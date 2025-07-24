@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Search, Menu, Bell, User } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Search, Menu, User, LogOut } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,8 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const isHomePage = location.pathname === '/';
 
   return (
@@ -50,14 +53,40 @@ export const Layout = ({ children }: LayoutProps) => {
                 </div>
               )}
               
-              <Button variant="outline" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Sign In
-              </Button>
-              
-              <Button size="sm" className="bg-gradient-primary hover:bg-primary-hover">
-                Get Started
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/dashboard">
+                      <User className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      await signOut();
+                      navigate('/');
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/auth">
+                      <User className="w-4 h-4 mr-2" />
+                      Sign In
+                    </Link>
+                  </Button>
+                  
+                  <Button size="sm" className="bg-gradient-primary hover:bg-primary-hover" asChild>
+                    <Link to="/auth">Get Started</Link>
+                  </Button>
+                </>
+              )}
 
               <Button variant="outline" size="sm" className="md:hidden">
                 <Menu className="w-4 h-4" />
