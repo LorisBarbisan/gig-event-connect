@@ -14,7 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      freelancer_profiles: {
+        Row: {
+          availability_status: string | null
+          bio: string | null
+          created_at: string
+          experience_years: number | null
+          first_name: string | null
+          hourly_rate: number | null
+          id: string
+          last_name: string | null
+          linkedin_url: string | null
+          location: string | null
+          portfolio_url: string | null
+          skills: string[] | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          availability_status?: string | null
+          bio?: string | null
+          created_at?: string
+          experience_years?: number | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          id?: string
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          portfolio_url?: string | null
+          skills?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          availability_status?: string | null
+          bio?: string | null
+          created_at?: string
+          experience_years?: number | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          id?: string
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          portfolio_url?: string | null
+          skills?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recruiter_profiles: {
+        Row: {
+          company_name: string
+          company_type: string | null
+          contact_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          linkedin_url: string | null
+          location: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          company_name: string
+          company_type?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          company_name?: string
+          company_type?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
