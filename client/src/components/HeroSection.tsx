@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
-import heroImage from "@/assets/hero-image.jpg";
+// import heroImage from "@/assets/hero-image.jpg";
 
 export const HeroSection = () => {
   return (
@@ -62,11 +62,12 @@ export const HeroSection = () => {
           {/* Right Column - Image & Cards */}
           <div className="relative animate-scale-in">
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
-              <img 
-                src={heroImage} 
-                alt="Technical crew setting up AV equipment at corporate event"
-                className="w-full h-[500px] object-cover"
-              />
+              <div className="w-full h-[500px] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>Professional Event Crew Platform</p>
+                </div>
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
 
