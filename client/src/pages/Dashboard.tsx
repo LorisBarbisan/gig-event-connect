@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { apiRequest } from '@/lib/queryClient';
 import { Layout } from '@/components/Layout';
 import { FreelancerDashboard } from '@/components/FreelancerDashboard';
 import { RecruiterDashboard } from '@/components/RecruiterDashboard';
@@ -15,6 +15,7 @@ interface Profile {
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,17 +27,14 @@ export default function Dashboard() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error) throw error;
-      setProfile({
-        ...data,
-        role: data.role as 'freelancer' | 'recruiter'
-      });
+      if (user) {
+        // Since we have user data with role, we can set the profile directly
+        setProfile({
+          id: user.id.toString(),
+          role: user.role,
+          email: user.email
+        });
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -59,7 +57,8 @@ export default function Dashboard() {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    setLocation('/auth');
+    return <div>Redirecting...</div>;
   }
 
   if (!profile) {

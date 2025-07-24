@@ -1,10 +1,9 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { apiRequest } from '@/lib/queryClient';
+import { User } from '@shared/schema';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -15,60 +14,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Check for stored user session
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem('user');
       }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, role: 'freelancer' | 'recruiter') => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { role }
-      }
-    });
-    return { error };
+    try {
+      const result = await apiRequest('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, role }),
+      });
+      setUser(result.user);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      return { error: null };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Signup failed' } };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    try {
+      const result = await apiRequest('/api/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setUser(result.user);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      return { error: null };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Sign in failed' } };
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    setUser(null);
+    localStorage.removeItem('user');
+    return { error: null };
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      session,
       loading,
       signUp,
       signIn,

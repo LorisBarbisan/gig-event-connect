@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Search, Menu, User, LogOut } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
@@ -8,10 +8,9 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation();
   const { user, signOut } = useAuth();
-  const isHomePage = location.pathname === '/';
+  const isHomePage = location === '/';
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,7 +65,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     size="sm"
                     onClick={async () => {
                       await signOut();
-                      navigate('/');
+                      setLocation('/');
                     }}
                   >
                     <LogOut className="w-4 h-4 mr-2" />

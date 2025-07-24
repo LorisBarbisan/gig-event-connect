@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useLocation } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ interface FreelancerDashboardProps {
 }
 
 export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile>({
     first_name: '',
@@ -64,13 +64,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
 
   const fetchFreelancerProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('freelancer_profiles')
-        .select('*')
-        .eq('user_id', profile.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
+      const data = await apiRequest(`/api/freelancer/${profile.id}`);
       
       if (data) {
         setFreelancerProfile({
@@ -100,16 +94,15 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
       };
 
       if (hasProfile) {
-        const { error } = await supabase
-          .from('freelancer_profiles')
-          .update(profileData)
-          .eq('user_id', profile.id);
-        if (error) throw error;
+        await apiRequest(`/api/freelancer/${profile.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(profileData),
+        });
       } else {
-        const { error } = await supabase
-          .from('freelancer_profiles')
-          .insert(profileData);
-        if (error) throw error;
+        await apiRequest('/api/freelancer', {
+          method: 'POST',
+          body: JSON.stringify(profileData),
+        });
         setHasProfile(true);
       }
 
@@ -147,7 +140,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
   };
 
   const viewProfile = () => {
-    navigate(`/profile/${profile.id}`);
+    setLocation(`/profile/${profile.id}`);
   };
 
   if (loading) {

@@ -1,0 +1,37 @@
+# Event Crew - Replit Migration
+
+## Project Overview
+Event Crew is a freelancer marketplace platform specifically designed for the events industry. The platform connects event professionals (freelancers) with recruiters/companies looking for skilled crew members.
+
+## Architecture
+- **Frontend**: React with TypeScript, using Wouter for routing
+- **Backend**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Custom JWT-less session management using localStorage
+- **UI**: Tailwind CSS with shadcn/ui components
+
+## Data Model
+- **Users**: Basic user information with email, password, and role (freelancer/recruiter)
+- **Freelancer Profiles**: Detailed professional profiles with skills, rates, availability
+- **Recruiter Profiles**: Company information and contact details
+
+## Recent Changes
+### January 24, 2025
+- **Migration from Lovable to Replit**: Successfully migrated the entire codebase from Supabase to Replit's PostgreSQL environment
+- **Removed Supabase dependencies**: Eliminated all @supabase/supabase-js dependencies and related code
+- **Implemented custom authentication**: Created server-side authentication system with bcrypt password hashing
+- **Database schema migration**: Converted from Supabase tables to Drizzle schema with PostgreSQL
+- **Router migration**: Switched from react-router-dom to wouter for client-side routing
+- **API endpoints**: Implemented RESTful API endpoints for user management and profile operations
+
+## User Preferences
+- Security-focused development with proper client/server separation
+- Modern web application patterns with backend handling data persistence
+- Minimal file structure with consolidated components where appropriate
+
+## Current Status
+The application has been successfully migrated from Lovable/Supabase to Replit environment with:
+- Working authentication system
+- Database operations through Drizzle ORM
+- Complete removal of external dependencies like Supabase
+- Ready for deployment and further development

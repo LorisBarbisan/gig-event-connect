@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { UserCheck, Building2 } from 'lucide-react';
 export default function Auth() {
   const { user, signUp, signIn } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [signUpData, setSignUpData] = useState({
     email: '',
@@ -27,7 +28,8 @@ export default function Auth() {
 
   // Redirect if already authenticated
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    setLocation('/dashboard');
+    return <div>Redirecting...</div>;
   }
 
   const handleSignUp = async (e: React.FormEvent) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -50,13 +50,7 @@ export function RecruiterDashboard({ profile }: RecruiterDashboardProps) {
 
   const fetchRecruiterProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('recruiter_profiles')
-        .select('*')
-        .eq('user_id', profile.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
+      const data = await apiRequest(`/api/recruiter/${profile.id}`);
       
       if (data) {
         setRecruiterProfile(data);
@@ -83,16 +77,15 @@ export function RecruiterDashboard({ profile }: RecruiterDashboardProps) {
       };
 
       if (hasProfile) {
-        const { error } = await supabase
-          .from('recruiter_profiles')
-          .update(profileData)
-          .eq('user_id', profile.id);
-        if (error) throw error;
+        await apiRequest(`/api/recruiter/${profile.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(profileData),
+        });
       } else {
-        const { error } = await supabase
-          .from('recruiter_profiles')
-          .insert(profileData);
-        if (error) throw error;
+        await apiRequest('/api/recruiter', {
+          method: 'POST',
+          body: JSON.stringify(profileData),
+        });
         setHasProfile(true);
       }
 

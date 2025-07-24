@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useParams } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,42 +56,35 @@ export default function Profile() {
   const fetchProfile = async () => {
     try {
       // First get the user's basic profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileError) throw profileError;
+      const userData = await apiRequest(`/api/user/${userId}`);
+      
       setUserProfile({
-        role: profileData.role as 'freelancer' | 'recruiter',
-        email: profileData.email
+        role: userData.role as 'freelancer' | 'recruiter',
+        email: userData.email
       });
 
       // Then get the specific profile based on role
-      if (profileData.role === 'freelancer') {
-        const { data, error } = await supabase
-          .from('freelancer_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        if (data) {
-          setFreelancerProfile({
-            ...data,
-            availability_status: data.availability_status as 'available' | 'busy' | 'unavailable'
-          });
+      if (userData.role === 'freelancer') {
+        try {
+          const freelancerData = await apiRequest(`/api/freelancer/${userId}`);
+          if (freelancerData) {
+            setFreelancerProfile({
+              ...freelancerData,
+              availability_status: freelancerData.availability_status as 'available' | 'busy' | 'unavailable'
+            });
+          }
+        } catch (error) {
+          // Profile doesn't exist yet
         }
       } else {
-        const { data, error } = await supabase
-          .from('recruiter_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        if (data) setRecruiterProfile(data);
+        try {
+          const recruiterData = await apiRequest(`/api/recruiter/${userId}`);
+          if (recruiterData) {
+            setRecruiterProfile(recruiterData);
+          }
+        } catch (error) {
+          // Profile doesn't exist yet
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
