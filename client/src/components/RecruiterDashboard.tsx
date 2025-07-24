@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Globe, Linkedin } from 'lucide-react';
+import { Building2, Users, Briefcase } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -119,15 +119,17 @@ export function RecruiterDashboard({ profile }: RecruiterDashboardProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Recruiter Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Manage your company profile and job postings</p>
+        <h1 className="text-4xl font-bold">
+          <span className="bg-gradient-hero bg-clip-text text-transparent">Recruiter Dashboard</span>
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">Manage your company profile and find talented crew</p>
       </div>
 
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
+        <Card className="border-border/50 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Building2 className="h-6 w-6 text-primary" />
               Company Profile
             </CardTitle>
           </CardHeader>
@@ -206,24 +208,27 @@ export function RecruiterDashboard({ profile }: RecruiterDashboardProps) {
               </div>
             </div>
 
-            <Button onClick={saveProfile} disabled={saving} className="w-full">
+            <Button onClick={saveProfile} disabled={saving} className="w-full bg-gradient-primary hover:bg-primary-hover">
               {saving ? 'Saving...' : 'Save Profile'}
             </Button>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+        <Card className="border-border/50 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-accent/5 to-primary/5">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Briefcase className="h-6 w-6 text-primary" />
+              Quick Actions
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Building2 className="h-6 w-6" />
+              <Button variant="outline" className="h-20 flex flex-col gap-2 border-primary/20 hover:bg-primary/5 hover:border-primary/30">
+                <Building2 className="h-6 w-6 text-primary" />
                 <span>Post New Job</span>
               </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Globe className="h-6 w-6" />
+              <Button variant="outline" className="h-20 flex flex-col gap-2 border-accent/20 hover:bg-accent/5 hover:border-accent/30">
+                <Users className="h-6 w-6 text-accent" />
                 <span>Browse Freelancers</span>
               </Button>
             </div>

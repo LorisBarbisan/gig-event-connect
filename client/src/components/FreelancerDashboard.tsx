@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { User, MapPin, DollarSign, Calendar, Plus, X } from 'lucide-react';
+import { User, MapPin, DollarSign, Calendar, Plus, X, UserCheck } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -158,20 +158,25 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Freelancer Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Manage your professional profile</p>
+          <h1 className="text-4xl font-bold">
+            <span className="bg-gradient-hero bg-clip-text text-transparent">Freelancer Dashboard</span>
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">Manage your professional profile and grow your career</p>
         </div>
         {hasProfile && (
-          <Button onClick={viewProfile} variant="outline">
+          <Button onClick={viewProfile} variant="outline" className="border-primary/20 hover:bg-primary/5">
             <User className="h-4 w-4 mr-2" />
             View Public Profile
           </Button>
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Professional Profile</CardTitle>
+      <Card className="border-border/50 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <UserCheck className="h-6 w-6 text-primary" />
+            Professional Profile
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -304,7 +309,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
             </div>
           </div>
 
-          <Button onClick={saveProfile} disabled={saving} className="w-full">
+          <Button onClick={saveProfile} disabled={saving} className="w-full bg-gradient-primary hover:bg-primary-hover">
             {saving ? 'Saving...' : 'Save Profile'}
           </Button>
         </CardContent>

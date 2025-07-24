@@ -79,11 +79,16 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Event Crew
+        <div className="text-center mb-8 space-y-4">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl">EC</span>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold">
+            <span className="bg-gradient-hero bg-clip-text text-transparent">Event Crew</span>
           </h1>
-          <p className="text-muted-foreground mt-2">Join the professional events community</p>
+          <p className="text-muted-foreground text-lg">Join the professional events community</p>
         </div>
 
         <Card className="border-border/50 shadow-xl">
@@ -125,7 +130,7 @@ export default function Auth() {
 
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-gradient-primary hover:bg-primary-hover" 
                     disabled={loading}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
@@ -197,7 +202,7 @@ export default function Auth() {
 
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-gradient-primary hover:bg-primary-hover" 
                     disabled={loading}
                   >
                     {loading ? 'Creating Account...' : 'Create Account'}
