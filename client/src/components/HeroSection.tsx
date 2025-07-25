@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
-// import heroImage from "@/assets/hero-image.jpg";
+import eventImage from "@assets/Screenshot 2025-07-25 100419_1753430707928.png";
 
 export const HeroSection = () => {
   return (
@@ -62,23 +62,22 @@ export const HeroSection = () => {
           {/* Right Column - Image & Cards */}
           <div className="relative animate-scale-in">
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
-              <div className="w-full h-[500px] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Professional Event Crew Platform</p>
-                </div>
-              </div>
+              <img 
+                src={eventImage} 
+                alt="Professional event crew working with technical equipment and stage lighting"
+                className="w-full h-[500px] object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
 
-            {/* Floating Job Cards */}
-            <Card className="absolute -top-4 -left-4 p-4 shadow-lg bg-card/95 backdrop-blur-sm animate-fade-in">
+            {/* Floating Job Cards - matching EventCrew design */}
+            <Card className="absolute -top-4 -left-4 p-3 shadow-lg bg-card/95 backdrop-blur-sm animate-fade-in border-l-4 border-l-primary">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-success rounded-lg flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-success-foreground" />
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-2 h-2 bg-primary rounded-full" />
                 </div>
                 <div>
-                  <div className="font-semibold text-sm">Audio Engineer</div>
+                  <div className="font-semibold text-sm text-foreground">Audio Engineer</div>
                   <div className="text-xs text-muted-foreground flex items-center">
                     <MapPin className="w-3 h-3 mr-1" />
                     London • £350/day
@@ -87,13 +86,13 @@ export const HeroSection = () => {
               </div>
             </Card>
 
-            <Card className="absolute -bottom-4 -right-4 p-4 shadow-lg bg-card/95 backdrop-blur-sm animate-fade-in">
+            <Card className="absolute -bottom-4 -right-4 p-3 shadow-lg bg-card/95 backdrop-blur-sm animate-fade-in border-l-4 border-l-accent">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-accent-foreground" />
+                <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <div className="w-2 h-2 bg-accent rounded-full" />
                 </div>
                 <div>
-                  <div className="font-semibold text-sm">Lighting Tech</div>
+                  <div className="font-semibold text-sm text-foreground">Lighting Tech</div>
                   <div className="text-xs text-muted-foreground flex items-center">
                     <MapPin className="w-3 h-3 mr-1" />
                     Manchester • 2 days

@@ -81,7 +81,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     </Link>
                   </Button>
                   
-                  <Button size="sm" className="bg-gradient-primary hover:bg-primary-hover" asChild>
+                  <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" asChild>
                     <Link to="/auth">Get Started</Link>
                   </Button>
                 </>
