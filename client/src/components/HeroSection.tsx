@@ -20,7 +20,8 @@ export const HeroSection = () => {
               
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
                 Connect with 
-                <span className="bg-gradient-hero bg-clip-text text-transparent"> Technical Crew</span> for Events
+                <span className="text-primary"> Technical</span>
+                <span className="text-accent"> Crew</span> for Events
               </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed">
