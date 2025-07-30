@@ -79,15 +79,14 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8 space-y-4">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">EC</span>
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold">
-            <span className="bg-gradient-hero bg-clip-text text-transparent">Event Crew</span>
-          </h1>
+        <div className="text-center mb-8">
+          <Button 
+            variant="outline" 
+            onClick={() => setLocation('/')}
+            className="mb-4"
+          >
+            ← Back to Home Page
+          </Button>
           <p className="text-muted-foreground text-lg">Join the professional events community</p>
         </div>
 
