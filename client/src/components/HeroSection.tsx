@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
-import eventImage from "@assets/ChatGPT Image Jul 30, 2025, 07_04_16 AM_1753851920175.png";
+import eventImage from "@assets/vecteezy_blurred-images-of-trade-fairs-in-the-big-hall-image-of_33496157_1753859139754.jpg";
 
 export const HeroSection = () => {
   return (
@@ -65,7 +65,7 @@ export const HeroSection = () => {
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <img 
                 src={eventImage} 
-                alt="Corporate event with professional lighting and AV presentation setup featuring galaxy visual display"
+                alt="Professional trade fair and exhibition hall with lighting and event displays"
                 className="w-full h-[500px] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
