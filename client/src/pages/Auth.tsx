@@ -130,7 +130,7 @@ export default function Auth() {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-primary hover:bg-primary-hover" 
+                    className="w-full bg-gradient-primary hover:bg-primary-hover text-white font-semibold py-2 mt-4" 
                     disabled={loading}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
@@ -202,7 +202,7 @@ export default function Auth() {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-primary hover:bg-primary-hover" 
+                    className="w-full bg-gradient-primary hover:bg-primary-hover text-white font-semibold py-2 mt-4" 
                     disabled={loading}
                   >
                     {loading ? 'Creating Account...' : 'Create Account'}
