@@ -20,6 +20,7 @@ export const freelancer_profiles = pgTable("freelancer_profiles", {
   bio: text("bio"),
   location: text("location"),
   hourly_rate: decimal("hourly_rate", { precision: 10, scale: 2 }),
+  rate_type: text("rate_type").default('hourly').$type<'hourly' | 'daily'>(),
   experience_years: integer("experience_years"),
   skills: text("skills").array(),
   portfolio_url: text("portfolio_url"),

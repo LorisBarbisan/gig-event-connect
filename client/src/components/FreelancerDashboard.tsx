@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { User, MapPin, DollarSign, Calendar, Plus, X, UserCheck } from 'lucide-react';
 
@@ -24,6 +25,7 @@ interface FreelancerProfile {
   bio: string;
   location: string;
   hourly_rate: number | null;
+  rate_type: 'hourly' | 'daily';
   experience_years: number | null;
   skills: string[];
   portfolio_url: string;
@@ -46,6 +48,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
     bio: '',
     location: '',
     hourly_rate: null,
+    rate_type: 'hourly',
     experience_years: null,
     skills: [],
     portfolio_url: '',
@@ -232,13 +235,27 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hourly_rate">Hourly Rate (£)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="rate">Rate (£)</Label>
+                <Select 
+                  value={freelancerProfile.rate_type} 
+                  onValueChange={(value: 'hourly' | 'daily') => setFreelancerProfile(prev => ({ ...prev, rate_type: value }))}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hourly</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Input
-                id="hourly_rate"
+                id="rate"
                 type="number"
                 value={freelancerProfile.hourly_rate || ''}
                 onChange={(e) => setFreelancerProfile(prev => ({ ...prev, hourly_rate: e.target.value ? parseFloat(e.target.value) : null }))}
-                placeholder="50"
+                placeholder={freelancerProfile.rate_type === 'hourly' ? '50' : '400'}
               />
             </div>
             <div className="space-y-2">
