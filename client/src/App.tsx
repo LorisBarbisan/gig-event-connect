@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/profile/:userId" component={Profile} />
           <Route path="/jobs" component={Jobs} />
           <Route path="/freelancers" component={Freelancers} />
-          <Route component={NotFound} />
+          <Route path="*" component={NotFound} />
         </Router>
       </TooltipProvider>
     </AuthProvider>
