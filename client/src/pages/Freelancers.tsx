@@ -88,7 +88,7 @@ export default function Freelancers() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">
-            <span className="bg-gradient-hero bg-clip-text text-transparent">Find Crew</span>
+            <span className="text-primary">Find</span> <span className="text-accent">Crew</span>
           </h1>
           <p className="text-muted-foreground text-lg">
             Connect with skilled technical professionals for your events. Browse profiles and hire the best crew for your projects.

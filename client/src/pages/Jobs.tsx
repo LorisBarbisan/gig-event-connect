@@ -71,7 +71,7 @@ export default function Jobs() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">
-            <span className="bg-gradient-hero bg-clip-text text-transparent">Find Jobs</span>
+            <span className="text-primary">Find</span> <span className="text-accent">Jobs</span>
           </h1>
           <p className="text-muted-foreground text-lg">
             Discover exciting opportunities in the events industry. Connect with top companies looking for technical crew.
