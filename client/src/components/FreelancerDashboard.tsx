@@ -74,7 +74,8 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
       if (data) {
         setFreelancerProfile({
           ...data,
-          availability_status: data.availability_status as 'available' | 'busy' | 'unavailable'
+          availability_status: data.availability_status as 'available' | 'busy' | 'unavailable',
+          profile_photo_url: data.profile_photo_url || ''
         });
         setHasProfile(true);
       }
@@ -192,7 +193,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
           <div className="flex items-start gap-6 pb-6 border-b border-border/50">
             <div className="flex flex-col items-center gap-3">
               <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-primary/5 overflow-hidden">
-                {freelancerProfile.profile_photo_url ? (
+                {freelancerProfile.profile_photo_url && freelancerProfile.profile_photo_url.trim() !== '' ? (
                   <img 
                     src={freelancerProfile.profile_photo_url} 
                     alt="Profile" 
