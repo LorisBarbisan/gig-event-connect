@@ -138,8 +138,19 @@ export default function Profile() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-20 w-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-                      <User className="h-10 w-10 text-white" />
+                    <div className="h-20 w-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center overflow-hidden">
+                      {(freelancerProfile.profile_photo_url && 
+                        freelancerProfile.profile_photo_url.trim() !== '' && 
+                        freelancerProfile.profile_photo_url !== 'null' && 
+                        freelancerProfile.profile_photo_url.startsWith('data:')) ? (
+                        <img 
+                          src={freelancerProfile.profile_photo_url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-10 w-10 text-white" />
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-2xl">
