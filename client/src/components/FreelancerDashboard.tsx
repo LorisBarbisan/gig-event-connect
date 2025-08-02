@@ -166,7 +166,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold">
-            <span className="bg-gradient-hero bg-clip-text text-transparent">Freelancer Dashboard</span>
+            <span className="text-primary">Freelancer</span> <span className="text-accent">Dashboard</span>
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">Manage your professional profile and grow your career</p>
         </div>

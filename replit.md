@@ -16,6 +16,12 @@ Event Crew is a freelancer marketplace platform specifically designed for the ev
 - **Recruiter Profiles**: Company information and contact details
 
 ## Recent Changes
+### February 2, 2025
+- **Fixed Gradient Text Issues**: Resolved rendering problems across all pages with gradient backgrounds
+- **Enhanced Password Validation**: Added comprehensive signup form validation with real-time feedback
+- **Fixed Routing Issues**: Corrected NotFound component appearing at bottom of all pages
+- **Improved UX**: Added visual indicators for password matching and form validation
+
 ### February 1, 2025
 - **Navigation System Complete**: Fixed all landing page buttons to navigate to proper pages
 - **Created Jobs Page**: Full job listing page with search, filters, and EventCrew design

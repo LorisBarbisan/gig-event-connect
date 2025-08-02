@@ -124,7 +124,7 @@ export function RecruiterDashboard({ profile }: RecruiterDashboardProps) {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold">
-          <span className="bg-gradient-hero bg-clip-text text-transparent">Recruiter Dashboard</span>
+          <span className="text-primary">Recruiter</span> <span className="text-accent">Dashboard</span>
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">Manage your company profile and find talented crew</p>
       </div>
