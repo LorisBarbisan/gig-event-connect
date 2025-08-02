@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, DollarSign, Calendar, Globe, Linkedin, ExternalLink, User, Building2 } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, Globe, Linkedin, ExternalLink, User, Building2, Mail } from 'lucide-react';
 
 interface FreelancerProfile {
   id: string;
@@ -165,11 +165,24 @@ export default function Profile() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`h-3 w-3 rounded-full ${getAvailabilityColor(freelancerProfile.availability_status)}`}></div>
-                    <Badge variant="outline" className="capitalize">
-                      {freelancerProfile.availability_status}
-                    </Badge>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-3 w-3 rounded-full ${getAvailabilityColor(freelancerProfile.availability_status)}`}></div>
+                      <Badge variant="outline" className="capitalize">
+                        {freelancerProfile.availability_status}
+                      </Badge>
+                    </div>
+                    <Button 
+                      className="bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover text-white font-semibold px-6 py-2"
+                      onClick={() => {
+                        const subject = `EventCrew Inquiry - ${freelancerProfile.first_name} ${freelancerProfile.last_name}`;
+                        const body = `Hi ${freelancerProfile.first_name},\n\nI found your profile on EventCrew and I'm interested in discussing a potential project opportunity.\n\nPlease let me know your availability.\n\nBest regards`;
+                        window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                      }}
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Contact
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
