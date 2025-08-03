@@ -72,7 +72,7 @@ export class DatabaseStorage implements IStorage {
       bio: profile.bio,
       location: profile.location,
       hourly_rate: profile.hourly_rate,
-      rate_type: profile.rate_type,
+      rate_type: profile.rate_type as 'hourly' | 'daily',
       experience_years: profile.experience_years,
       skills: profile.skills,
       portfolio_url: profile.portfolio_url,
