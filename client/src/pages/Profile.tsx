@@ -1,89 +1,89 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'wouter';
+import { useLocation } from 'wouter';
+import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, DollarSign, Calendar, Globe, Linkedin, ExternalLink, User, Building2, Mail } from 'lucide-react';
+import { User, MapPin, DollarSign, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star } from 'lucide-react';
+
+interface Profile {
+  id: string;
+  role: 'freelancer' | 'recruiter';
+  email: string;
+}
 
 interface FreelancerProfile {
-  id: string;
+  id?: string;
   first_name: string;
   last_name: string;
   title: string;
   bio: string;
   location: string;
   hourly_rate: number | null;
+  rate_type: 'hourly' | 'daily';
   experience_years: number | null;
   skills: string[];
   portfolio_url: string;
   linkedin_url: string;
   website_url: string;
   availability_status: 'available' | 'busy' | 'unavailable';
-}
-
-interface RecruiterProfile {
-  id: string;
-  company_name: string;
-  contact_name: string;
-  company_type: string;
-  location: string;
-  description: string;
-  website_url: string;
-  linkedin_url: string;
-}
-
-interface UserProfile {
-  role: 'freelancer' | 'recruiter';
-  email: string;
+  profile_photo_url?: string;
 }
 
 export default function Profile() {
-  const { userId } = useParams<{ userId: string }>();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [, setLocation] = useLocation();
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile | null>(null);
-  const [recruiterProfile, setRecruiterProfile] = useState<RecruiterProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userId) {
+    if (!authLoading && !user) {
+      setLocation('/auth');
+      return;
+    }
+
+    if (user) {
       fetchProfile();
     }
-  }, [userId]);
+  }, [user, authLoading, setLocation]);
 
   const fetchProfile = async () => {
     try {
-      // First get the user's basic profile
-      const userData = await apiRequest(`/api/user/${userId}`);
-      
-      setUserProfile({
-        role: userData.role as 'freelancer' | 'recruiter',
-        email: userData.email
-      });
+      const userProfile: Profile = {
+        id: user!.id.toString(),
+        role: user!.role as 'freelancer' | 'recruiter',
+        email: user!.email
+      };
+      setProfile(userProfile);
 
-      // Then get the specific profile based on role
-      if (userData.role === 'freelancer') {
+      if (userProfile.role === 'freelancer') {
         try {
-          const freelancerData = await apiRequest(`/api/freelancer/${userId}`);
-          if (freelancerData) {
+          const data = await apiRequest(`/api/freelancer/${userProfile.id}`);
+          if (data) {
             setFreelancerProfile({
-              ...freelancerData,
-              availability_status: freelancerData.availability_status as 'available' | 'busy' | 'unavailable'
+              id: data.id,
+              first_name: data.first_name || '',
+              last_name: data.last_name || '',
+              title: data.title || '',
+              bio: data.bio || '',
+              location: data.location || '',
+              hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
+              rate_type: data.rate_type || 'hourly',
+              experience_years: data.experience_years || null,
+              skills: data.skills || [],
+              portfolio_url: data.portfolio_url || '',
+              linkedin_url: data.linkedin_url || '',
+              website_url: data.website_url || '',
+              availability_status: data.availability_status || 'available',
+              profile_photo_url: data.profile_photo_url || ''
             });
           }
         } catch (error) {
-          // Profile doesn't exist yet
-        }
-      } else {
-        try {
-          const recruiterData = await apiRequest(`/api/recruiter/${userId}`);
-          if (recruiterData) {
-            setRecruiterProfile(recruiterData);
-          }
-        } catch (error) {
-          // Profile doesn't exist yet
+          console.log('No freelancer profile found');
         }
       }
     } catch (error) {
@@ -93,240 +93,223 @@ export default function Profile() {
     }
   };
 
-  const getAvailabilityColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-green-500';
-      case 'busy': return 'bg-yellow-500';
-      case 'unavailable': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <div className="space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-64 w-full" />
+          <div className="max-w-4xl mx-auto space-y-6">
             <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-64 w-full" />
           </div>
         </div>
       </Layout>
     );
   }
 
-  if (!userProfile) {
+  if (!profile) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Profile not found</h1>
-            <p className="text-muted-foreground">This user profile doesn't exist or is not available.</p>
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold mb-4">Profile Not Found</h1>
+            <Button onClick={() => setLocation('/dashboard')}>
+              Go to Dashboard
+            </Button>
           </div>
         </div>
       </Layout>
     );
   }
 
-  if (userProfile.role === 'freelancer' && freelancerProfile) {
+  if (profile.role === 'freelancer' && !freelancerProfile) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-20 w-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center overflow-hidden">
-                      {((freelancerProfile as any).profile_photo_url && 
-                        (freelancerProfile as any).profile_photo_url.trim() !== '' && 
-                        (freelancerProfile as any).profile_photo_url !== 'null' && 
-                        (freelancerProfile as any).profile_photo_url.startsWith('data:')) ? (
-                        <img 
-                          src={(freelancerProfile as any).profile_photo_url} 
-                          alt="Profile" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-10 w-10 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">
-                        {freelancerProfile.first_name} {freelancerProfile.last_name}
-                      </CardTitle>
-                      <p className="text-xl text-muted-foreground">{freelancerProfile.title}</p>
-                      {freelancerProfile.location && (
-                        <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                          <MapPin className="h-4 w-4" />
-                          <span>{freelancerProfile.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-3 w-3 rounded-full ${getAvailabilityColor(freelancerProfile.availability_status)}`}></div>
-                      <Badge variant="outline" className="capitalize">
-                        {freelancerProfile.availability_status}
-                      </Badge>
-                    </div>
-                    <Button 
-                      className="bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover text-white font-semibold px-6 py-2"
-                      onClick={() => {
-                        const subject = `EventCrew Inquiry - ${freelancerProfile.first_name} ${freelancerProfile.last_name}`;
-                        const body = `Hi ${freelancerProfile.first_name},\n\nI found your profile on EventCrew and I'm interested in discussing a potential project opportunity.\n\nPlease let me know your availability.\n\nBest regards`;
-                        window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-                      }}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Contact
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {freelancerProfile.bio && (
-                  <div>
-                    <h3 className="font-semibold mb-2">About</h3>
-                    <p className="text-muted-foreground">{freelancerProfile.bio}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {freelancerProfile.hourly_rate && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <span>£{freelancerProfile.hourly_rate}/hour</span>
-                    </div>
-                  )}
-                  {freelancerProfile.experience_years && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>{freelancerProfile.experience_years} years experience</span>
-                    </div>
-                  )}
-                </div>
-
-                {freelancerProfile.skills.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-3">Skills</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {freelancerProfile.skills.map((skill, index) => (
-                        <Badge key={index} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  {freelancerProfile.portfolio_url && (
-                    <Button variant="outline" asChild>
-                      <a href={freelancerProfile.portfolio_url} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-4 w-4 mr-2" />
-                        Portfolio
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
-                  )}
-                  {freelancerProfile.linkedin_url && (
-                    <Button variant="outline" asChild>
-                      <a href={freelancerProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-4 w-4 mr-2" />
-                        LinkedIn
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
-                  )}
-                  {freelancerProfile.website_url && (
-                    <Button variant="outline" asChild>
-                      <a href={freelancerProfile.website_url} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-4 w-4 mr-2" />
-                        Website
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="max-w-4xl mx-auto text-center space-y-4">
+            <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
+              <User className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold">Complete Your Profile</h1>
+            <p className="text-muted-foreground">
+              Create your freelancer profile to start connecting with event organizers.
+            </p>
+            <Button 
+              onClick={() => setLocation('/dashboard')}
+              className="bg-gradient-primary hover:bg-primary-hover"
+            >
+              Create Profile
+            </Button>
           </div>
         </div>
       </Layout>
     );
   }
 
-  if (userProfile.role === 'recruiter' && recruiterProfile) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="h-20 w-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-                    <Building2 className="h-10 w-10 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">{recruiterProfile.company_name}</CardTitle>
-                    <p className="text-xl text-muted-foreground">{recruiterProfile.company_type}</p>
-                    {recruiterProfile.contact_name && (
-                      <p className="text-muted-foreground">Contact: {recruiterProfile.contact_name}</p>
-                    )}
-                    {recruiterProfile.location && (
-                      <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{recruiterProfile.location}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {recruiterProfile.description && (
-                  <div>
-                    <h3 className="font-semibold mb-2">About</h3>
-                    <p className="text-muted-foreground">{recruiterProfile.description}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  {recruiterProfile.website_url && (
-                    <Button variant="outline" asChild>
-                      <a href={recruiterProfile.website_url} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-4 w-4 mr-2" />
-                        Website
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
-                  )}
-                  {recruiterProfile.linkedin_url && (
-                    <Button variant="outline" asChild>
-                      <a href={recruiterProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-4 w-4 mr-2" />
-                        LinkedIn
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleContactClick = () => {
+    const subject = encodeURIComponent(`EventCrew Inquiry - ${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`);
+    const body = encodeURIComponent(`Hi ${freelancerProfile?.first_name},\n\nI found your profile on EventCrew and I'm interested in discussing a potential collaboration for an upcoming event.\n\nPlease let me know your availability.\n\nBest regards`);
+    window.open(`mailto:${profile.email}?subject=${subject}&body=${body}`, '_blank');
+  };
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Profile Incomplete</h1>
-          <p className="text-muted-foreground">This user hasn't completed their profile yet.</p>
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Profile Header */}
+          <Card>
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
+                  {freelancerProfile?.profile_photo_url && 
+                   freelancerProfile.profile_photo_url.trim() !== '' && 
+                   freelancerProfile.profile_photo_url !== 'null' && 
+                   freelancerProfile.profile_photo_url.startsWith('data:') ? (
+                    <img 
+                      src={freelancerProfile.profile_photo_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
+                </div>
+                
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold">
+                        {freelancerProfile?.first_name} {freelancerProfile?.last_name}
+                      </h1>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        VERIFIED
+                      </Badge>
+                    </div>
+                    <p className="text-xl text-primary font-semibold mb-2">
+                      {freelancerProfile?.title}
+                    </p>
+                    <div className="flex items-center gap-4 text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {freelancerProfile?.location}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {freelancerProfile?.experience_years} years experience
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        £{freelancerProfile?.hourly_rate}/{freelancerProfile?.rate_type}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3 w-3 rounded-full ${
+                      freelancerProfile?.availability_status === 'available' ? 'bg-green-500' :
+                      freelancerProfile?.availability_status === 'busy' ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}></div>
+                    <Badge variant="outline" className="capitalize">
+                      {freelancerProfile?.availability_status}
+                    </Badge>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      onClick={handleContactClick}
+                      className="bg-gradient-primary hover:bg-primary-hover"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Contact
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setLocation('/dashboard')}
+                    >
+                      Edit Profile
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* About Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>About</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground leading-relaxed">
+                {freelancerProfile?.bio || 'No bio available.'}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Skills Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Skills & Expertise</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {freelancerProfile?.skills.map((skill, index) => (
+                  <Badge key={index} variant="secondary" className="px-3 py-1">
+                    {skill}
+                  </Badge>
+                ))}
+                {(!freelancerProfile?.skills || freelancerProfile.skills.length === 0) && (
+                  <p className="text-muted-foreground">No skills added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Links Section */}
+          {(freelancerProfile?.portfolio_url || freelancerProfile?.linkedin_url || freelancerProfile?.website_url) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Links</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {freelancerProfile?.portfolio_url && (
+                    <a 
+                      href={freelancerProfile.portfolio_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Portfolio
+                    </a>
+                  )}
+                  {freelancerProfile?.linkedin_url && (
+                    <a 
+                      href={freelancerProfile.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                      LinkedIn
+                    </a>
+                  )}
+                  {freelancerProfile?.website_url && (
+                    <a 
+                      href={freelancerProfile.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Website
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </Layout>
