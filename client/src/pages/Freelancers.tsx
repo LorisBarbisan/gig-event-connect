@@ -27,22 +27,25 @@ export default function Freelancers() {
   });
 
   // Transform real freelancer data to match display format
-  const transformedRealFreelancers = realFreelancers.map((profile: any) => ({
-    id: `real-${profile.user_id}`,
-    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-    title: profile.title || 'Event Professional',
-    location: profile.location || 'Location not specified',
-    experience: profile.experience_years ? `${profile.experience_years} years` : 'Experience not specified',
-    rate: profile.hourly_rate ? `£${profile.hourly_rate}/${profile.rate_type || 'hour'}` : 'Rate on request',
-    rating: 5.0, // Default rating for real profiles
-    availability: profile.availability_status === 'available' ? 'Available' : 
-                 profile.availability_status === 'busy' ? 'Busy' : 'Unavailable',
-    skills: profile.skills || [],
-    bio: profile.bio || 'Professional event crew member',
-    recentProjects: Math.floor(Math.random() * 5) + 1, // Random for display
-    avatar: profile.profile_photo_url || null,
-    isReal: true // Flag to identify real profiles
-  }));
+  const transformedRealFreelancers = realFreelancers.map((profile: any) => {
+    console.log('Transforming profile:', profile.first_name, 'Avatar data exists:', !!profile.profile_photo_url);
+    return {
+      id: `real-${profile.user_id}`,
+      name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+      title: profile.title || 'Event Professional',
+      location: profile.location || 'Location not specified',
+      experience: profile.experience_years ? `${profile.experience_years} years` : 'Experience not specified',
+      rate: profile.hourly_rate ? `£${profile.hourly_rate}/${profile.rate_type || 'hour'}` : 'Rate on request',
+      rating: 5.0, // Default rating for real profiles
+      availability: profile.availability_status === 'available' ? 'Available' : 
+                   profile.availability_status === 'busy' ? 'Busy' : 'Unavailable',
+      skills: profile.skills || [],
+      bio: profile.bio || 'Professional event crew member',
+      recentProjects: Math.floor(Math.random() * 5) + 1, // Random for display
+      avatar: profile.profile_photo_url || null,
+      isReal: true // Flag to identify real profiles
+    };
+  });
 
   // Mock freelancer data matching EventCrew design
   const mockFreelancers = [
@@ -195,10 +198,10 @@ export default function Freelancers() {
                   <CardHeader>
                     <div className="flex items-start gap-4">
                       <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-2xl overflow-hidden">
-                        {freelancer.isReal && freelancer.avatar && freelancer.avatar.startsWith('data:') ? (
+                        {freelancer.avatar && freelancer.avatar.startsWith('data:') ? (
                           <img 
                             src={freelancer.avatar} 
-                            alt="Profile" 
+                            alt={`${freelancer.name} profile photo`}
                             className="w-full h-full object-cover"
                           />
                         ) : (
