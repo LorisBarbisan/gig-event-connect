@@ -24,10 +24,10 @@ export default function Jobs() {
     }
   });
 
-  // Mock jobs data as fallback for demonstration
+  // Mock jobs data as fallback for demonstration  
   const mockJobs = [
     {
-      id: 1,
+      id: 'mock-1',
       title: 'Audio Engineer - Tech Conference',
       company: 'EventTech Solutions',
       location: 'London, UK',
@@ -40,7 +40,7 @@ export default function Jobs() {
       skills: ['Sound Engineering', 'Live Events', 'Mixing Consoles']
     },
     {
-      id: 2,
+      id: 'mock-2',
       title: 'Lighting Technician - Corporate Event',
       company: 'Bright Events Ltd',
       location: 'Manchester, UK',
@@ -53,7 +53,7 @@ export default function Jobs() {
       skills: ['Lighting Design', 'LED Systems', 'Event Production']
     },
     {
-      id: 3,
+      id: 'mock-3',
       title: 'AV Specialist - Exhibition',
       company: 'ExpoTech Events',
       location: 'Birmingham, UK',
@@ -67,8 +67,15 @@ export default function Jobs() {
     }
   ];
 
+  // Transform real jobs to ensure unique IDs and consistent format
+  const transformedRealJobs = jobs.map((job: any) => ({
+    ...job,
+    id: `real-${job.id}`,
+    posted: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently posted'
+  }));
+
   // Use real jobs data first, then mock data for demonstration
-  const jobsToShow = [...jobs, ...mockJobs];
+  const jobsToShow = [...transformedRealJobs, ...mockJobs];
   
   const filteredJobs = jobsToShow.filter((job: any) => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
