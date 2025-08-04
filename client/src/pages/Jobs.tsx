@@ -77,7 +77,10 @@ export default function Jobs() {
   // Use real jobs data first, then mock data for demonstration
   const jobsToShow = [...transformedRealJobs, ...mockJobs];
   
-  const filteredJobs = jobsToShow.filter((job: any) => {
+  // Debug: Force render with known data if API data exists
+  const displayJobs = isLoading ? [] : jobsToShow;
+  
+  const filteredJobs = displayJobs.filter((job: any) => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          job.company.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLocation = !locationFilter || job.location.toLowerCase().includes(locationFilter.toLowerCase());
@@ -155,20 +158,7 @@ export default function Jobs() {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading jobs...</p>
-              </div>
-            </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-              <p className="text-muted-foreground">Try adjusting your search criteria.</p>
-            </div>
-          ) : (
-            filteredJobs.map((job: any) => (
+          {filteredJobs.map((job: any) => (
             <Card key={job.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -212,7 +202,7 @@ export default function Jobs() {
               </CardContent>
             </Card>
             ))
-          )}
+          }
         </div>
       </div>
     </Layout>
