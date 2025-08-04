@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Layout } from '@/components/Layout';
 import { FreelancerDashboardTabs } from '@/components/FreelancerDashboardTabs';
-import { RecruiterDashboard } from '@/components/RecruiterDashboard';
+import RecruiterDashboardTabs from '@/components/RecruiterDashboardTabs';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Profile {
@@ -82,11 +82,13 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      {profile.role === 'freelancer' ? (
-        <FreelancerDashboardTabs profile={profile} />
-      ) : (
-        <RecruiterDashboard profile={profile} />
-      )}
+      <div className="container mx-auto px-4 py-8">
+        {profile.role === 'freelancer' ? (
+          <FreelancerDashboardTabs profile={profile} />
+        ) : (
+          <RecruiterDashboardTabs />
+        )}
+      </div>
     </Layout>
   );
 }

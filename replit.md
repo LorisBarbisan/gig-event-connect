@@ -16,6 +16,14 @@ Event Crew is a freelancer marketplace platform specifically designed for the ev
 - **Recruiter Profiles**: Company information and contact details
 
 ## Recent Changes
+### August 4, 2025
+- **Recruiter Multi-Tab Dashboard**: Complete redesign of recruiter dashboard with 4 main tabs (Company Profile, My Jobs, Messages, Applications)
+- **Job Posting System**: Added comprehensive job posting functionality with form validation and management
+- **Profile Management**: Full recruiter profile creation and editing with company information, contact details, and branding
+- **Database Validation Fix**: Resolved user_id type validation error in recruiter profile creation
+- **Settings Page**: Comprehensive settings page with account management, notifications, privacy controls, and account deletion
+- **Account Management**: Enhanced dropdown menu with functioning Settings navigation
+
 ### February 3, 2025
 - **Tabbed Dashboard Interface**: Complete redesign of freelancer dashboard with 4 main tabs (Edit Profile, Messages, Jobs, Bookings)
 - **Account Menu**: Added professional dropdown account menu with avatar, profile links, and sign-out functionality

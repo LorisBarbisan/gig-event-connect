@@ -66,6 +66,8 @@ export const insertRecruiterProfileSchema = createInsertSchema(recruiter_profile
   id: true,
   created_at: true,
   updated_at: true,
+}).extend({
+  user_id: z.number(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
