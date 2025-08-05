@@ -10,8 +10,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, role } = insertUserSchema.parse(req.body);
       
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
+      // Check if user already exists (case-insensitive)
+      const existingUser = await storage.getUserByEmail(email.toLowerCase());
       if (existingUser) {
         return res.status(400).json({ error: "User already exists" });
       }
@@ -19,9 +19,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      // Create user
+      // Create user (store email in lowercase)
       const user = await storage.createUser({
-        email,
+        email: email.toLowerCase(),
         password: hashedPassword,
         role
       });
@@ -40,8 +40,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
       console.log("Signin attempt for:", email);
       
-      // Find user
-      const user = await storage.getUserByEmail(email);
+      // Find user (case-insensitive email lookup)
+      const user = await storage.getUserByEmail(email.toLowerCase());
       if (!user) {
         console.log("User not found:", email);
         return res.status(401).json({ error: "Invalid credentials" });
