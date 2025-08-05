@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const [location, setLocation] = useLocation();
   const { user, signOut } = useAuth();
+  const { getDisplayName, getInitials } = useProfile();
   const isHomePage = location === '/';
 
   return (
@@ -69,10 +71,10 @@ export const Layout = ({ children }: LayoutProps) => {
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                       <Avatar className="w-6 h-6">
                         <AvatarFallback className="bg-gradient-primary text-white text-xs">
-                          {user.email.charAt(0).toUpperCase()}
+                          {getInitials()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="hidden md:inline">{user.email.split('@')[0]}</span>
+                      <span className="hidden md:inline">{getDisplayName()}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
