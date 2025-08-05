@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { User, MapPin, DollarSign, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { User, MapPin, Coins, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 interface Profile {
   id: string;

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, MapPin, DollarSign, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star } from 'lucide-react';
+import { User, MapPin, Coins, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -202,7 +202,7 @@ export default function Profile() {
                         {freelancerProfile?.experience_years} years experience
                       </div>
                       <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
+                        <Coins className="w-4 h-4" />
                         £{freelancerProfile?.hourly_rate}/{freelancerProfile?.rate_type}
                       </div>
                     </div>

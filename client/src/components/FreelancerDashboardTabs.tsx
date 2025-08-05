@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { User, MapPin, DollarSign, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, Send, Mail, Phone } from 'lucide-react';
+import { User, MapPin, Coins, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, Send, Mail, Phone } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -709,7 +709,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                                 {job.date}
                               </span>
                               <span className="flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" />
+                                <Coins className="h-3 w-3" />
                                 {job.rate}
                               </span>
                             </div>
@@ -775,7 +775,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                                 {booking.date}
                               </span>
                               <span className="flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" />
+                                <Coins className="h-3 w-3" />
                                 {booking.rate}
                               </span>
                             </div>

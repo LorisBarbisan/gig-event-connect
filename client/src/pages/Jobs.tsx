@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Clock, DollarSign, Calendar, Filter } from 'lucide-react';
+import { Search, MapPin, Clock, Coins, Calendar, Filter } from 'lucide-react';
 
 export default function Jobs() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,7 +181,7 @@ export default function Jobs() {
                       <span>{job.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <Coins className="h-4 w-4 text-muted-foreground" />
                       <span>{job.rate}</span>
                     </div>
                     <div className="flex items-center gap-2">

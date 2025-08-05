@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { Building2, MapPin, Globe, Calendar, Users, Briefcase, MessageSquare, Settings, Plus, Edit, Trash2, DollarSign, Clock } from 'lucide-react';
+import { Building2, MapPin, Globe, Calendar, Users, Briefcase, MessageSquare, Settings, Plus, Edit, Trash2, Coins, Clock } from 'lucide-react';
 
 interface RecruiterProfile {
   id: number;
@@ -610,7 +610,7 @@ export default function RecruiterDashboardTabs() {
                           {job.location}
                         </div>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
+                          <Coins className="w-4 h-4" />
                           {job.rate}
                         </div>
                         <div className="flex items-center gap-1">

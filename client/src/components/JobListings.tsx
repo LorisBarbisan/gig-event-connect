@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { 
   MapPin, 
   Clock, 
-  DollarSign, 
+  Coins, 
   Calendar,
   Building,
   Users,

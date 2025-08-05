@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Star, User, DollarSign, Calendar, Filter } from 'lucide-react';
+import { Search, MapPin, Star, User, Coins, Calendar, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 
@@ -260,7 +260,7 @@ export default function Freelancers() {
                         <span>{freelancer.location}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <Coins className="h-4 w-4 text-muted-foreground" />
                         <span>{freelancer.rate}</span>
                       </div>
                       <div className="flex items-center gap-2">
