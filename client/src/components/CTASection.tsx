@@ -89,7 +89,7 @@ export const CTASection = () => {
                 <Button 
                   className="w-full text-white font-bold py-4 px-8 rounded-lg shadow-xl border-2 min-h-[3rem] z-10 relative"
                   style={{
-                    background: 'linear-gradient(135deg, #1e90ff 0%, #9a3dff 100%)',
+                    backgroundColor: '#1e90ff',
                     borderColor: '#1e90ff',
                     color: '#ffffff',
                     fontWeight: 'bold',
