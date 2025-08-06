@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Briefcase } from "lucide-react";
+import { useLocation } from "wouter";
 
 export const CTASection = () => {
+  const [, setLocation] = useLocation();
+
   return (
     <section className="py-16 lg:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="container mx-auto px-4">
@@ -39,7 +42,11 @@ export const CTASection = () => {
                   </li>
                 </ul>
 
-                <Button className="w-full bg-gradient-primary hover:bg-primary-hover">
+                <Button 
+                  className="w-full bg-gradient-primary hover:bg-primary-hover"
+                  onClick={() => setLocation('/auth')}
+                  data-testid="button-create-freelancer-profile"
+                >
                   Create Freelancer Profile
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -79,7 +86,11 @@ export const CTASection = () => {
                   </li>
                 </ul>
 
-                <Button className="w-full bg-gradient-accent hover:opacity-90">
+                <Button 
+                  className="w-full bg-gradient-accent hover:opacity-90 text-white font-semibold py-3 px-6 rounded-lg shadow-lg"
+                  onClick={() => setLocation('/auth')}
+                  data-testid="button-post-first-job"
+                >
                   Post Your First Job
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
