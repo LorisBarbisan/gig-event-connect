@@ -83,6 +83,7 @@ export default function RecruiterDashboardTabs() {
   // Job posting form states
   const [jobTitle, setJobTitle] = useState('');
   const [jobType, setJobType] = useState('');
+  const [contractType, setContractType] = useState('');
   const [jobLocation, setJobLocation] = useState('');
   const [jobRate, setJobRate] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -219,14 +220,25 @@ export default function RecruiterDashboardTabs() {
       title: jobTitle,
       company: profile.company_name,
       location: jobLocation,
-      type: jobType,
+      type: jobType === 'contract' && contractType ? `${contractType}-contract` : jobType,
       rate: jobRate,
       description: jobDescription,
       status: 'active',
     };
 
     createJobMutation.mutate(jobData);
-  };
+  }
+
+  // Reset form when closing
+  const resetJobForm = () => {
+    setJobTitle('');
+    setJobType('');
+    setContractType('');
+    setJobLocation('');
+    setJobRate('');
+    setJobDescription('');
+    setShowJobForm(false);
+  };;
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ['/api/jobs/recruiter', user?.id],
@@ -523,7 +535,10 @@ export default function RecruiterDashboardTabs() {
                 <div className="space-y-4">
                   <div className="max-w-md">
                     <Label htmlFor="job-type">Job Type</Label>
-                    <Select value={jobType} onValueChange={setJobType}>
+                    <Select value={jobType} onValueChange={(value) => {
+                      setJobType(value);
+                      setContractType(''); // Reset contract type when job type changes
+                    }}>
                       <SelectTrigger data-testid="select-job-type">
                         <SelectValue placeholder="Select job type" />
                       </SelectTrigger>
@@ -538,6 +553,24 @@ export default function RecruiterDashboardTabs() {
                 {/* Step 2: Rest of the form - only show after job type is selected */}
                 {jobType && (
                   <>
+                    {/* Contract-specific fields */}
+                    {jobType === 'contract' && (
+                      <div className="space-y-4">
+                        <div className="max-w-md">
+                          <Label htmlFor="contract-type">Contract Type</Label>
+                          <Select value={contractType} onValueChange={setContractType}>
+                            <SelectTrigger data-testid="select-contract-type">
+                              <SelectValue placeholder="Select contract type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="full-time">Full Time Contract</SelectItem>
+                              <SelectItem value="part-time">Part Time Contract</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="job-title">Job Title</Label>
@@ -560,12 +593,14 @@ export default function RecruiterDashboardTabs() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="job-rate">Rate</Label>
+                        <Label htmlFor="job-rate">
+                          {jobType === 'contract' ? 'Salary' : 'Rate'}
+                        </Label>
                         <Input
                           id="job-rate"
                           value={jobRate}
                           onChange={(e) => setJobRate(e.target.value)}
-                          placeholder="e.g. £450/day"
+                          placeholder={jobType === 'contract' ? 'e.g. £45,000/year' : 'e.g. £450/day'}
                           data-testid="input-job-rate"
                         />
                       </div>
@@ -583,13 +618,13 @@ export default function RecruiterDashboardTabs() {
                     </div>
                   </>
                 )}
-                {/* Submit buttons - only show when job type is selected */}
-                {jobType && (
+                {/* Submit buttons - only show when job type is selected and contract type is selected if contract */}
+                {jobType && (jobType !== 'contract' || contractType) && (
                   <div className="flex gap-2">
                     <Button onClick={handleJobPost} data-testid="button-submit-job">
                       Post Job
                     </Button>
-                    <Button variant="outline" onClick={() => setShowJobForm(false)} data-testid="button-cancel-job">
+                    <Button variant="outline" onClick={resetJobForm} data-testid="button-cancel-job">
                       Cancel
                     </Button>
                   </div>
