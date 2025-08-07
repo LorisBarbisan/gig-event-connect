@@ -136,6 +136,18 @@ export default function Profile() {
               company_logo_url: data.company_logo_url || ''
             });
             console.log('Recruiter profile set successfully');
+            console.log('New recruiterProfile state should be:', {
+              id: data.id?.toString(),
+              company_name: data.company_name || '',
+              contact_name: data.contact_name || '',
+              company_type: data.company_type || '',
+              company_description: data.description || '',
+              location: data.location || '',
+              website_url: data.website_url || '',
+              linkedin_url: data.linkedin_url || '',
+              phone: data.phone || '',
+              company_logo_url: data.company_logo_url || ''
+            });
           } else {
             console.log('No recruiter profile data received from API');
           }
@@ -269,6 +281,8 @@ export default function Profile() {
 
   if (profile?.role === 'recruiter' && !recruiterProfile) {
     console.log('No recruiter profile found, showing create profile message');
+    console.log('Current recruiterProfile state:', recruiterProfile);
+    console.log('Profile role:', profile?.role);
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
