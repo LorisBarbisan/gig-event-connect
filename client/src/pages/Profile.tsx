@@ -124,11 +124,11 @@ export default function Profile() {
           if (data) {
             console.log('Setting recruiter profile with data:', data);
             setRecruiterProfile({
-              id: data.id,
+              id: data.id?.toString(),
               company_name: data.company_name || '',
               contact_name: data.contact_name || '',
               company_type: data.company_type || '',
-              company_description: data.company_description || '',
+              company_description: data.description || '',
               location: data.location || '',
               website_url: data.website_url || '',
               linkedin_url: data.linkedin_url || '',
@@ -191,11 +191,11 @@ export default function Profile() {
           const data = await apiRequest(`/api/recruiter/${targetUserId}`);
           if (data) {
             setRecruiterProfile({
-              id: data.id,
+              id: data.id?.toString(),
               company_name: data.company_name || '',
               contact_name: data.contact_name || '',
               company_type: data.company_type || '',
-              company_description: data.company_description || '',
+              company_description: data.description || '',
               location: data.location || '',
               website_url: data.website_url || '',
               linkedin_url: data.linkedin_url || '',
