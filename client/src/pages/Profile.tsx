@@ -120,7 +120,9 @@ export default function Profile() {
       } else if (userProfile.role === 'recruiter') {
         try {
           const data = await apiRequest(`/api/recruiter/${userProfile.id}`);
+          console.log('Recruiter profile data received:', data);
           if (data) {
+            console.log('Setting recruiter profile with data:', data);
             setRecruiterProfile({
               id: data.id,
               company_name: data.company_name || '',
@@ -133,6 +135,9 @@ export default function Profile() {
               phone: data.phone || '',
               company_logo_url: data.company_logo_url || ''
             });
+            console.log('Recruiter profile set successfully');
+          } else {
+            console.log('No recruiter profile data received from API');
           }
         } catch (error) {
           console.log('No recruiter profile found:', error);
