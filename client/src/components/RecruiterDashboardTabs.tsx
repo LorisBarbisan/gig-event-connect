@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Building2, MapPin, Globe, Calendar, Users, Briefcase, MessageSquare, Settings, Plus, Edit, Trash2, Coins, Clock } from 'lucide-react';
+import { ImageUpload } from '@/components/ImageUpload';
 
 interface RecruiterProfile {
   id: number;
@@ -79,6 +80,7 @@ export default function RecruiterDashboardTabs() {
   const [description, setDescription] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [companyLogo, setCompanyLogo] = useState('');
 
   // Job posting form states
   const [jobTitle, setJobTitle] = useState('');
@@ -145,7 +147,7 @@ export default function RecruiterDashboardTabs() {
   });
 
   // Initialize form data when profile loads
-  useState(() => {
+  useEffect(() => {
     if (profile && profile.company_name) {
       setCompanyName(profile.company_name || '');
       setContactName(profile.contact_name || '');
@@ -154,8 +156,9 @@ export default function RecruiterDashboardTabs() {
       setDescription(profile.description || '');
       setWebsiteUrl(profile.website_url || '');
       setLinkedinUrl(profile.linkedin_url || '');
+      setCompanyLogo(profile.company_logo_url || '');
     }
-  });
+  }, [profile]);
 
   const handleSave = () => {
     const profileData = {
@@ -166,6 +169,7 @@ export default function RecruiterDashboardTabs() {
       description,
       website_url: websiteUrl,
       linkedin_url: linkedinUrl,
+      company_logo_url: companyLogo,
     };
 
     if (profile) {
@@ -364,6 +368,15 @@ export default function RecruiterDashboardTabs() {
               {isEditing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
+                    <ImageUpload
+                      label="Company Logo"
+                      value={companyLogo}
+                      onChange={setCompanyLogo}
+                      placeholder="Upload your company logo"
+                      aspectRatio="square"
+                      maxSizeMB={2}
+                      testId="company-logo-upload"
+                    />
                     <div>
                       <Label htmlFor="company-name">Company Name</Label>
                       <Input
@@ -460,8 +473,17 @@ export default function RecruiterDashboardTabs() {
                   {profile && profile.company_name ? (
                     <>
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gradient-primary rounded-lg flex items-center justify-center">
-                          <Building2 className="w-8 h-8 text-white" />
+                        <div className="w-16 h-16 bg-gradient-primary rounded-lg flex items-center justify-center overflow-hidden">
+                          {profile?.company_logo_url ? (
+                            <img 
+                              src={profile.company_logo_url} 
+                              alt={`${profile.company_name} logo`}
+                              className="w-full h-full object-cover"
+                              data-testid="img-company-logo"
+                            />
+                          ) : (
+                            <Building2 className="w-8 h-8 text-white" />
+                          )}
                         </div>
                         <div>
                           <h3 className="text-xl font-semibold">{profile?.company_name}</h3>
