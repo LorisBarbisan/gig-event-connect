@@ -96,6 +96,14 @@ export default function RecruiterDashboardTabs() {
     enabled: !!user?.id,
   });
 
+  // Debug the profile data
+  useEffect(() => {
+    console.log('DEBUG: Profile data structure:', profile);
+    console.log('DEBUG: Profile company_name:', profile?.company_name);
+    console.log('DEBUG: Profile exists check:', !!profile);
+    console.log('DEBUG: Company name exists check:', !!profile?.company_name);
+  }, [profile]);
+
   const updateMutation = useMutation({
     mutationFn: async (profileData: any) => {
       return await apiRequest(`/api/recruiter/${user?.id}`, {
