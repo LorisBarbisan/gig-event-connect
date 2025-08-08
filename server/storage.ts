@@ -14,7 +14,7 @@ import {
   type Job,
   type InsertJob
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString);
@@ -135,7 +135,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecruiterProfile(userId: number): Promise<RecruiterProfile | undefined> {
-    const result = await db.select().from(recruiter_profiles).where(eq(recruiter_profiles.user_id, userId)).limit(1);
+    const result = await db.select().from(recruiter_profiles)
+      .where(eq(recruiter_profiles.user_id, userId))
+      .orderBy(desc(recruiter_profiles.id))
+      .limit(1);
     return result[0];
   }
 
