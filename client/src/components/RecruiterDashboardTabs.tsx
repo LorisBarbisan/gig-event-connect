@@ -198,16 +198,12 @@ export default function RecruiterDashboardTabs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
       toast({
         title: 'Job posted',
         description: `${jobTitle} has been posted successfully.`,
       });
-      setShowJobForm(false);
-      setJobTitle('');
-      setJobType('');
-      setJobLocation('');
-      setJobRate('');
-      setJobDescription('');
+      resetJobForm();
     },
     onError: () => {
       toast({
@@ -255,6 +251,13 @@ export default function RecruiterDashboardTabs() {
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ['/api/jobs/recruiter', user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/jobs/recruiter/${user?.id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    },
     enabled: !!user?.id,
   });
 
