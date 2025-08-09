@@ -176,14 +176,14 @@ export class JobAggregator {
         if (!existingJob) {
           // Convert external job format to internal job format
           const jobData = {
-            recruiter_id: 0, // Special ID for external jobs
+            recruiter_id: null, // Null for external jobs
             title: job.title,
             company: job.company,
             location: job.location,
-            type: job.employmentType || 'external',
+            type: 'external' as const,
             rate: job.salary || 'Not specified',
             description: job.description,
-            status: 'active',
+            status: 'active' as const,
             external_id: job.id,
             external_source: job.source,
             external_url: job.jobUrl,

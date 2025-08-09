@@ -14,7 +14,7 @@ import {
   type Job,
   type InsertJob
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, isNull, and } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString);
@@ -224,7 +224,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExternalJobs(): Promise<Job[]> {
-    return await db.select().from(jobs).where(eq(jobs.recruiter_id, 0)); // External jobs have recruiter_id = 0
+    return await db.select().from(jobs).where(
+      and(
+        isNull(jobs.recruiter_id), 
+        eq(jobs.type, 'external')
+      )
+    ); // External jobs have recruiter_id = null and type = 'external'
   }
 }
 

@@ -49,7 +49,7 @@ export const recruiter_profiles = pgTable("recruiter_profiles", {
 
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
-  recruiter_id: integer("recruiter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  recruiter_id: integer("recruiter_id").references(() => users.id, { onDelete: "cascade" }), // Made nullable for external jobs
   title: text("title").notNull(),
   company: text("company").notNull(),
   location: text("location").notNull(),
