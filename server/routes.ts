@@ -220,6 +220,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync external jobs from Reed and Adzuna
+  app.post("/api/jobs/sync-external", async (req, res) => {
+    try {
+      const { jobAggregator } = await import('./jobAggregator');
+      await jobAggregator.syncExternalJobs();
+      res.json({ message: "External jobs synced successfully" });
+    } catch (error) {
+      console.error("Sync external jobs error:", error);
+      res.status(500).json({ error: "Failed to sync external jobs" });
+    }
+  });
+
+  // Get external jobs only
+  app.get("/api/jobs/external", async (req, res) => {
+    try {
+      const externalJobs = await storage.getExternalJobs();
+      res.json(externalJobs);
+    } catch (error) {
+      console.error("Get external jobs error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/jobs/recruiter/:recruiterId", async (req, res) => {
     try {
       const recruiterId = parseInt(req.params.recruiterId);

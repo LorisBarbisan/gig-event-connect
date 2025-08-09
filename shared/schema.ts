@@ -53,10 +53,14 @@ export const jobs = pgTable("jobs", {
   title: text("title").notNull(),
   company: text("company").notNull(),
   location: text("location").notNull(),
-  type: text("type").notNull().$type<'full-time' | 'part-time' | 'contract' | 'temporary' | 'freelance'>(),
+  type: text("type").notNull().$type<'full-time' | 'part-time' | 'contract' | 'temporary' | 'freelance' | 'external'>(),
   rate: text("rate").notNull(),
   description: text("description").notNull(),
   status: text("status").default('active').$type<'active' | 'paused' | 'closed'>(),
+  external_id: text("external_id"), // For external job IDs (reed_123, adzuna_456)
+  external_source: text("external_source").$type<'reed' | 'adzuna' | null>(), // Source of external job
+  external_url: text("external_url"), // URL to original job posting
+  posted_date: text("posted_date"), // Original posting date from external source
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

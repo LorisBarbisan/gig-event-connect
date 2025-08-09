@@ -44,6 +44,11 @@ export interface IStorage {
   updateJob(jobId: number, job: Partial<InsertJob>): Promise<Job | undefined>;
   deleteJob(jobId: number): Promise<void>;
   
+  // External job management
+  getJobByExternalId(externalId: string): Promise<Job | undefined>;
+  createExternalJob(job: any): Promise<Job>;
+  getExternalJobs(): Promise<Job[]>;
+  
   // Get all freelancer profiles for listings
   getAllFreelancerProfiles(): Promise<FreelancerProfile[]>;
 }
@@ -206,6 +211,20 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJob(jobId: number): Promise<void> {
     await db.delete(jobs).where(eq(jobs.id, jobId));
+  }
+
+  async getJobByExternalId(externalId: string): Promise<Job | undefined> {
+    const result = await db.select().from(jobs).where(eq(jobs.external_id, externalId)).limit(1);
+    return result[0];
+  }
+
+  async createExternalJob(job: any): Promise<Job> {
+    const result = await db.insert(jobs).values(job).returning();
+    return result[0];
+  }
+
+  async getExternalJobs(): Promise<Job[]> {
+    return await db.select().from(jobs).where(eq(jobs.recruiter_id, 0)); // External jobs have recruiter_id = 0
   }
 }
 

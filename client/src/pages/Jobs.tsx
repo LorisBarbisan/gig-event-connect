@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import ExternalJobsSection from '@/components/ExternalJobsSection';
 import { Search, MapPin, Clock, Coins, Calendar, Filter } from 'lucide-react';
 
 export default function Jobs() {
@@ -203,6 +205,11 @@ export default function Jobs() {
             </Card>
             ))
           }
+
+          <Separator className="my-8" />
+          
+          {/* External Jobs Section */}
+          <ExternalJobsSection showInJobsPage={true} />
         </div>
       </div>
     </Layout>

@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Building2, MapPin, Globe, Calendar, Users, Briefcase, MessageSquare, Settings, Plus, Edit, Trash2, Coins, Clock } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
+import ExternalJobsSection from '@/components/ExternalJobsSection';
 
 interface RecruiterProfile {
   id: number;
