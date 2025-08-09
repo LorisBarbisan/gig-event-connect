@@ -220,15 +220,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync external jobs from Reed and Adzuna
+  // Helper function for preset descriptions
+  function getPresetDescription(preset: string): string {
+    const descriptions: Record<string, string> = {
+      audio: 'Sound engineers, audio technicians, live sound mixing roles',
+      lighting: 'Lighting technicians, designers, LED and stage lighting work',
+      video: 'Video technicians, AV engineers, projection and broadcast roles',
+      highPaying: 'High-salary contract positions (£40k+ minimum)',
+      london: 'Jobs specifically in London area',
+    };
+    return descriptions[preset] || 'Custom job search configuration';
+  }
+
+  // Sync external jobs from Reed and Adzuna with optional config
   app.post("/api/jobs/sync-external", async (req, res) => {
     try {
       const { jobAggregator } = await import('./jobAggregator');
-      await jobAggregator.syncExternalJobs();
+      const config = req.body.config; // Optional configuration
+      await jobAggregator.syncExternalJobs(config);
       res.json({ message: "External jobs synced successfully" });
     } catch (error) {
       console.error("Sync external jobs error:", error);
       res.status(500).json({ error: "Failed to sync external jobs" });
+    }
+  });
+
+  // Get available job search presets
+  app.get("/api/jobs/presets", async (req, res) => {
+    try {
+      const { PRESET_CONFIGS } = await import('./jobConfig');
+      const presets = Object.keys(PRESET_CONFIGS).map(key => ({
+        id: key,
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        description: getPresetDescription(key)
+      }));
+      res.json(presets);
+    } catch (error) {
+      console.error("Get job presets error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Sync jobs with a specific preset
+  app.post("/api/jobs/sync-preset/:preset", async (req, res) => {
+    try {
+      const { getJobConfig } = await import('./jobConfig');
+      const { jobAggregator } = await import('./jobAggregator');
+      const config = getJobConfig(req.params.preset as any);
+      await jobAggregator.syncExternalJobs(config);
+      res.json({ 
+        message: `External jobs synced with ${req.params.preset} preset`,
+        preset: req.params.preset
+      });
+    } catch (error) {
+      console.error("Sync external jobs with preset error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

@@ -1,4 +1,5 @@
 import { storage } from './storage';
+import { DEFAULT_JOB_CONFIG, type JobSearchConfig } from './jobConfig';
 
 interface ExternalJob {
   id: string;
@@ -61,17 +62,52 @@ export class JobAggregator {
 
   /**
    * Fetch jobs from Reed UK API
-   * Keywords: audio, video, lighting, events, AV, production
+   * You can customize these default parameters:
+   * - keywords: Search terms (default: events-related terms)
+   * - location: Geographic area (default: 'UK')  
+   * - resultsToTake: Number of jobs to fetch (max 100, default: 20)
+   * 
+   * Additional Reed API parameters you can add:
+   * - minimumSalary: Minimum salary filter
+   * - maximumSalary: Maximum salary filter
+   * - employmentType: 'permanent', 'contract', 'temp', 'parttime'
+   * - graduate: true/false for graduate roles
+   * - postedByRecruitmentAgency: true/false
    */
-  async fetchReedJobs(keywords = 'events audio video lighting AV production', location = 'UK'): Promise<ExternalJob[]> {
+  async fetchReedJobs(
+    keywords = 'events audio video lighting AV production technical crew stage', 
+    location = 'UK',
+    options: {
+      resultsToTake?: number;
+      minimumSalary?: number;
+      maximumSalary?: number;
+      employmentType?: string;
+      graduate?: boolean;
+      postedByRecruitmentAgency?: boolean;
+    } = {}
+  ): Promise<ExternalJob[]> {
     if (!this.reedApiKey) {
       console.log('Reed API key not configured');
       return [];
     }
 
     try {
+      // Build query parameters
+      const params = new URLSearchParams({
+        keywords: keywords,
+        locationName: location,
+        resultsToTake: (options.resultsToTake || 20).toString()
+      });
+      
+      // Add optional filters
+      if (options.minimumSalary) params.append('minimumSalary', options.minimumSalary.toString());
+      if (options.maximumSalary) params.append('maximumSalary', options.maximumSalary.toString());
+      if (options.employmentType) params.append('employmentType', options.employmentType);
+      if (options.graduate !== undefined) params.append('graduate', options.graduate.toString());
+      if (options.postedByRecruitmentAgency !== undefined) params.append('postedByRecruitmentAgency', options.postedByRecruitmentAgency.toString());
+
       const response = await fetch(
-        `https://www.reed.co.uk/api/1.0/search?keywords=${encodeURIComponent(keywords)}&locationName=${encodeURIComponent(location)}&resultsToTake=20`,
+        `https://www.reed.co.uk/api/1.0/search?${params.toString()}`,
         {
           headers: {
             'Authorization': `Basic ${Buffer.from(this.reedApiKey + ':').toString('base64')}`,
@@ -108,16 +144,49 @@ export class JobAggregator {
 
   /**
    * Fetch jobs from Adzuna API
+   * You can customize these parameters:
+   * - keywords: Search terms (default: events-related terms)
+   * - country: Country code (default: 'gb' for UK)
+   * - location: Specific location within country
+   * - salary_min: Minimum salary filter
+   * - salary_max: Maximum salary filter
+   * - results_per_page: Number of results (max 50, default: 20)
+   * - contract_type: 'permanent', 'contract', 'part_time', 'temporary'
    */
-  async fetchAdzunaJobs(keywords = 'events audio video lighting AV production', country = 'gb'): Promise<ExternalJob[]> {
+  async fetchAdzunaJobs(
+    keywords = 'events audio video lighting AV production technical crew stage',
+    country = 'gb',
+    options: {
+      location?: string;
+      salary_min?: number;
+      salary_max?: number;
+      results_per_page?: number;
+      contract_type?: string;
+    } = {}
+  ): Promise<ExternalJob[]> {
     if (!this.adzunaApiKey || !this.adzunaAppId) {
       console.log('Adzuna API credentials not configured');
       return [];
     }
 
     try {
+      // Build query parameters  
+      const params = new URLSearchParams({
+        app_id: this.adzunaAppId!,
+        app_key: this.adzunaApiKey!,
+        what: keywords,
+        results_per_page: (options.results_per_page || 20).toString(),
+        'content-type': 'application/json'
+      });
+
+      // Add optional filters
+      if (options.location) params.append('where', options.location);
+      if (options.salary_min) params.append('salary_min', options.salary_min.toString());
+      if (options.salary_max) params.append('salary_max', options.salary_max.toString());
+      if (options.contract_type) params.append('category', options.contract_type);
+
       const response = await fetch(
-        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${this.adzunaAppId}&app_key=${this.adzunaApiKey}&what=${encodeURIComponent(keywords)}&results_per_page=20&content-type=application/json`
+        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -147,12 +216,15 @@ export class JobAggregator {
   }
 
   /**
-   * Fetch jobs from all configured sources
+   * Fetch jobs from all configured sources with customizable parameters
    */
-  async fetchAllExternalJobs(): Promise<ExternalJob[]> {
+  async fetchAllExternalJobs(
+    reedOptions?: Parameters<typeof this.fetchReedJobs>[2],
+    adzunaOptions?: Parameters<typeof this.fetchAdzunaJobs>[2]
+  ): Promise<ExternalJob[]> {
     const [reedJobs, adzunaJobs] = await Promise.all([
-      this.fetchReedJobs(),
-      this.fetchAdzunaJobs()
+      this.fetchReedJobs(undefined, undefined, reedOptions),
+      this.fetchAdzunaJobs(undefined, undefined, adzunaOptions)
     ]);
 
     // Combine and deduplicate jobs
@@ -163,13 +235,20 @@ export class JobAggregator {
   }
 
   /**
-   * Store external jobs in the database with external flag
+   * Store external jobs in the database with configurable options
    */
-  async syncExternalJobs(): Promise<void> {
+  async syncExternalJobs(config: JobSearchConfig = DEFAULT_JOB_CONFIG): Promise<void> {
     try {
       const externalJobs = await this.fetchAllExternalJobs();
+      // Apply config limits
+      const limitedJobs = config.general.enableDeduplication 
+        ? this.deduplicateJobs(externalJobs)
+        : externalJobs;
       
-      for (const job of externalJobs) {
+      const finalJobs = limitedJobs.slice(0, config.general.maxTotalJobs);
+      console.log(`Synced ${finalJobs.length} external jobs`);
+
+      for (const job of finalJobs) {
         // Check if job already exists
         const existingJob = await storage.getJobByExternalId(job.id);
         
