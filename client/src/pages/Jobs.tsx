@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import ExternalJobsSection from '@/components/ExternalJobsSection';
-import { Search, MapPin, Clock, Coins, Calendar, Filter } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { Search, MapPin, Clock, Coins, Calendar, Filter, RefreshCw } from 'lucide-react';
 
 export default function Jobs() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -24,6 +26,29 @@ export default function Jobs() {
       const data = await response.json();
       return data;
     }
+  });
+
+  // Sync external jobs mutation
+  const syncExternalJobsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/jobs/sync-external', {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      toast({
+        title: 'Jobs synced',
+        description: 'Latest jobs from Reed and Adzuna have been fetched.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Sync failed',
+        description: error.message || 'Failed to sync external jobs.',
+        variant: 'destructive',
+      });
+    },
   });
 
   // Mock jobs data as fallback for demonstration  
@@ -154,9 +179,21 @@ export default function Jobs() {
             <h2 className="text-2xl font-semibold">
               {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} Found
             </h2>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Sort by: Most Recent</span>
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => syncExternalJobsMutation.mutate()}
+                disabled={syncExternalJobsMutation.isPending}
+                size="sm"
+                variant="outline"
+                data-testid="button-sync-jobs"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncExternalJobsMutation.isPending ? 'animate-spin' : ''}`} />
+                {syncExternalJobsMutation.isPending ? 'Syncing...' : 'Sync Jobs'}
+              </Button>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Sort by: Most Recent</span>
+              </div>
             </div>
           </div>
 
@@ -168,9 +205,16 @@ export default function Jobs() {
                     <CardTitle className="text-xl">{job.title}</CardTitle>
                     <p className="text-muted-foreground font-medium">{job.company}</p>
                   </div>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {job.type}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                      {job.type}
+                    </Badge>
+                    {job.external_source && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                        {job.external_source}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -193,9 +237,17 @@ export default function Jobs() {
                   </div>
 
                   <div className="flex gap-3 pt-4">
-                    <Button className="bg-gradient-primary hover:bg-primary-hover">
-                      Apply Now
-                    </Button>
+                    {job.external_url ? (
+                      <Button asChild className="bg-gradient-primary hover:bg-primary-hover">
+                        <a href={job.external_url} target="_blank" rel="noopener noreferrer">
+                          Apply on {job.external_source}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button className="bg-gradient-primary hover:bg-primary-hover">
+                        Apply Now
+                      </Button>
+                    )}
                     <Button variant="outline">
                       Save Job
                     </Button>
@@ -206,10 +258,7 @@ export default function Jobs() {
             ))
           }
 
-          <Separator className="my-8" />
-          
-          {/* External Jobs Section */}
-          <ExternalJobsSection showInJobsPage={true} />
+
         </div>
       </div>
     </Layout>

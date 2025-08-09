@@ -48,6 +48,7 @@ export interface IStorage {
   getJobByExternalId(externalId: string): Promise<Job | undefined>;
   createExternalJob(job: any): Promise<Job>;
   getExternalJobs(): Promise<Job[]>;
+  getAllJobsSortedByDate(): Promise<Job[]>;
   
   // Get all freelancer profiles for listings
   getAllFreelancerProfiles(): Promise<FreelancerProfile[]>;
@@ -179,6 +180,10 @@ export class DatabaseStorage implements IStorage {
   // Job management methods
   async getAllJobs(): Promise<Job[]> {
     return await db.select().from(jobs);
+  }
+
+  async getAllJobsSortedByDate(): Promise<Job[]> {
+    return await db.select().from(jobs).orderBy(desc(jobs.created_at));
   }
 
   async getJobsByRecruiterId(recruiterId: number): Promise<Job[]> {

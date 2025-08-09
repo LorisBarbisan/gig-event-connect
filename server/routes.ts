@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Job management routes
   app.get("/api/jobs", async (req, res) => {
     try {
-      const jobs = await storage.getAllJobs();
+      const jobs = await storage.getAllJobsSortedByDate();
       res.json(jobs);
     } catch (error) {
       console.error("Get all jobs error:", error);
