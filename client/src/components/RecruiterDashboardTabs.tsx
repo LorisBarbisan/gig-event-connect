@@ -341,13 +341,11 @@ export default function RecruiterDashboardTabs() {
             <Briefcase className="w-4 h-4" />
             My Jobs
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              <span>Messages</span>
-            </div>
+          <TabsTrigger value="messages" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            <span>Messages</span>
             {sampleMessages.filter(m => m.unread).length > 0 && (
-              <Badge variant="destructive" className="h-5 w-5 p-0 text-xs flex items-center justify-center">
+              <Badge variant="destructive" className="h-5 w-5 p-0 text-xs flex items-center justify-center ml-1">
                 {sampleMessages.filter(m => m.unread).length}
               </Badge>
             )}
