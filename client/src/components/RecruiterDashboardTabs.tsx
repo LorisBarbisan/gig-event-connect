@@ -92,6 +92,11 @@ export default function RecruiterDashboardTabs() {
   const [jobDescription, setJobDescription] = useState('');
   const [showJobForm, setShowJobForm] = useState(false);
 
+  // Decline application states
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [declineMessage, setDeclineMessage] = useState('');
+
   const { data: profile, isLoading } = useQuery<RecruiterProfile>({
     queryKey: ['/api/recruiter', user?.id],
     queryFn: async () => {
@@ -825,7 +830,16 @@ export default function RecruiterDashboardTabs() {
                           <Button size="sm" data-testid={`button-accept-${application.id}`}>
                             Accept
                           </Button>
-                          <Button variant="outline" size="sm" data-testid={`button-reject-${application.id}`}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            data-testid={`button-reject-${application.id}`}
+                            onClick={() => {
+                              setSelectedApplication(application);
+                              setDeclineDialogOpen(true);
+                              setDeclineMessage('');
+                            }}
+                          >
                             Decline
                           </Button>
                         </>
@@ -838,6 +852,55 @@ export default function RecruiterDashboardTabs() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Decline Application Dialog */}
+      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline Application</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to decline the application from{' '}
+              <strong>{selectedApplication?.candidate_name}</strong> for{' '}
+              <strong>{selectedApplication?.job_title}</strong>.
+              <br />
+              <br />
+              Please provide a message to send to the applicant (optional):
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="my-4">
+            <Textarea
+              placeholder="Thank you for your interest in this position. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future opportunities that match your skills and experience."
+              value={declineMessage}
+              onChange={(e) => setDeclineMessage(e.target.value)}
+              className="min-h-[100px]"
+              data-testid="textarea-decline-message"
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-decline">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                // Here you would handle the decline logic
+                // For now, we'll just show a toast
+                toast({
+                  title: 'Application Declined',
+                  description: `${selectedApplication?.candidate_name}'s application has been declined${declineMessage ? ' with a message' : ''}.`,
+                });
+                setDeclineDialogOpen(false);
+                setSelectedApplication(null);
+                setDeclineMessage('');
+              }}
+              data-testid="button-confirm-decline"
+            >
+              Confirm Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
