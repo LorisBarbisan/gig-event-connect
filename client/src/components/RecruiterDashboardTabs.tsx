@@ -288,7 +288,7 @@ export default function RecruiterDashboardTabs() {
     },
     {
       id: 3,
-      from: 'EventCrew System',
+      from: 'Event Link System',
       subject: 'Your job posting expires soon',
       content: 'Your Senior Sound Engineer posting will expire in 3 days.',
       time: '2 days ago',

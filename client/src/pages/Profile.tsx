@@ -309,12 +309,12 @@ export default function Profile() {
 
   const handleContactClick = () => {
     if (profile?.role === 'freelancer' && freelancerProfile) {
-      const subject = encodeURIComponent(`EventCrew Inquiry - ${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`);
-      const body = encodeURIComponent(`Hi ${freelancerProfile?.first_name},\n\nI found your profile on EventCrew and I'm interested in discussing a potential collaboration for an upcoming event.\n\nPlease let me know your availability.\n\nBest regards`);
+      const subject = encodeURIComponent(`Event Link Inquiry - ${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`);
+      const body = encodeURIComponent(`Hi ${freelancerProfile?.first_name},\n\nI found your profile on Event Link and I'm interested in discussing a potential collaboration for an upcoming event.\n\nPlease let me know your availability.\n\nBest regards`);
       window.open(`mailto:${profile?.email}?subject=${subject}&body=${body}`, '_blank');
     } else if (profile?.role === 'recruiter' && recruiterProfile) {
-      const subject = encodeURIComponent(`EventCrew Inquiry - ${recruiterProfile.company_name}`);
-      const body = encodeURIComponent(`Hi ${recruiterProfile.contact_name || 'there'},\n\nI found your company profile on EventCrew and I'm interested in discussing potential opportunities.\n\nPlease let me know if you have any suitable positions available.\n\nBest regards`);
+      const subject = encodeURIComponent(`Event Link Inquiry - ${recruiterProfile.company_name}`);
+      const body = encodeURIComponent(`Hi ${recruiterProfile.contact_name || 'there'},\n\nI found your company profile on Event Link and I'm interested in discussing potential opportunities.\n\nPlease let me know if you have any suitable positions available.\n\nBest regards`);
       window.open(`mailto:${profile?.email}?subject=${subject}&body=${body}`, '_blank');
     }
   };

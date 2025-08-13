@@ -176,7 +176,7 @@ export class JobAggregator {
         {
           headers: {
             'Authorization': `Basic ${Buffer.from(this.reedApiKey + ':').toString('base64')}`,
-            'User-Agent': 'EventCrew/1.0'
+            'User-Agent': 'EventLink/1.0'
           }
         }
       );

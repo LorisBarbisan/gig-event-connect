@@ -1,7 +1,7 @@
-# Event Crew - Replit Migration
+# Event Link - Replit Migration
 
 ## Project Overview
-Event Crew is a freelancer marketplace platform specifically designed for the events industry. The platform connects event professionals (freelancers) with recruiters/companies looking for skilled crew members.
+Event Link is a freelancer marketplace platform specifically designed for the events industry. The platform connects event professionals (freelancers) with recruiters/companies looking for skilled crew members.
 
 ## Architecture
 - **Frontend**: React with TypeScript, using Wouter for routing
@@ -44,7 +44,7 @@ Event Crew is a freelancer marketplace platform specifically designed for the ev
 - **Job Posting Form Enhancement**: Simplified job posting to start with Job Type dropdown (Contract/Freelance only)
 - **Dynamic Form Fields**: Contract jobs show additional Contract Type selection (Full Time/Part Time Contract) and "Salary" field instead of "Rate"
 - **Enhanced Job Form Flow**: Progressive disclosure - fields appear based on job type selection, submit buttons only show when required fields are completed
-- **CTA Button Visibility Fix**: Fixed "Post Your First Job" button styling with EventCrew brand colors (#1e90ff) for proper visibility
+- **CTA Button Visibility Fix**: Fixed "Post Your First Job" button styling with Event Link brand colors (#1e90ff) for proper visibility
 - **Settings Page Enhancement**: Enhanced Settings page with account holder name display, password status indicator, and password change functionality
 - **Password Change System**: Added secure password change popup with form validation (old password, new password, confirm password)
 - **Account Information Display**: Settings now shows actual user name from profile data with intelligent fallbacks
@@ -83,16 +83,16 @@ Event Crew is a freelancer marketplace platform specifically designed for the ev
 
 ### February 1, 2025
 - **Navigation System Complete**: Fixed all landing page buttons to navigate to proper pages
-- **Created Jobs Page**: Full job listing page with search, filters, and EventCrew design
+- **Created Jobs Page**: Full job listing page with search, filters, and Event Link design
 - **Created Freelancers Page**: Comprehensive crew search page with profiles and skills
 - **Updated Routing**: Added /jobs and /freelancers routes to main application
 - **Fixed Authentication Flow**: Resolved error messages and redirect issues during login
 - **Rate Toggle Feature**: Added hourly/daily rate selector in freelancer dashboard
 
 ### January 30, 2025
-- **EventCrew UI Design Complete**: Applied complete EventCrew branding with blue/purple gradient design
+- **Event Link UI Design Complete**: Applied complete Event Link branding with blue/purple gradient design
 - **Updated Hero Image**: Replaced with corporate event presentation image showing professional AV setup
-- **Color Scheme Enhancement**: "Technical" in blue, "Crew" in purple matching EventCrew brand
+- **Color Scheme Enhancement**: "Technical" in blue, "Crew" in purple matching Event Link brand
 - **Professional Event Focus**: Updated visuals to showcase corporate presentations and technical events
 
 ### January 24, 2025

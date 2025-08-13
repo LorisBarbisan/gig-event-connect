@@ -64,7 +64,7 @@ export const FeaturesSection = () => {
         {/* Section Header */}
         <div className="text-center space-y-4 mb-16">
           <Badge variant="secondary" className="w-fit mx-auto">
-            Why Choose Event Crew
+            Why Choose Event Link
           </Badge>
           <h2 className="text-3xl lg:text-5xl font-bold">
             Built for the Events Industry

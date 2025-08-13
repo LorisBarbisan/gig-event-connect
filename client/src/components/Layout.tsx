@@ -27,7 +27,7 @@ export const Layout = ({ children }: LayoutProps) => {
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">EC</span>
               </div>
-              <span className="text-xl font-bold text-foreground">Event Crew</span>
+              <span className="text-xl font-bold text-foreground">Event Link</span>
             </Link>
 
             {/* Navigation */}
@@ -144,7 +144,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 <div className="w-6 h-6 bg-gradient-primary rounded flex items-center justify-center">
                   <span className="text-white font-bold text-sm">EC</span>
                 </div>
-                <span className="font-semibold">Event Crew</span>
+                <span className="font-semibold">Event Link</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Connecting technical professionals with event opportunities in the corporate events sector.
@@ -206,7 +206,7 @@ export const Layout = ({ children }: LayoutProps) => {
           </div>
           
           <div className="border-t mt-8 pt-6 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Event Crew. All rights reserved.</p>
+            <p>&copy; 2024 Event Link. All rights reserved.</p>
           </div>
         </div>
       </footer>

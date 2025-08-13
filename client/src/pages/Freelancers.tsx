@@ -47,7 +47,7 @@ export default function Freelancers() {
     };
   });
 
-  // Mock freelancer data matching EventCrew design
+  // Mock freelancer data matching Event Link design
   const mockFreelancers = [
     {
       id: 1,

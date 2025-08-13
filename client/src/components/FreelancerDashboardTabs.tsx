@@ -358,7 +358,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 </div>
                 <div>
                   <CardTitle className="text-2xl">
-                    {hasProfile ? `${freelancerProfile.first_name} ${freelancerProfile.last_name}` : 'Welcome to EventCrew'}
+                    {hasProfile ? `${freelancerProfile.first_name} ${freelancerProfile.last_name}` : 'Welcome to Event Link'}
                   </CardTitle>
                   <p className="text-muted-foreground">
                     {hasProfile ? freelancerProfile.title : 'Let\'s create your freelancer profile'}

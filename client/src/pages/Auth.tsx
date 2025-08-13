@@ -98,7 +98,7 @@ export default function Auth() {
         });
       } else {
         toast({
-          title: "Welcome to Event Crew!",
+          title: "Welcome to Event Link!",
           description: "Your account has been created successfully."
         });
       }
