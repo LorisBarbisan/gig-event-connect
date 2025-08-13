@@ -43,6 +43,22 @@ const EVENT_ROLE_KEYWORDS = [
   'streaming technician', 'media technician', 'broadcast technician'
 ];
 
+// Keywords that indicate NON-event industry roles (catering, hospitality, etc.) that should be excluded
+const EXCLUDE_KEYWORDS = [
+  // Catering and food service
+  'chef', 'head chef', 'sous chef', 'cook', 'kitchen', 'culinary', 'food', 'catering',
+  'restaurant', 'hospitality', 'banquet', 'menu', 'dining', 'waitress', 'waiter',
+  'bartender', 'barista', 'food service', 'food preparation', 'pastry chef',
+  
+  // General hospitality 
+  'hotel', 'reception', 'front desk', 'housekeeping', 'concierge',
+  'guest services', 'accommodation', 'booking',
+  
+  // Other non-technical roles often found in "events"
+  'cleaning', 'security guard', 'bouncer', 'steward', 'usher',
+  'ticket sales', 'customer service', 'admin', 'administrator'
+];
+
 interface ExternalJob {
   id: string;
   title: string;
@@ -391,13 +407,25 @@ export class JobAggregator {
       const descriptionLower = job.description.toLowerCase();
       const combinedText = `${titleLower} ${descriptionLower}`;
       
-      // Check if job title or description contains event industry keywords
+      // First check if job contains excluded keywords (catering, hospitality, etc.)
+      const isExcluded = EXCLUDE_KEYWORDS.some(excludeKeyword => 
+        combinedText.includes(excludeKeyword.toLowerCase())
+      );
+      
+      if (isExcluded) {
+        console.log(`✗ Excluding job (catering/hospitality): ${job.title} (${job.company})`);
+        return false;
+      }
+      
+      // Then check if job title or description contains event industry keywords
       const isEventRole = EVENT_ROLE_KEYWORDS.some(keyword => 
         combinedText.includes(keyword.toLowerCase())
       );
       
       if (isEventRole) {
         console.log(`✓ Keeping job: ${job.title} (${job.company})`);
+      } else {
+        console.log(`✗ Excluding job (not event industry): ${job.title} (${job.company})`);
       }
       
       return isEventRole;

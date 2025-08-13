@@ -16,6 +16,11 @@ Event Crew is a freelancer marketplace platform specifically designed for the ev
 - **Recruiter Profiles**: Company information and contact details
 
 ## Recent Changes
+### August 13, 2025
+- **Catering Job Exclusion**: Fixed external job filtering to exclude catering and hospitality jobs (Head Chef, etc.) that were bypassing event industry filters
+- **Enhanced Job Filtering**: Added comprehensive exclusion keywords for non-technical roles like catering, food service, general hospitality, and administrative positions
+- **Improved Filter Precision**: Updated filtering algorithm to check exclusion criteria first, then event industry keywords, resulting in higher quality job matches
+
 ### August 10, 2025
 - **Contract Type Filtering**: Updated Jobs page Category filter from skills-based to contract type filtering (Full-Time, Part-Time, Fixed term, Temporary, Gig)
 - **UI Alignment Fix**: Resolved Messages tab notification badge alignment issues in both freelancer and recruiter dashboards
