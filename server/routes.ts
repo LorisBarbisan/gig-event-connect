@@ -418,6 +418,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get applications for a recruiter's jobs
+  app.get("/api/recruiter/:recruiterId/applications", async (req, res) => {
+    try {
+      const recruiterId = parseInt(req.params.recruiterId);
+      
+      // Get all jobs for this recruiter
+      const recruiterJobs = await storage.getJobsByRecruiterId(recruiterId);
+      const jobIds = recruiterJobs.map(job => job.id);
+      
+      if (jobIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get all applications for these jobs with freelancer details
+      const applications = [];
+      for (const jobId of jobIds) {
+        const jobApplications = await storage.getJobApplications(jobId);
+        for (const app of jobApplications) {
+          const freelancer = await storage.getFreelancerProfile(app.freelancer_id);
+          const job = recruiterJobs.find(j => j.id === jobId);
+          applications.push({
+            ...app,
+            freelancer_profile: freelancer,
+            job_title: job?.title || 'Unknown Job',
+            job_company: job?.company || 'Unknown Company'
+          });
+        }
+      }
+      
+      res.json(applications);
+    } catch (error) {
+      console.error("Get recruiter applications error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

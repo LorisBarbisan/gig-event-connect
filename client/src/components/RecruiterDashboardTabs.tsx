@@ -267,6 +267,19 @@ export default function RecruiterDashboardTabs() {
     enabled: !!user?.id,
   });
 
+  // Fetch real job applications for this recruiter
+  const { data: applications = [], isLoading: applicationsLoading } = useQuery({
+    queryKey: ['/api/recruiter', user?.id, 'applications'],
+    queryFn: async () => {
+      const response = await fetch(`/api/recruiter/${user?.id}/applications`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
+
   const sampleMessages: Message[] = [
     {
       id: 1,
@@ -358,6 +371,11 @@ export default function RecruiterDashboardTabs() {
           <TabsTrigger value="applications" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Applications
+            {applications.length > 0 && (
+              <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
+                {applications.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -798,58 +816,83 @@ export default function RecruiterDashboardTabs() {
             <p className="text-muted-foreground">Review and manage job applications</p>
           </div>
 
-          <div className="space-y-4">
-            {sampleApplications.map((application) => (
-              <Card key={application.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium">{application.candidate_name}</h4>
-                        <Badge variant={
-                          application.status === 'hired' ? 'default' :
-                          application.status === 'reviewed' ? 'secondary' :
-                          application.status === 'rejected' ? 'destructive' : 'outline'
-                        }>
-                          {application.status}
-                        </Badge>
+          {applicationsLoading ? (
+            <div className="flex justify-center p-8">
+              <div>Loading applications...</div>
+            </div>
+          ) : applications.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Applications Yet</h3>
+                <p className="text-muted-foreground">Job applications will appear here when freelancers apply to your posted jobs.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {applications.map((application: any) => (
+                <Card key={application.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium">
+                            {application.freelancer_profile ? 
+                              `${application.freelancer_profile.first_name} ${application.freelancer_profile.last_name}` : 
+                              'Freelancer'
+                            }
+                          </h4>
+                          <Badge variant={
+                            application.status === 'hired' ? 'default' :
+                            application.status === 'reviewed' ? 'secondary' :
+                            application.status === 'rejected' ? 'destructive' : 'outline'
+                          }>
+                            {application.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">Applied for: {application.job_title}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                          <div>Rate: {application.freelancer_profile?.hourly_rate ? `£${application.freelancer_profile.hourly_rate}/${application.freelancer_profile.rate_type}` : 'Not specified'}</div>
+                          <div>Experience: {application.freelancer_profile?.experience_years ? `${application.freelancer_profile.experience_years} years` : 'Not specified'}</div>
+                          <div>Applied: {new Date(application.applied_at).toLocaleDateString()}</div>
+                        </div>
+                        {application.cover_letter && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium mb-1">Cover Letter:</p>
+                            <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded">{application.cover_letter}</p>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">Applied for: {application.job_title}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                        <div>Rate: {application.rate}</div>
-                        <div>Experience: {application.experience}</div>
-                        <div>Applied: {application.applied_date}</div>
+                      <div className="flex gap-2 ml-4">
+                        <Button variant="outline" size="sm" data-testid={`button-view-application-${application.id}`}>
+                          View Profile
+                        </Button>
+                        {application.status === 'applied' && (
+                          <>
+                            <Button size="sm" data-testid={`button-accept-${application.id}`}>
+                              Accept
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              data-testid={`button-reject-${application.id}`}
+                              onClick={() => {
+                                setSelectedApplication(application);
+                                setDeclineDialogOpen(true);
+                                setDeclineMessage('');
+                              }}
+                            >
+                              Decline
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button variant="outline" size="sm" data-testid={`button-view-application-${application.id}`}>
-                        View Profile
-                      </Button>
-                      {application.status === 'pending' && (
-                        <>
-                          <Button size="sm" data-testid={`button-accept-${application.id}`}>
-                            Accept
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            data-testid={`button-reject-${application.id}`}
-                            onClick={() => {
-                              setSelectedApplication(application);
-                              setDeclineDialogOpen(true);
-                              setDeclineMessage('');
-                            }}
-                          >
-                            Decline
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
