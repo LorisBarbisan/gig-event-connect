@@ -340,8 +340,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobId = parseInt(req.params.jobId);
       const { freelancerId, coverLetter } = req.body;
       
+      console.log("Job application request:", {
+        jobId,
+        freelancerId,
+        coverLetter,
+        body: req.body
+      });
+      
       if (!freelancerId) {
+        console.log("Missing freelancer ID in request");
         return res.status(400).json({ error: "Freelancer ID is required" });
+      }
+
+      // Check if application already exists
+      const existingApplications = await storage.getJobApplicationsByFreelancer(freelancerId);
+      const alreadyApplied = existingApplications.some((app: any) => app.job_id === jobId);
+      
+      if (alreadyApplied) {
+        return res.status(400).json({ error: "You have already applied to this job" });
       }
 
       const application = await storage.createJobApplication({
@@ -350,6 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cover_letter: coverLetter || null,
       });
       
+      console.log("Job application created:", application);
       res.json(application);
     } catch (error) {
       console.error("Create job application error:", error);

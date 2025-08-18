@@ -69,16 +69,22 @@ export default function Jobs() {
   // Job application mutation
   const applyToJobMutation = useMutation({
     mutationFn: async (jobId: number) => {
+      console.log('Mutation function called with:', { jobId, currentUser });
+      
       if (!currentUser?.id) {
         throw new Error('Please log in to apply for jobs');
       }
       
+      const payload = {
+        freelancerId: currentUser.id,
+        coverLetter: null
+      };
+      
+      console.log('Sending application request:', payload);
+      
       return await apiRequest(`/api/jobs/${jobId}/apply`, {
         method: 'POST',
-        body: JSON.stringify({
-          freelancerId: currentUser.id,
-          coverLetter: null
-        }),
+        body: JSON.stringify(payload),
         headers: {
           'Content-Type': 'application/json'
         }
@@ -113,11 +119,23 @@ export default function Jobs() {
   });
 
   const handleApplyNow = (job: any) => {
+    console.log('Apply Now clicked:', { jobId: job.id, currentUser, hasExternalUrl: !!job.external_url });
+    
     if (job.external_url) {
       // For external jobs, open the external URL
       window.open(job.external_url, '_blank');
     } else {
       // For internal jobs, apply through our system
+      if (!currentUser?.id) {
+        toast({
+          title: 'Login required',
+          description: 'Please log in to apply for jobs.',
+          variant: 'destructive',
+        });
+        setLocation('/auth');
+        return;
+      }
+      console.log('Applying to job:', job.id, 'with user:', currentUser.id);
       applyToJobMutation.mutate(job.id);
     }
   };
