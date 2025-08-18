@@ -353,11 +353,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if application already exists
-      const existingApplications = await storage.getJobApplicationsByFreelancer(freelancerId);
-      const alreadyApplied = existingApplications.some((app: any) => app.job_id === jobId);
-      
-      if (alreadyApplied) {
-        return res.status(400).json({ error: "You have already applied to this job" });
+      try {
+        const existingApplications = await storage.getJobApplicationsByFreelancer(freelancerId);
+        const alreadyApplied = existingApplications.some((app: any) => app.job_id === jobId);
+        
+        if (alreadyApplied) {
+          return res.status(400).json({ error: "You have already applied to this job" });
+        }
+      } catch (error) {
+        console.log("Could not check existing applications, proceeding with application creation");
       }
 
       const application = await storage.createJobApplication({

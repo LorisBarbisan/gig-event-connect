@@ -258,6 +258,10 @@ export class DatabaseStorage implements IStorage {
   async getJobApplications(jobId: number): Promise<JobApplication[]> {
     return await db.select().from(job_applications).where(eq(job_applications.job_id, jobId));
   }
+
+  async getJobApplicationsByFreelancer(freelancerId: number): Promise<JobApplication[]> {
+    return await db.select().from(job_applications).where(eq(job_applications.freelancer_id, freelancerId));
+  }
 }
 
 export const storage = new DatabaseStorage();

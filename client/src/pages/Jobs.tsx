@@ -55,13 +55,15 @@ export default function Jobs() {
   });
 
   // Get current user for application functionality
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: userLoading } = useQuery({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
       const response = await fetch('/api/auth/user');
       if (response.status === 401) return null;
       if (!response.ok) throw new Error('Failed to fetch user');
-      return response.json();
+      const userData = await response.json();
+      console.log('Current user loaded:', userData);
+      return userData;
     },
     retry: false,
   });
@@ -119,25 +121,41 @@ export default function Jobs() {
   });
 
   const handleApplyNow = (job: any) => {
-    console.log('Apply Now clicked:', { jobId: job.id, currentUser, hasExternalUrl: !!job.external_url });
+    console.log('Apply Now clicked:', { 
+      jobId: job.id, 
+      currentUser, 
+      hasExternalUrl: !!job.external_url,
+      userLoading,
+      userId: currentUser?.id 
+    });
     
     if (job.external_url) {
       // For external jobs, open the external URL
       window.open(job.external_url, '_blank');
-    } else {
-      // For internal jobs, apply through our system
-      if (!currentUser?.id) {
-        toast({
-          title: 'Login required',
-          description: 'Please log in to apply for jobs.',
-          variant: 'destructive',
-        });
-        setLocation('/auth');
-        return;
-      }
-      console.log('Applying to job:', job.id, 'with user:', currentUser.id);
-      applyToJobMutation.mutate(job.id);
+      return;
     }
+    
+    // For internal jobs, apply through our system
+    if (userLoading) {
+      toast({
+        title: 'Please wait',
+        description: 'Loading user information...',
+      });
+      return;
+    }
+    
+    if (!currentUser || !currentUser.id) {
+      toast({
+        title: 'Login required',
+        description: 'Please log in to apply for jobs.',
+        variant: 'destructive',
+      });
+      setLocation('/auth');
+      return;
+    }
+    
+    console.log('Applying to job:', job.id, 'with user:', currentUser.id);
+    applyToJobMutation.mutate(job.id);
   };
 
   const toggleJobExpansion = (jobId: string) => {
