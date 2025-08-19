@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { User, MapPin, Coins, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, Send, Mail, Phone } from 'lucide-react';
+import { CVUploader } from './CVUploader';
 
 interface Profile {
   id: string;
@@ -35,6 +36,10 @@ interface FreelancerProfile {
   website_url: string;
   availability_status: 'available' | 'busy' | 'unavailable';
   profile_photo_url?: string;
+  cv_file_name?: string;
+  cv_file_type?: string;
+  cv_file_size?: number;
+  cv_file_url?: string;
 }
 
 interface FreelancerDashboardTabsProps {
@@ -625,6 +630,24 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                       <SelectItem value="unavailable">Unavailable</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* CV Upload Section */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">CV/Resume</Label>
+                  <CVUploader
+                    userId={parseInt(profile.id)}
+                    currentCV={freelancerProfile.cv_file_name ? {
+                      fileName: freelancerProfile.cv_file_name,
+                      fileType: freelancerProfile.cv_file_type,
+                      fileSize: freelancerProfile.cv_file_size,
+                      fileUrl: freelancerProfile.cv_file_url,
+                    } : undefined}
+                    onUploadComplete={() => {
+                      // Refresh the profile data after CV upload
+                      window.location.reload();
+                    }}
+                  />
                 </div>
 
                 <Button onClick={saveProfile} disabled={saving} className="w-full bg-gradient-primary hover:bg-primary-hover">

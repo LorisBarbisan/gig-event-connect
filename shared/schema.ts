@@ -28,6 +28,10 @@ export const freelancer_profiles = pgTable("freelancer_profiles", {
   website_url: text("website_url"),
   availability_status: text("availability_status").default('available').$type<'available' | 'busy' | 'unavailable'>(),
   profile_photo_url: text("profile_photo_url"),
+  cv_file_url: text("cv_file_url"),
+  cv_file_name: text("cv_file_name"),
+  cv_file_type: text("cv_file_type"),
+  cv_file_size: integer("cv_file_size"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

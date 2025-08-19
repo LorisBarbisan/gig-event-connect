@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { insertUserSchema, insertFreelancerProfileSchema, insertRecruiterProfileSchema, insertJobSchema, insertJobApplicationSchema } from "@shared/schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -451,6 +453,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get recruiter applications error:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // CV Upload routes
+  app.post("/api/cv/upload-url", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error generating CV upload URL:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/cv", async (req, res) => {
+    try {
+      const { userId, fileName, fileType, fileSize, fileUrl } = req.body;
+      
+      if (!userId || !fileName || !fileUrl) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        fileUrl,
+        {
+          owner: userId.toString(),
+          visibility: "private",
+        }
+      );
+
+      // Update freelancer profile with CV information
+      const freelancerProfile = await storage.getFreelancerProfile(userId);
+      if (freelancerProfile) {
+        await storage.updateFreelancerProfile(userId, {
+          ...freelancerProfile,
+          cv_file_url: normalizedPath,
+          cv_file_name: fileName,
+          cv_file_type: fileType,
+          cv_file_size: fileSize,
+        });
+      }
+
+      res.json({ 
+        success: true,
+        cvPath: normalizedPath 
+      });
+    } catch (error) {
+      console.error("Error saving CV:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/cv", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      // Update freelancer profile to remove CV information
+      const freelancerProfile = await storage.getFreelancerProfile(userId);
+      if (freelancerProfile) {
+        await storage.updateFreelancerProfile(userId, {
+          ...freelancerProfile,
+          cv_file_url: null,
+          cv_file_name: null,
+          cv_file_type: null,
+          cv_file_size: null,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting CV:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Serve CV files
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing CV file:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
