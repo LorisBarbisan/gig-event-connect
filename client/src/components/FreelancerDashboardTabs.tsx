@@ -360,6 +360,8 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                       src={freelancerProfile.profile_photo_url} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
+                      onLoad={() => console.log('Profile photo loaded successfully')}
+                      onError={(e) => console.log('Profile photo failed to load:', e)}
                     />
                   ) : (
                     <User className="w-8 h-8 text-white" />
