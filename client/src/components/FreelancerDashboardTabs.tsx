@@ -355,8 +355,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
                   {(freelancerProfile.profile_photo_url && 
                     freelancerProfile.profile_photo_url.trim() !== '' && 
-                    freelancerProfile.profile_photo_url !== 'null' && 
-                    freelancerProfile.profile_photo_url.startsWith('data:')) ? (
+                    freelancerProfile.profile_photo_url !== 'null') ? (
                     <img 
                       src={freelancerProfile.profile_photo_url} 
                       alt="Profile" 
@@ -435,8 +434,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                   <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
                     {(freelancerProfile.profile_photo_url && 
                       freelancerProfile.profile_photo_url.trim() !== '' && 
-                      freelancerProfile.profile_photo_url !== 'null' && 
-                      freelancerProfile.profile_photo_url.startsWith('data:')) ? (
+                      freelancerProfile.profile_photo_url !== 'null') ? (
                       <img 
                         src={freelancerProfile.profile_photo_url} 
                         alt="Profile" 
