@@ -372,9 +372,9 @@ export default function RecruiterDashboardTabs() {
           <TabsTrigger value="messages" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             <span>Messages</span>
-            {unreadCount && unreadCount.count > 0 && (
+            {unreadCount && Number(unreadCount.count) > 0 && (
               <Badge variant="destructive" className="h-5 w-5 p-0 text-xs flex items-center justify-center ml-1">
-                {unreadCount.count}
+                {Number(unreadCount.count)}
               </Badge>
             )}
           </TabsTrigger>

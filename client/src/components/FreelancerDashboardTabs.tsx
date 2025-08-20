@@ -77,7 +77,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
   const { data: unreadCount } = useQuery({
     queryKey: ['/api/messages/unread-count', profile.id],
     queryFn: () => apiRequest(`/api/messages/unread-count?userId=${profile.id}`),
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds for testing
   });
 
   // Get user's job applications
@@ -409,9 +409,9 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
             <TabsTrigger value="messages" className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
               <span>Messages</span>
-              {unreadCount && unreadCount.count > 0 && (
+              {unreadCount && Number(unreadCount.count) > 0 && (
                 <Badge variant="destructive" className="text-xs flex items-center justify-center ml-1">
-                  {unreadCount.count}
+                  {Number(unreadCount.count)}
                 </Badge>
               )}
             </TabsTrigger>

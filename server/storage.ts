@@ -418,7 +418,7 @@ export class DatabaseStorage implements IStorage {
 
     const conversationIds = userConversations.map(c => c.id);
     
-    const result = await db.select({ count: sql<number>`count(*)` })
+    const result = await db.select({ count: sql<number>`count(*)::int` })
       .from(messages)
       .where(
         and(
@@ -428,7 +428,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    return result[0]?.count || 0;
+    return Number(result[0]?.count || 0);
   }
 }
 
