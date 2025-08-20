@@ -312,13 +312,13 @@ export class DatabaseStorage implements IStorage {
         WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
         ELSE ${conversations.participant_one_id}
       END`,
-      otherUserEmail: sql<string>`u.email`,
-      otherUserRole: sql<string>`u.role`
+      otherUserEmail: users.email,
+      otherUserRole: users.role
     })
     .from(conversations)
     .leftJoin(
       users,
-      sql`u.id = CASE 
+      sql`${users.id} = CASE 
         WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
         ELSE ${conversations.participant_one_id}
       END`
@@ -339,7 +339,7 @@ export class DatabaseStorage implements IStorage {
       created_at: row.created_at,
       otherUser: {
         id: row.otherUserId,
-        email: row.otherUserEmail,
+        email: row.otherUserEmail || '',
         role: (row.otherUserRole as 'freelancer' | 'recruiter') || 'freelancer',
         password: '',
         created_at: new Date(),
