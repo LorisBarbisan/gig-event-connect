@@ -66,6 +66,7 @@ export interface IStorage {
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
   getFreelancerApplications(freelancerId: number): Promise<JobApplication[]>;
   getJobApplications(jobId: number): Promise<JobApplication[]>;
+  updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired'): Promise<JobApplication>;
   
   // Messaging management
   getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation>;
@@ -275,6 +276,17 @@ export class DatabaseStorage implements IStorage {
 
   async getJobApplicationsByFreelancer(freelancerId: number): Promise<JobApplication[]> {
     return await db.select().from(job_applications).where(eq(job_applications.freelancer_id, freelancerId));
+  }
+
+  async updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired'): Promise<JobApplication> {
+    const result = await db.update(job_applications)
+      .set({ 
+        status: status,
+        updated_at: sql`now()`
+      })
+      .where(eq(job_applications.id, applicationId))
+      .returning();
+    return result[0];
   }
 
   // Messaging methods

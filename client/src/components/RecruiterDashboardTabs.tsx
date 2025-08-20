@@ -106,6 +106,10 @@ export default function RecruiterDashboardTabs() {
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [declineMessage, setDeclineMessage] = useState('');
+  
+  // Accept application states
+  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
+  const [selectedAcceptApplication, setSelectedAcceptApplication] = useState<any | null>(null);
 
   const { data: profile, isLoading } = useQuery<RecruiterProfile>({
     queryKey: ['/api/recruiter', user?.id],
@@ -275,6 +279,31 @@ export default function RecruiterDashboardTabs() {
       return response.json();
     },
     enabled: !!user?.id,
+  });
+
+  // Accept application mutation
+  const acceptApplicationMutation = useMutation({
+    mutationFn: async (applicationId: number) => {
+      return await apiRequest(`/api/applications/${applicationId}/accept`, {
+        method: 'PUT',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recruiter', user?.id, 'applications'] });
+      setAcceptDialogOpen(false);
+      setSelectedAcceptApplication(null);
+      toast({
+        title: 'Application accepted',
+        description: 'The freelancer has been hired and will receive a notification.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to accept application.',
+        variant: 'destructive',
+      });
+    },
   });
 
   // Fetch real job applications for this recruiter
@@ -862,7 +891,14 @@ export default function RecruiterDashboardTabs() {
                         </Button>
                         {application.status === 'applied' && (
                           <>
-                            <Button size="sm" data-testid={`button-accept-${application.id}`}>
+                            <Button 
+                              size="sm" 
+                              onClick={() => {
+                                setSelectedAcceptApplication(application);
+                                setAcceptDialogOpen(true);
+                              }}
+                              data-testid={`button-accept-${application.id}`}
+                            >
                               Accept
                             </Button>
                             <Button 
@@ -933,6 +969,51 @@ export default function RecruiterDashboardTabs() {
               data-testid="button-confirm-decline"
             >
               Confirm Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Accept Application Dialog */}
+      <AlertDialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Accept Application</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to hire{' '}
+              <strong>
+                {selectedAcceptApplication?.freelancer_profile ? 
+                  `${selectedAcceptApplication.freelancer_profile.first_name} ${selectedAcceptApplication.freelancer_profile.last_name}` : 
+                  'this freelancer'
+                }
+              </strong>{' '}
+              for the position <strong>{selectedAcceptApplication?.job_title}</strong>.
+              <br />
+              <br />
+              This action will:
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Mark the application as "hired"</li>
+                <li>Send a notification to the freelancer</li>
+                <li>Update the job booking status</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-accept">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (selectedAcceptApplication?.id) {
+                  acceptApplicationMutation.mutate(selectedAcceptApplication.id);
+                }
+              }}
+              disabled={acceptApplicationMutation.isPending}
+              data-testid="button-confirm-accept"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {acceptApplicationMutation.isPending ? 'Hiring...' : 'Confirm Hire'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -459,6 +459,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Accept/Hire an application
+  app.put("/api/applications/:applicationId/accept", async (req, res) => {
+    try {
+      const applicationId = parseInt(req.params.applicationId);
+      const updatedApplication = await storage.updateApplicationStatus(applicationId, 'hired');
+      res.json(updatedApplication);
+    } catch (error) {
+      console.error("Accept application error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reject an application
+  app.put("/api/applications/:applicationId/reject", async (req, res) => {
+    try {
+      const applicationId = parseInt(req.params.applicationId);
+      const updatedApplication = await storage.updateApplicationStatus(applicationId, 'rejected');
+      res.json(updatedApplication);
+    } catch (error) {
+      console.error("Reject application error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // CV Upload routes
   app.post("/api/cv/upload-url", async (req, res) => {
     try {
