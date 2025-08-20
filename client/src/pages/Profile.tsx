@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, MapPin, Coins, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star } from 'lucide-react';
+import { User, MapPin, Coins, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star, MessageCircle } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
   id: string;
@@ -56,6 +58,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [profileDataLoaded, setProfileDataLoaded] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     console.log('Profile useEffect triggered:', { user, authLoading, userId });
@@ -307,15 +311,42 @@ export default function Profile() {
     );
   }
 
+  // Create conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async (otherUserId: number) => {
+      return apiRequest('/api/conversations', {
+        method: 'POST',
+        body: JSON.stringify({
+          userOneId: user!.id,
+          userTwoId: otherUserId
+        }),
+      });
+    },
+    onSuccess: (conversation) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      toast({
+        title: "Conversation started",
+        description: "You can now message this user from your Messages tab.",
+      });
+      setLocation('/dashboard');
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to start conversation. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleContactClick = () => {
-    if (profile?.role === 'freelancer' && freelancerProfile) {
-      const subject = encodeURIComponent(`Event Link Inquiry - ${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`);
-      const body = encodeURIComponent(`Hi ${freelancerProfile?.first_name},\n\nI found your profile on Event Link and I'm interested in discussing a potential collaboration for an upcoming event.\n\nPlease let me know your availability.\n\nBest regards`);
-      window.open(`mailto:${profile?.email}?subject=${subject}&body=${body}`, '_blank');
-    } else if (profile?.role === 'recruiter' && recruiterProfile) {
-      const subject = encodeURIComponent(`Event Link Inquiry - ${recruiterProfile.company_name}`);
-      const body = encodeURIComponent(`Hi ${recruiterProfile.contact_name || 'there'},\n\nI found your company profile on Event Link and I'm interested in discussing potential opportunities.\n\nPlease let me know if you have any suitable positions available.\n\nBest regards`);
-      window.open(`mailto:${profile?.email}?subject=${subject}&body=${body}`, '_blank');
+    if (!user) {
+      setLocation('/auth');
+      return;
+    }
+    
+    if (profile?.id) {
+      createConversationMutation.mutate(parseInt(profile.id));
     }
   };
 
@@ -384,13 +415,16 @@ export default function Profile() {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                      <Button 
-                        onClick={handleContactClick}
-                        className="bg-gradient-primary hover:bg-primary-hover"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Contact
-                      </Button>
+                      {!isOwnProfile && (
+                        <Button 
+                          onClick={handleContactClick}
+                          disabled={createConversationMutation.isPending}
+                          className="bg-gradient-primary hover:bg-primary-hover"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Send Message
+                        </Button>
+                      )}
                       {isOwnProfile && (
                         <Button 
                           variant="outline"
@@ -451,13 +485,16 @@ export default function Profile() {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                      <Button 
-                        onClick={handleContactClick}
-                        className="bg-gradient-primary hover:bg-primary-hover"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Contact
-                      </Button>
+                      {!isOwnProfile && (
+                        <Button 
+                          onClick={handleContactClick}
+                          disabled={createConversationMutation.isPending}
+                          className="bg-gradient-primary hover:bg-primary-hover"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Send Message
+                        </Button>
+                      )}
                       {isOwnProfile && (
                         <Button 
                           variant="outline"

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,12 +33,15 @@ interface NewConversationModalProps {
 export function NewConversationModal({ currentUser, onConversationCreated }: NewConversationModalProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [contactType, setContactType] = useState<'freelancers' | 'recruiters'>(
+    currentUser.role === 'freelancer' ? 'recruiters' : 'freelancers'
+  );
   const queryClient = useQueryClient();
 
-  // Fetch freelancers or recruiters based on current user role
+  // Fetch profiles based on selected contact type
   const { data: profiles = [], isLoading } = useQuery({
-    queryKey: [currentUser.role === 'freelancer' ? '/api/recruiter-profiles' : '/api/freelancers'],
-    queryFn: () => apiRequest(currentUser.role === 'freelancer' ? '/api/recruiter-profiles' : '/api/freelancers'),
+    queryKey: [contactType === 'freelancers' ? '/api/freelancers' : '/api/recruiter-profiles'],
+    queryFn: () => apiRequest(contactType === 'freelancers' ? '/api/freelancers' : '/api/recruiter-profiles'),
     enabled: open,
   });
 
@@ -65,7 +69,7 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
     
     const searchLower = searchTerm.toLowerCase();
     
-    if (currentUser.role === 'freelancer') {
+    if (contactType === 'recruiters') {
       // Searching recruiters
       return (
         profile.company_name?.toLowerCase().includes(searchLower) ||
@@ -79,10 +83,13 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
         `${profile.first_name} ${profile.last_name}`.toLowerCase().includes(searchLower)
       );
     }
+  }).filter((profile: UserProfile) => {
+    // Don't show current user in the list
+    return profile.user_id !== currentUser.id;
   });
 
   const getDisplayName = (profile: UserProfile) => {
-    if (currentUser.role === 'freelancer') {
+    if (contactType === 'recruiters') {
       return profile.company_name || 'Company';
     } else {
       return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
@@ -90,7 +97,7 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
   };
 
   const getDisplaySubtext = (profile: UserProfile) => {
-    if (currentUser.role === 'freelancer') {
+    if (contactType === 'recruiters') {
       return profile.contact_name || 'Contact';
     } else {
       return 'Freelancer';
@@ -98,7 +105,7 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
   };
 
   const getInitials = (profile: UserProfile) => {
-    if (currentUser.role === 'freelancer') {
+    if (contactType === 'recruiters') {
       return profile.company_name?.substring(0, 2).toUpperCase() || 'CO';
     } else {
       const firstName = profile.first_name || '';
@@ -120,15 +127,28 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
           <DialogTitle>Start New Conversation</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Contact Type Selection (only for freelancers) */}
+          {currentUser.role === 'freelancer' && (
+            <Tabs value={contactType} onValueChange={(value) => {
+              setContactType(value as 'freelancers' | 'recruiters');
+              setSearchTerm(""); // Clear search when switching tabs
+            }}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="recruiters">Recruiters</TabsTrigger>
+                <TabsTrigger value="freelancers">Freelancers</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="search">
-              Search {currentUser.role === 'freelancer' ? 'Recruiters' : 'Freelancers'}
+              Search {contactType === 'recruiters' ? 'Recruiters' : 'Freelancers'}
             </Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="search"
-                placeholder={`Search ${currentUser.role === 'freelancer' ? 'companies' : 'freelancers'}...`}
+                placeholder={`Search ${contactType === 'recruiters' ? 'companies' : 'freelancers'}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -145,7 +165,7 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
             ) : filteredProfiles.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
                 <User className="h-8 w-8 mx-auto mb-2" />
-                <p>No {currentUser.role === 'freelancer' ? 'recruiters' : 'freelancers'} found</p>
+                <p>No {contactType} found</p>
               </div>
             ) : (
               filteredProfiles.map((profile: UserProfile) => (
