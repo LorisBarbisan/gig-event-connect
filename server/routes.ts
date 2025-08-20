@@ -41,21 +41,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signin", async (req, res) => {
     try {
       const { email, password } = req.body;
-      console.log("Signin attempt for:", email);
+      
+      // Input validation
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      if (typeof email !== 'string' || typeof password !== 'string') {
+        return res.status(400).json({ error: "Invalid input types" });
+      }
       
       // Find user (case-insensitive email lookup)
       const user = await storage.getUserByEmail(email.toLowerCase());
       if (!user) {
-        console.log("User not found:", email);
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      console.log("User found, checking password...");
-      console.log("Password from request:", password);
-      console.log("Stored hash:", user.password);
       // Check password
       const isValid = await bcrypt.compare(password, user.password);
-      console.log("Password valid:", isValid);
       
       if (!isValid) {
         return res.status(401).json({ error: "Invalid credentials" });
@@ -149,16 +152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/freelancer/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const profile = req.body;
-      console.log("Profile update data:", {
-        userId,
-        hasPhoto: !!profile.profile_photo_url,
-        photoLength: profile.profile_photo_url ? profile.profile_photo_url.length : 0
-      });
-      const result = await storage.updateFreelancerProfile(userId, profile);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Validate profile data using partial schema
+      const profileData = insertFreelancerProfileSchema.partial().parse(req.body);
+      
+      const result = await storage.updateFreelancerProfile(userId, profileData);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update freelancer profile error:", error);
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid profile data" });
+      }
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -194,11 +201,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/recruiter/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const profile = req.body;
-      const result = await storage.updateRecruiterProfile(userId, profile);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Validate profile data using partial schema
+      const profileData = insertRecruiterProfileSchema.partial().parse(req.body);
+      
+      const result = await storage.updateRecruiterProfile(userId, profileData);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update recruiter profile error:", error);
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid profile data" });
+      }
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -499,8 +515,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId, fileName, fileType, fileSize, fileUrl } = req.body;
       
+      // Validate required fields
       if (!userId || !fileName || !fileUrl) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Validate data types
+      if (typeof userId !== 'number' || typeof fileName !== 'string' || typeof fileUrl !== 'string') {
+        return res.status(400).json({ error: "Invalid field types" });
+      }
+
+      // Validate file type if provided
+      if (fileType && typeof fileType !== 'string') {
+        return res.status(400).json({ error: "Invalid file type" });
+      }
+
+      // Validate file size if provided
+      if (fileSize && (typeof fileSize !== 'number' || fileSize <= 0)) {
+        return res.status(400).json({ error: "Invalid file size" });
       }
 
       const objectStorageService = new ObjectStorageService();
@@ -678,13 +710,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const message = JSON.parse(data.toString());
         
         if (message.type === 'authenticate') {
-          userId = message.userId;
-          if (userId) {
-            if (!clients.has(userId)) {
-              clients.set(userId, new Set());
+          // Validate message structure
+          if (typeof message.userId === 'number' && message.userId > 0) {
+            const authenticatedUserId = message.userId;
+            userId = authenticatedUserId;
+            if (!clients.has(authenticatedUserId)) {
+              clients.set(authenticatedUserId, new Set());
             }
-            clients.get(userId)!.add(ws);
-            console.log(`User ${userId} authenticated and added to WebSocket clients`);
+            clients.get(authenticatedUserId)!.add(ws);
+            console.log(`User ${authenticatedUserId} authenticated and added to WebSocket clients`);
+          } else {
+            console.error('Invalid userId in WebSocket authentication:', message.userId);
           }
         }
       } catch (error) {

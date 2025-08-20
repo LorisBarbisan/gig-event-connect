@@ -97,13 +97,13 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     const ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
+    const handleOpen = () => {
       console.log('WebSocket connected');
       ws.send(JSON.stringify({ type: 'authenticate', userId: currentUser.id }));
       setWebsocket(ws);
     };
 
-    ws.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'new_message') {
@@ -116,12 +116,26 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
       }
     };
 
-    ws.onclose = () => {
+    const handleClose = () => {
       console.log('WebSocket disconnected');
       setWebsocket(null);
     };
 
+    const handleError = (error: Event) => {
+      console.error('WebSocket error:', error);
+    };
+
+    ws.addEventListener('open', handleOpen);
+    ws.addEventListener('message', handleMessage);
+    ws.addEventListener('close', handleClose);
+    ws.addEventListener('error', handleError);
+
     return () => {
+      // Clean up event listeners before closing
+      ws.removeEventListener('open', handleOpen);
+      ws.removeEventListener('message', handleMessage);
+      ws.removeEventListener('close', handleClose);
+      ws.removeEventListener('error', handleError);
       ws.close();
     };
   }, [currentUser.id, queryClient]);
