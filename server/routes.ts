@@ -491,7 +491,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/applications/:applicationId/reject", async (req, res) => {
     try {
       const applicationId = parseInt(req.params.applicationId);
+      const { message: declineMessage } = req.body || {};
+      
       const updatedApplication = await storage.updateApplicationStatus(applicationId, 'rejected');
+      
+      // Send notification message to freelancer
+      try {
+        const recruiterId = 1; // Use first recruiter for now
+        const recruiter = await storage.getUser(recruiterId);
+        
+        if (recruiter && updatedApplication) {
+          // Create or get conversation between recruiter and freelancer
+          const conversation = await storage.getOrCreateConversation(recruiterId, updatedApplication.freelancer_id);
+          
+          // Send decline notification message
+          const notificationText = declineMessage || 
+            `Thank you for your interest in the position. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future opportunities that match your skills and experience.`;
+          
+          const message = await storage.sendMessage({
+            conversation_id: conversation.id,
+            sender_id: recruiterId,
+            content: `Your application has been declined.\n\n${notificationText}`
+          });
+          
+          // Broadcast message to WebSocket clients
+          const messageWithSender = {
+            ...message,
+            sender: recruiter
+          };
+          
+          broadcastToConversation(conversation.id, messageWithSender);
+        }
+      } catch (msgError) {
+        console.error("Error sending decline message:", msgError);
+        // Don't fail the whole request if messaging fails
+      }
+      
       res.json(updatedApplication);
     } catch (error) {
       console.error("Reject application error:", error);

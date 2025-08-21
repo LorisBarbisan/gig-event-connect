@@ -972,6 +972,12 @@ export default function RecruiterDashboardTabs() {
                   // Call API to decline the application
                   await apiRequest(`/api/applications/${selectedApplication.id}/reject`, {
                     method: 'PUT',
+                    body: JSON.stringify({
+                      message: declineMessage
+                    }),
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
                   });
                   
                   // Invalidate queries to refresh the applications list
