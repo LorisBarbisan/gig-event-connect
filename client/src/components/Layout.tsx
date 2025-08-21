@@ -5,7 +5,8 @@ import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import eventLinkLogo from "@/assets/eventlink-logo.png";
+// Using direct public path for logo
+const eventLinkLogo = "http://localhost:5000/src/assets/eventlink-logo.png";
 
 interface LayoutProps {
   children: React.ReactNode;
