@@ -24,9 +24,9 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
-              <img src={e8Logo} alt="E8 Logo" className="w-16 h-16" />
-              <span className="text-xl font-bold text-foreground">E8</span>
+            <Link to="/" className="flex items-center space-x-3">
+              <img src={e8Logo} alt="E8 Logo" className="w-20 h-20" />
+              <span className="text-2xl font-bold text-foreground">E8</span>
             </Link>
 
             {/* Navigation */}
@@ -140,8 +140,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <img src={e8Logo} alt="E8 Logo" className="w-12 h-12" />
-                <span className="font-semibold">E8</span>
+                <img src={e8Logo} alt="E8 Logo" className="w-14 h-14" />
+                <span className="font-semibold text-lg">E8</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Connecting technical professionals with event opportunities in the corporate events sector.
