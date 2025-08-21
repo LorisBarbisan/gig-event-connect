@@ -5,7 +5,7 @@ import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-// import e8Logo from "@/assets/e8-logo.png";
+import eventLinkLogo from "@/assets/eventlink-logo.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,9 +25,7 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3" data-testid="logo-header">
-              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">E8</span>
-              </div>
+              <img src={eventLinkLogo} alt="Event Link Logo" className="w-12 h-12 object-contain" data-testid="logo-image" />
               <span className="text-2xl font-bold text-foreground">Event Link</span>
             </Link>
 
@@ -142,9 +140,7 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">E8</span>
-                </div>
+                <img src={eventLinkLogo} alt="Event Link Logo" className="w-10 h-10 object-contain" />
                 <span className="font-semibold text-lg">Event Link</span>
               </div>
               <p className="text-sm text-muted-foreground">
