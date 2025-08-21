@@ -5,7 +5,7 @@ import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import e8Logo from "@/assets/e8-logo.png";
+import e8Logo from "../assets/e8-logo.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,9 +24,9 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3">
-              <img src={e8Logo} alt="E8 Logo" className="w-20 h-20" />
-              <span className="text-2xl font-bold text-foreground">E8</span>
+            <Link to="/" className="flex items-center space-x-3" data-testid="logo-header">
+              <img src={e8Logo} alt="E8 Logo" className="w-24 h-24 object-contain" data-testid="logo-image" />
+              <span className="text-3xl font-bold text-foreground">E8</span>
             </Link>
 
             {/* Navigation */}
