@@ -66,6 +66,10 @@ interface Application {
   status: 'pending' | 'reviewed' | 'rejected' | 'hired';
   rate: string;
   experience: string;
+  freelancer_profile?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export default function RecruiterDashboardTabs() {
@@ -73,6 +77,14 @@ export default function RecruiterDashboardTabs() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
+  const [lastViewedApplications, setLastViewedApplications] = useState<number>(() => {
+    const stored = localStorage.getItem('lastViewedApplications');
+    return stored ? parseInt(stored) : Date.now();
+  });
+  const [lastViewedJobs, setLastViewedJobs] = useState<number>(() => {
+    const stored = localStorage.getItem('lastViewedJobs');
+    return stored ? parseInt(stored) : Date.now();
+  });
 
   // Fetch unread message count
   const { data: unreadCount } = useQuery({
@@ -81,6 +93,20 @@ export default function RecruiterDashboardTabs() {
     refetchInterval: 10000, // Refetch every 10 seconds
     enabled: !!user?.id,
   });
+
+  // Handle tab changes and mark as viewed
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'applications') {
+      const now = Date.now();
+      setLastViewedApplications(now);
+      localStorage.setItem('lastViewedApplications', now.toString());
+    } else if (tab === 'jobs') {
+      const now = Date.now();
+      setLastViewedJobs(now);
+      localStorage.setItem('lastViewedJobs', now.toString());
+    }
+  };
   const [isEditing, setIsEditing] = useState(false);
 
   // Form states for profile editing
@@ -388,7 +414,7 @@ export default function RecruiterDashboardTabs() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
@@ -410,11 +436,17 @@ export default function RecruiterDashboardTabs() {
           <TabsTrigger value="applications" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Applications
-            {applications.length > 0 && (
-              <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
-                {applications.length}
-              </Badge>
-            )}
+            {(() => {
+              const pendingApplications = applications.filter((app: any) => 
+                app.status === 'pending' && 
+                new Date(app.applied_date).getTime() > lastViewedApplications
+              );
+              return pendingApplications.length > 0 && (
+                <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
+                  {pendingApplications.length}
+                </Badge>
+              );
+            })()}
           </TabsTrigger>
         </TabsList>
 

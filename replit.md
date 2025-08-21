@@ -24,6 +24,11 @@ E8 is a freelancer marketplace platform specifically designed for the events ind
 - **Error Handling**: Added proper error handling and user feedback for application decline operations
 - **Messaging Integration**: Added automatic notification messages to freelancers when applications are declined
 - **Favicon Update**: Added E8 logo as favicon for the application
+- **Smart Notification System**: Implemented red notification dots that appear/disappear based on tab viewing behavior
+  - Applications tab: Shows red dot for new pending applications until viewed
+  - Jobs tab (freelancer): Shows red dot for declined/hired application updates until viewed
+  - Messages tab: Shows red dot for unread messages across both dashboards
+  - Persistent tracking using localStorage to maintain notification state across browser sessions
 
 ### August 20, 2025
 - **Comprehensive Security Audit & Bug Fixes**: Identified and resolved critical security vulnerabilities and performance issues

@@ -72,6 +72,10 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
   const [saving, setSaving] = useState(false);
   const [newSkill, setNewSkill] = useState('');
   const [activeTab, setActiveTab] = useState('profile');
+  const [lastViewedJobs, setLastViewedJobs] = useState<number>(() => {
+    const stored = localStorage.getItem('freelancerLastViewedJobs');
+    return stored ? parseInt(stored) : Date.now();
+  });
 
   // Fetch unread message count
   const { data: unreadCount } = useQuery({
@@ -93,6 +97,16 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
     },
     retry: false,
   });
+
+  // Handle tab changes and mark as viewed
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'jobs') {
+      const now = Date.now();
+      setLastViewedJobs(now);
+      localStorage.setItem('freelancerLastViewedJobs', now.toString());
+    }
+  };
 
   useEffect(() => {
     fetchFreelancerProfile();
@@ -400,7 +414,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
         </Card>
 
         {/* Tabbed Dashboard */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <UserCheck className="h-4 w-4" />
@@ -418,6 +432,17 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
             <TabsTrigger value="jobs" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               Jobs
+              {(() => {
+                const updatedApplications = jobApplications.filter((app: any) => 
+                  ['rejected', 'hired'].includes(app.status) && 
+                  new Date(app.updated_at || app.created_at).getTime() > lastViewedJobs
+                );
+                return updatedApplications.length > 0 && (
+                  <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
+                    {updatedApplications.length}
+                  </Badge>
+                );
+              })()}
             </TabsTrigger>
             <TabsTrigger value="bookings" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
