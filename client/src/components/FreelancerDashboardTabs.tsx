@@ -74,7 +74,8 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
   const [activeTab, setActiveTab] = useState('profile');
   const [lastViewedJobs, setLastViewedJobs] = useState<number>(() => {
     const stored = localStorage.getItem('freelancerLastViewedJobs');
-    return stored ? parseInt(stored) : Date.now();
+    // For testing: use a much older timestamp to ensure notifications show
+    return stored ? parseInt(stored) : Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
   });
 
   // Fetch unread message count
@@ -101,11 +102,15 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
   // Handle tab changes and mark as viewed
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    if (tab === 'jobs') {
-      const now = Date.now();
-      setLastViewedJobs(now);
-      localStorage.setItem('freelancerLastViewedJobs', now.toString());
-    }
+    // Only update lastViewedJobs timestamp when actually viewing the content
+    // This ensures the notification persists until the user sees the updated applications
+  };
+
+  // Function to mark job applications as viewed when user scrolls or interacts with content
+  const markJobsAsViewed = () => {
+    const now = Date.now();
+    setLastViewedJobs(now);
+    localStorage.setItem('freelancerLastViewedJobs', now.toString());
   };
 
   useEffect(() => {
@@ -437,6 +442,16 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                   ['rejected', 'hired'].includes(app.status) && 
                   new Date(app.updated_at || app.created_at).getTime() > lastViewedJobs
                 );
+                console.log('Notification check:', {
+                  apps: jobApplications.length,
+                  updatedApps: updatedApplications.length,
+                  lastViewed: lastViewedJobs,
+                  appTimes: jobApplications.map(app => ({
+                    id: app.id,
+                    status: app.status,
+                    updated: new Date(app.updated_at || app.created_at).getTime()
+                  }))
+                });
                 return updatedApplications.length > 0 && (
                   <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
                     {updatedApplications.length}
@@ -712,7 +727,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
           </TabsContent>
 
           {/* Jobs Tab */}
-          <TabsContent value="jobs" className="space-y-6">
+          <TabsContent value="jobs" className="space-y-6" onFocus={markJobsAsViewed} onClick={markJobsAsViewed}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
