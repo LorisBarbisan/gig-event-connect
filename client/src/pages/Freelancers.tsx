@@ -52,7 +52,7 @@ export default function Freelancers() {
     };
   });
 
-  // Mock freelancer data matching Event Link design
+  // Mock freelancer data matching E8 design
   const mockFreelancers = [
     {
       id: 1,

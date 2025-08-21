@@ -5,6 +5,7 @@ import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import e8Logo from "@/assets/e8-logo.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,10 +25,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">EC</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">Event Link</span>
+              <img src={e8Logo} alt="E8 Logo" className="w-8 h-8" />
+              <span className="text-xl font-bold text-foreground">E8</span>
             </Link>
 
             {/* Navigation */}
@@ -141,10 +140,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-primary rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">EC</span>
-                </div>
-                <span className="font-semibold">Event Link</span>
+                <img src={e8Logo} alt="E8 Logo" className="w-6 h-6" />
+                <span className="font-semibold">E8</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Connecting technical professionals with event opportunities in the corporate events sector.
@@ -206,7 +203,7 @@ export const Layout = ({ children }: LayoutProps) => {
           </div>
           
           <div className="border-t mt-8 pt-6 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Event Link. All rights reserved.</p>
+            <p>&copy; 2024 E8. All rights reserved.</p>
           </div>
         </div>
       </footer>

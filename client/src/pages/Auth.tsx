@@ -98,7 +98,7 @@ export default function Auth() {
         });
       } else {
         toast({
-          title: "Welcome to Event Link!",
+          title: "Welcome to E8!",
           description: "Your account has been created successfully."
         });
       }
