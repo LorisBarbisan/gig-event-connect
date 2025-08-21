@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
 import eventImage from "@assets/vecteezy_blurred-images-of-trade-fairs-in-the-big-hall-image-of_33496157_1753859139754.jpg";
+import e8Logo from "@assets/Logo_1755756384612.png";
 
 export const HeroSection = () => {
   return (
@@ -17,20 +18,11 @@ export const HeroSection = () => {
               {/* Large E8 Logo */}
               <div className="flex justify-center lg:justify-start mb-4">
                 <div className="relative">
-                  <svg width="120" height="120" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-lg">
-                    <defs>
-                      <linearGradient id="heroLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4FC3F7" />
-                        <stop offset="50%" stopColor="#29B6F6" />
-                        <stop offset="100%" stopColor="#1976D2" />
-                      </linearGradient>
-                      <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="3" floodOpacity="0.2"/>
-                      </filter>
-                    </defs>
-                    <rect width="100" height="100" rx="20" ry="20" fill="url(#heroLogoGradient)" filter="url(#logoShadow)" />
-                    <text x="50" y="65" fontSize="42" fontFamily="Arial, sans-serif" fontWeight="bold" fill="white" textAnchor="middle">E8</text>
-                  </svg>
+                  <img 
+                    src={e8Logo} 
+                    alt="E8 Logo" 
+                    className="w-32 h-32 drop-shadow-lg"
+                  />
                 </div>
               </div>
 
