@@ -210,6 +210,7 @@ export default function SimplifiedRecruiterDashboard() {
                   onExpandToggle={toggleJobExpansion}
                   isExpanded={expandedJobs.has(job.id)}
                   showHiredSection={true}
+                  currentUserId={user?.id || 0}
                 />
               ))
             ) : (

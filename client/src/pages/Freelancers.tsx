@@ -19,6 +19,18 @@ export default function Freelancers() {
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedFreelancer, setSelectedFreelancer] = useState<any>(null);
   const { user: currentUser } = useAuth();
+  const [highlightedFreelancer, setHighlightedFreelancer] = useState<string | null>(null);
+
+  // Check for highlight parameter in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlight = urlParams.get('highlight');
+    if (highlight) {
+      setHighlightedFreelancer(highlight);
+      // Remove highlight after 3 seconds
+      setTimeout(() => setHighlightedFreelancer(null), 3000);
+    }
+  }, []);
 
   // Fetch real freelancer profiles from API
   const { data: realFreelancers = [], isLoading } = useQuery({
@@ -199,7 +211,16 @@ export default function Freelancers() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredFreelancers.map((freelancer) => (
-                <Card key={freelancer.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-accent">
+                <Card 
+                  key={freelancer.id} 
+                  className={`hover:shadow-lg transition-shadow border-l-4 border-l-accent ${
+                    highlightedFreelancer && 
+                    ((freelancer.isReal && freelancer.id === `real-${highlightedFreelancer}`) ||
+                     (!freelancer.isReal && freelancer.id.toString() === highlightedFreelancer))
+                      ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  }`}
+                  data-testid={`freelancer-card-${freelancer.id}`}
+                >
                   <CardHeader>
                     <div className="flex items-start gap-4">
                       <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-2xl overflow-hidden">

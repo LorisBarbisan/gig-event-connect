@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { MapPin, Calendar, Users, Edit, Trash2, Coins, ChevronDown, ChevronUp, User, MessageCircle, Eye } from 'lucide-react';
+import { MessageModal } from '@/components/MessageModal';
 import type { Job, JobApplication } from '@shared/types';
 
 interface JobCardProps {
@@ -14,6 +15,7 @@ interface JobCardProps {
   onExpandToggle?: (jobId: number) => void;
   isExpanded?: boolean;
   showHiredSection?: boolean;
+  currentUserId?: number;
 }
 
 export function JobCard({ 
@@ -23,15 +25,27 @@ export function JobCard({
   onDelete, 
   onExpandToggle, 
   isExpanded = false,
-  showHiredSection = true 
+  showHiredSection = true,
+  currentUserId = 0
 }: JobCardProps) {
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [selectedFreelancer, setSelectedFreelancer] = useState<{id: number, name: string} | null>(null);
+
   const handleProfileView = (userId: number) => {
-    window.open(`/freelancer-profile/${userId}`, '_blank');
+    // Navigate to freelancers page and highlight the specific freelancer
+    window.open(`/freelancers?highlight=${userId}`, '_blank');
   };
 
-  const handleMessageFreelancer = (userId: number) => {
-    // This could trigger a message modal or navigate to messages tab
-    console.log('Message freelancer:', userId);
+  const handleMessageFreelancer = (applicant: JobApplication) => {
+    const freelancerName = applicant.freelancer_profile?.first_name && applicant.freelancer_profile?.last_name
+      ? `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}`
+      : `Freelancer ${applicant.freelancer_id}`;
+    
+    setSelectedFreelancer({
+      id: applicant.freelancer_id,
+      name: freelancerName
+    });
+    setMessageModalOpen(true);
   };
 
   return (
@@ -180,7 +194,7 @@ export function JobCard({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleMessageFreelancer(applicant.freelancer_id)}
+                      onClick={() => handleMessageFreelancer(applicant)}
                       data-testid={`button-message-freelancer-${applicant.freelancer_id}`}
                     >
                       <MessageCircle className="w-3 h-3 mr-1" />
@@ -193,6 +207,20 @@ export function JobCard({
           </div>
         )}
       </CardContent>
+      
+      {/* Message Modal */}
+      {selectedFreelancer && (
+        <MessageModal
+          isOpen={messageModalOpen}
+          onClose={() => {
+            setMessageModalOpen(false);
+            setSelectedFreelancer(null);
+          }}
+          recipientId={selectedFreelancer.id}
+          recipientName={selectedFreelancer.name}
+          senderId={currentUserId}
+        />
+      )}
     </Card>
   );
 }
