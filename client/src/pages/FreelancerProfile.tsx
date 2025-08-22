@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Star, Calendar, Coins, ExternalLink, MessageCircle, Phone, Mail } from 'lucide-react';
+import { MapPin, Star, Calendar, Coins, ExternalLink, MessageCircle } from 'lucide-react';
 
 export default function FreelancerProfile() {
   const [match, params] = useRoute('/freelancer-profile/:userId');
@@ -199,10 +199,6 @@ export default function FreelancerProfile() {
                 <Button className="w-full bg-gradient-primary hover:bg-primary-hover">
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Send Message
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Contact via Email
                 </Button>
               </CardContent>
             </Card>
