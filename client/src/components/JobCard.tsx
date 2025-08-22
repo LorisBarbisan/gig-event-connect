@@ -145,47 +145,45 @@ export function JobCard({
                   key={applicant.id}
                   className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-medium">
+                      {applicant.freelancer_profile?.first_name?.[0] || 'F'}
+                      {applicant.freelancer_profile?.last_name?.[0] || ''}
+                    </div>
+                    <div>
                       <h5 className="font-medium">
-                        {applicant.freelancer_profile ? 
-                          `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}` : 
-                          'Freelancer'
+                        {applicant.freelancer_profile?.first_name && applicant.freelancer_profile?.last_name 
+                          ? `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}`
+                          : `Freelancer ${applicant.freelancer_id}`
                         }
                       </h5>
-                      <Badge variant="default" className="bg-green-600 text-white">
-                        Hired
-                      </Badge>
-                    </div>
-                    {applicant.freelancer_profile?.title && (
-                      <p className="text-sm text-muted-foreground">
-                        {applicant.freelancer_profile.title}
-                      </p>
-                    )}
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Rate: {applicant.freelancer_profile?.hourly_rate ? 
-                        `£${applicant.freelancer_profile.hourly_rate}/${applicant.freelancer_profile.rate_type}` : 
-                        'Not specified'
-                      }
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {applicant.freelancer_profile?.hourly_rate && (
+                          <span>£{applicant.freelancer_profile.hourly_rate}/{applicant.freelancer_profile?.rate_type || 'day'}</span>
+                        )}
+                        {applicant.freelancer_profile?.title && (
+                          <span>• {applicant.freelancer_profile.title}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleProfileView(applicant.freelancer_profile?.user_id || 0)}
-                      data-testid={`button-view-profile-${applicant.freelancer_profile?.user_id}`}
+                      onClick={() => handleProfileView(applicant.freelancer_id)}
+                      data-testid={`button-view-freelancer-${applicant.freelancer_id}`}
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Profile
+                      <Eye className="w-3 h-3 mr-1" />
+                      View Profile
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleMessageFreelancer(applicant.freelancer_profile?.user_id || 0)}
-                      data-testid={`button-message-${applicant.freelancer_profile?.user_id}`}
+                      onClick={() => handleMessageFreelancer(applicant.freelancer_id)}
+                      data-testid={`button-message-freelancer-${applicant.freelancer_id}`}
                     >
-                      <MessageCircle className="w-4 h-4 mr-1" />
+                      <MessageCircle className="w-3 h-3 mr-1" />
                       Message
                     </Button>
                   </div>
