@@ -32,8 +32,8 @@ export function JobCard({
   const [selectedFreelancer, setSelectedFreelancer] = useState<{id: number, name: string} | null>(null);
 
   const handleProfileView = (userId: number) => {
-    // Navigate to freelancers page and highlight the specific freelancer
-    window.open(`/freelancers?highlight=${userId}`, '_blank');
+    // Navigate directly to the freelancer's profile page
+    window.open(`/freelancer-profile/${userId}`, '_blank');
   };
 
   const handleMessageFreelancer = (applicant: JobApplication) => {

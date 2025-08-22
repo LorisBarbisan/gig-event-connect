@@ -37,8 +37,8 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user1_id: senderId,
-          user2_id: recipientId,
+          userOneId: senderId,
+          userTwoId: recipientId,
         }),
       });
 
