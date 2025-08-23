@@ -26,8 +26,8 @@ export const Layout = ({ children }: LayoutProps) => {
   const [location, setLocation] = useLocation();
   const { user, signOut } = useAuth();
   
-  // Initialize notifications hook
-  useNotifications({ userId: user?.id });
+  // Temporarily disable notifications hook to debug black screen
+  // useNotifications({ userId: user?.id });
   
   // Simplified profile handling
   const getDisplayName = () => {
@@ -91,7 +91,8 @@ export const Layout = ({ children }: LayoutProps) => {
               
               {user ? (
                 <div className="flex items-center gap-3">
-                  <NotificationSystem userId={user.id} />
+                  {/* Temporarily disable notification system to debug black screen */}
+                  {/* <NotificationSystem userId={user.id} /> */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex items-center gap-2">
