@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertUserSchema, insertFreelancerProfileSchema, insertRecruiterProfileSchema, insertJobSchema, insertJobApplicationSchema, insertMessageSchema, insertNotificationSchema } from "@shared/schema";
+import { sendVerificationEmail } from "./emailService";
+import { randomBytes } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 
@@ -22,27 +24,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      // Create user (store email in lowercase)
+      // Generate verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationExpires = new Date();
+      verificationExpires.setHours(verificationExpires.getHours() + 24); // 24 hours
+      
+      // Create user (store email in lowercase) - user starts unverified
       const user = await storage.createUser({
         email: email.toLowerCase(),
         password: hashedPassword,
-        role
+        role,
+        email_verification_token: verificationToken,
+        email_verification_expires: verificationExpires
       });
 
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword });
+      // Send verification email
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const emailSent = await sendVerificationEmail(
+        user.email,
+        verificationToken,
+        baseUrl
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send verification email to:', user.email);
+      }
+
+      // Return success message without user data (user must verify email first)
+      res.json({ 
+        message: "Registration successful! Please check your email to verify your account before signing in.",
+        emailSent 
+      });
     } catch (error) {
       console.error("Signup error:", error);
-      // Return temporary user for demo purposes when database is unavailable
+      // Return demo response when database is unavailable
       res.json({ 
-        user: { 
-          id: 1, 
-          email: email?.toLowerCase() || "demo@example.com", 
-          role: role || "freelancer",
-          created_at: new Date(),
-          updated_at: new Date()
-        } 
+        message: "Registration successful! Please check your email to verify your account before signing in.",
+        emailSent: false
       });
     }
   });
@@ -66,6 +84,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Check if email is verified
+      if (!user.email_verified) {
+        return res.status(403).json({ 
+          error: "Please verify your email address before signing in. Check your email for the verification link." 
+        });
+      }
+
       // Check password
       const isValid = await bcrypt.compare(password, user.password);
       
@@ -84,10 +109,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: 1, 
           email: email?.toLowerCase() || "demo@example.com", 
           role: "freelancer",
+          email_verified: true,
           created_at: new Date(),
           updated_at: new Date()
         } 
       });
+    }
+  });
+
+  // Email verification endpoint
+  app.get("/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Invalid Verification Link</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
+            <h1 style="color: #dc2626;">Invalid Verification Link</h1>
+            <p>The verification link is invalid or malformed.</p>
+            <a href="/auth" style="color: #3b82f6;">Return to Sign In</a>
+          </body>
+          </html>
+        `);
+      }
+
+      const isValid = await storage.verifyEmail(token);
+      
+      if (isValid) {
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Email Verified Successfully</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
+            <div style="max-width: 600px; margin: 0 auto;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold; margin: 0 auto 20px;">✓</div>
+              <h1 style="color: #16a34a;">Email Verified Successfully!</h1>
+              <p>Your email address has been verified. You can now sign in to your E8 account.</p>
+              <a href="/auth" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px;">Sign In to E8</a>
+            </div>
+          </body>
+          </html>
+        `);
+      } else {
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Verification Failed</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
+            <h1 style="color: #dc2626;">Verification Failed</h1>
+            <p>The verification link is invalid, expired, or has already been used.</p>
+            <p>Please try registering again or contact support if you continue to have issues.</p>
+            <a href="/auth" style="color: #3b82f6;">Return to Sign In</a>
+          </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Email verification error:", error);
+      return res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Verification Error</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
+          <h1 style="color: #dc2626;">Verification Error</h1>
+          <p>An error occurred while verifying your email. Please try again later.</p>
+          <a href="/auth" style="color: #3b82f6;">Return to Sign In</a>
+        </body>
+        </html>
+      `);
+    }
+  });
+
+  // Resend verification email endpoint
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email.toLowerCase());
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (user.email_verified) {
+        return res.status(400).json({ error: "Email is already verified" });
+      }
+      
+      // Generate new verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationExpires = new Date();
+      verificationExpires.setHours(verificationExpires.getHours() + 24);
+      
+      // Update user with new token
+      await storage.updateUserVerificationToken(user.id, verificationToken, verificationExpires);
+      
+      // Send verification email
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const emailSent = await sendVerificationEmail(
+        user.email,
+        verificationToken,
+        baseUrl
+      );
+      
+      if (emailSent) {
+        res.json({ message: "Verification email sent successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to send verification email" });
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

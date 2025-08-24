@@ -5,9 +5,10 @@ import { User } from '@shared/schema';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any }>;
+  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string; emailSent?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
+  resendVerificationEmail: (email: string) => Promise<{ error: any; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,9 +36,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         method: 'POST',
         body: JSON.stringify({ email, password, role }),
       });
-      setUser(result.user);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      return { error: null };
+      // New signup flow returns message instead of user
+      return { error: null, message: result.message, emailSent: result.emailSent };
     } catch (error) {
       return { error: { message: error instanceof Error ? error.message : 'Signup failed' } };
     }
@@ -63,13 +63,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error: null };
   };
 
+  const resendVerificationEmail = async (email: string) => {
+    try {
+      const result = await apiRequest('/api/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+      return { error: null, message: result.message };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Failed to resend verification email' } };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       loading,
       signUp,
       signIn,
-      signOut
+      signOut,
+      resendVerificationEmail
     }}>
       {children}
     </AuthContext.Provider>

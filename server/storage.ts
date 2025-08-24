@@ -36,8 +36,12 @@ export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  
+  // Email verification methods
+  verifyEmail(token: string): Promise<boolean>;
+  updateUserVerificationToken(userId: number, token: string | null, expires: Date | null): Promise<void>;
   
   // Freelancer profile management
   getFreelancerProfile(userId: number): Promise<FreelancerProfile | undefined>;
@@ -100,14 +104,59 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+  async createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User> {
     const userData = {
       email: user.email,
       password: user.password,
-      role: user.role as 'freelancer' | 'recruiter'
+      role: user.role as 'freelancer' | 'recruiter',
+      email_verified: false,
+      email_verification_token: user.email_verification_token,
+      email_verification_expires: user.email_verification_expires
     };
     const result = await db.insert(users).values(userData).returning();
     return result[0];
+  }
+
+  async verifyEmail(token: string): Promise<boolean> {
+    try {
+      const result = await db.select().from(users)
+        .where(eq(users.email_verification_token, token))
+        .limit(1);
+      
+      if (!result[0]) return false;
+      
+      const user = result[0];
+      
+      // Check if token has expired
+      if (user.email_verification_expires && new Date() > user.email_verification_expires) {
+        return false;
+      }
+      
+      // Update user as verified and clear verification token
+      await db.update(users)
+        .set({
+          email_verified: true,
+          email_verification_token: null,
+          email_verification_expires: null,
+          updated_at: new Date()
+        })
+        .where(eq(users.id, user.id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      return false;
+    }
+  }
+
+  async updateUserVerificationToken(userId: number, token: string | null, expires: Date | null): Promise<void> {
+    await db.update(users)
+      .set({
+        email_verification_token: token,
+        email_verification_expires: expires,
+        updated_at: new Date()
+      })
+      .where(eq(users.id, userId));
   }
 
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {

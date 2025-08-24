@@ -11,10 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Building2 } from 'lucide-react';
 
 export default function Auth() {
-  const { user, signUp, signIn } = useAuth();
+  const { user, signUp, signIn, resendVerificationEmail } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
+  const [showResendOption, setShowResendOption] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
@@ -88,7 +90,7 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      const { error } = await signUp(signUpData.email, signUpData.password, signUpData.role);
+      const { error, message, emailSent } = await signUp(signUpData.email, signUpData.password, signUpData.role);
       
       if (error) {
         toast({
@@ -98,8 +100,18 @@ export default function Auth() {
         });
       } else {
         toast({
-          title: "Welcome to E8!",
-          description: "Your account has been created successfully."
+          title: "Registration Successful!",
+          description: message || "Please check your email to verify your account before signing in."
+        });
+        // Store email for potential resend verification
+        setPendingVerificationEmail(signUpData.email);
+        setShowResendOption(true);
+        // Clear the form after successful signup
+        setSignUpData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'freelancer'
         });
       }
     } catch (err) {
@@ -119,13 +131,51 @@ export default function Auth() {
     const { error } = await signIn(signInData.email, signInData.password);
     
     if (error) {
+      let description = error.message;
+      // Check if it's an email verification error
+      if (error.message.includes("verify your email")) {
+        description = "Please verify your email address before signing in. Check your email for the verification link.";
+        setPendingVerificationEmail(signInData.email);
+        setShowResendOption(true);
+      }
       toast({
         title: "Sign In Failed",
-        description: error.message,
+        description: description,
         variant: "destructive"
       });
     }
     setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingVerificationEmail) return;
+    
+    setLoading(true);
+    try {
+      const { error, message } = await resendVerificationEmail(pendingVerificationEmail);
+      
+      if (error) {
+        toast({
+          title: "Failed to Resend",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Verification Email Sent",
+          description: message || "Please check your email for the verification link."
+        });
+        setShowResendOption(false);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to resend verification email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -283,6 +333,36 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Resend Verification Email Option */}
+        {showResendOption && pendingVerificationEmail && (
+          <Card className="mt-4 border-yellow-200 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-sm text-yellow-800 mb-3">
+                  Need to verify your email? We can resend the verification link to:
+                </p>
+                <p className="font-medium text-yellow-900 mb-4">{pendingVerificationEmail}</p>
+                <Button 
+                  onClick={handleResendVerification}
+                  disabled={loading}
+                  variant="outline"
+                  className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                  data-testid="button-resend-verification"
+                >
+                  {loading ? "Sending..." : "Resend Verification Email"}
+                </Button>
+                <button
+                  onClick={() => setShowResendOption(false)}
+                  className="ml-2 text-sm text-yellow-600 hover:text-yellow-800 underline"
+                  data-testid="button-dismiss-resend"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
