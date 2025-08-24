@@ -48,12 +48,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!emailSent) {
         console.error('Failed to send verification email to:', user.email);
+        console.log('TEMP DEV INFO: Verification URL:', `${baseUrl}/verify-email?token=${verificationToken}`);
       }
 
       // Return success message without user data (user must verify email first)
       res.json({ 
-        message: "Registration successful! Please check your email to verify your account before signing in.",
-        emailSent 
+        message: emailSent 
+          ? "Registration successful! Please check your email to verify your account before signing in."
+          : "Registration successful! Email service is temporarily unavailable. Please contact support or try the verification link in the console logs.",
+        emailSent,
+        // DEV ONLY: Include verification URL in response when email fails
+        ...(process.env.NODE_ENV === 'development' && !emailSent && {
+          devVerificationUrl: `${baseUrl}/verify-email?token=${verificationToken}`
+        })
       });
     } catch (error) {
       console.error("Signup error:", error);

@@ -5,7 +5,7 @@ import { User } from '@shared/schema';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string; emailSent?: boolean }>;
+  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string; emailSent?: boolean; devVerificationUrl?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   resendVerificationEmail: (email: string) => Promise<{ error: any; message?: string }>;
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         body: JSON.stringify({ email, password, role }),
       });
       // New signup flow returns message instead of user
-      return { error: null, message: result.message, emailSent: result.emailSent };
+      return { error: null, message: result.message, emailSent: result.emailSent, devVerificationUrl: result.devVerificationUrl };
     } catch (error) {
       return { error: { message: error instanceof Error ? error.message : 'Signup failed' } };
     }

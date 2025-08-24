@@ -25,8 +25,11 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html,
     });
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('SendGrid email error:', error);
+    if (error.response && error.response.body && error.response.body.errors) {
+      console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+    }
     return false;
   }
 }
@@ -116,7 +119,7 @@ The E8 Team
 
   return await sendEmail({
     to: email,
-    from: 'noreply@e8platform.com', // You may need to verify this domain with SendGrid
+    from: 'noreply@replit.dev', // Using Replit's verified domain
     subject: 'Verify Your E8 Account',
     html: htmlContent,
     text: textContent,

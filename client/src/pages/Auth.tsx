@@ -90,7 +90,7 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      const { error, message, emailSent } = await signUp(signUpData.email, signUpData.password, signUpData.role);
+      const { error, message, emailSent, devVerificationUrl } = await signUp(signUpData.email, signUpData.password, signUpData.role);
       
       if (error) {
         toast({
@@ -99,13 +99,28 @@ export default function Auth() {
           variant: "destructive"
         });
       } else {
-        toast({
-          title: "Registration Successful!",
-          description: message || "Please check your email to verify your account before signing in."
-        });
+        // Show different messages based on email delivery status
+        if (emailSent) {
+          toast({
+            title: "Registration Successful!",
+            description: message || "Please check your email to verify your account before signing in."
+          });
+        } else {
+          toast({
+            title: "Registration Successful!",
+            description: "Account created but email service is temporarily unavailable. Check the browser console for a direct verification link.",
+            variant: "default"
+          });
+          // Log the dev URL for easy access
+          if (devVerificationUrl) {
+            console.log('🔗 VERIFICATION LINK:', devVerificationUrl);
+            console.log('👆 Click the link above to verify your email');
+          }
+        }
+        
         // Store email for potential resend verification
         setPendingVerificationEmail(signUpData.email);
-        setShowResendOption(true);
+        setShowResendOption(!emailSent); // Only show resend option if email failed
         // Clear the form after successful signup
         setSignUpData({
           email: '',
