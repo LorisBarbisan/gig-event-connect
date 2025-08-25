@@ -117,28 +117,12 @@ The E8 Team
 © 2024 E8. All rights reserved.
   `;
 
-  // Try different sender addresses - SendGrid requires verified sender identity
-  const senderAddresses = [
-    'noreply@replit.dev', // Replit's verified domain
-    'test@example.com',   // Common test address
-    'noreply@sendgrid.net' // SendGrid's own domain
-  ];
-  
-  for (const fromAddress of senderAddresses) {
-    const success = await sendEmail({
-      to: email,
-      from: fromAddress,
-      subject: 'Verify Your E8 Account',
-      html: htmlContent,
-      text: textContent,
-    });
-    
-    if (success) {
-      console.log(`Email sent successfully using from address: ${fromAddress}`);
-      return true;
-    }
-  }
-  
-  console.log('All sender addresses failed.');
-  return false;
+  // Use verified SendGrid sender address
+  return await sendEmail({
+    to: email,
+    from: 'regristration@eventlink.one', // Your verified SendGrid sender
+    subject: 'Verify Your E8 Account',
+    html: htmlContent,
+    text: textContent,
+  });
 }
