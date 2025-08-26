@@ -38,6 +38,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  deleteUserAccount(userId: number): Promise<void>;
   
   // Email verification methods
   verifyEmail(token: string): Promise<boolean>;
@@ -571,6 +572,54 @@ export class DatabaseStorage implements IStorage {
           sql`${notifications.expires_at} < NOW()`
         )
       );
+  }
+
+  async deleteUserAccount(userId: number): Promise<void> {
+    try {
+      // Start a transaction to ensure all deletions succeed or all fail
+      await db.transaction(async (tx) => {
+        // 1. Delete all conversations where user is a participant
+        // This will cascade delete all messages in those conversations
+        await tx.delete(conversations)
+          .where(
+            or(
+              eq(conversations.participant_one_id, userId),
+              eq(conversations.participant_two_id, userId)
+            )
+          );
+
+        // 2. Delete all job applications by this user
+        await tx.delete(job_applications)
+          .where(eq(job_applications.freelancer_id, userId));
+
+        // 3. Delete all jobs posted by this user (if recruiter)
+        // This will cascade delete all job applications for those jobs
+        await tx.delete(jobs)
+          .where(eq(jobs.recruiter_id, userId));
+
+        // 4. Delete all notifications for this user
+        await tx.delete(notifications)
+          .where(eq(notifications.user_id, userId));
+
+        // 5. Delete user profiles (freelancer or recruiter)
+        // These should cascade delete due to foreign key constraints
+        await tx.delete(freelancer_profiles)
+          .where(eq(freelancer_profiles.user_id, userId));
+        
+        await tx.delete(recruiter_profiles)
+          .where(eq(recruiter_profiles.user_id, userId));
+
+        // 6. Finally, delete the user record
+        // This ensures referential integrity is maintained
+        await tx.delete(users)
+          .where(eq(users.id, userId));
+      });
+
+      console.log(`Successfully deleted all data for user ID: ${userId}`);
+    } catch (error) {
+      console.error('Error during account deletion:', error);
+      throw new Error('Failed to delete user account. Please try again.');
+    }
   }
 }
 

@@ -265,6 +265,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Account deletion endpoint
+  app.delete("/api/auth/delete-account", async (req, res) => {
+    try {
+      const { userId, password } = req.body;
+      
+      if (!userId || !password) {
+        return res.status(400).json({ error: "User ID and password are required" });
+      }
+      
+      // Get user to verify password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Verify password before deletion
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ error: "Incorrect password" });
+      }
+      
+      // Delete all user data
+      await storage.deleteUserAccount(userId);
+      
+      res.json({ 
+        message: "Account deleted successfully. All your data has been permanently removed." 
+      });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      if (error instanceof Error && error.message.includes('Failed to delete')) {
+        res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to delete account. Please try again or contact support." });
+      }
+    }
+  });
+
   // User profile routes  
   app.get("/api/users/:id", async (req, res) => {
     try {

@@ -25,6 +25,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
     confirmPassword: '',
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
 
   const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -76,12 +78,49 @@ export function SettingsForm({ user }: SettingsFormProps) {
   };
 
   const handleDeleteAccount = async () => {
-    // This would need to be implemented in the backend
-    toast({
-      title: 'Feature unavailable',
-      description: 'Account deletion is not yet implemented.',
-      variant: 'destructive',
-    });
+    if (!deletePassword) {
+      toast({
+        title: 'Password required',
+        description: 'Please enter your password to confirm account deletion.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      await apiRequest('/api/auth/delete-account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          password: deletePassword,
+        }),
+      });
+
+      toast({
+        title: 'Account deleted',
+        description: 'Your account and all associated data have been permanently deleted.',
+      });
+
+      // Clear the password field
+      setDeletePassword('');
+      setShowDeleteDialog(false);
+      
+      // Redirect to home page after a delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+      
+    } catch (error: any) {
+      toast({
+        title: 'Deletion failed',
+        description: error.message || 'Failed to delete account. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -279,15 +318,34 @@ export function SettingsForm({ user }: SettingsFormProps) {
                       <li>Message history</li>
                       <li>Uploaded files and documents</li>
                     </ul>
+                    <div className="mt-4">
+                      <Label htmlFor="delete-password">Enter your password to confirm:</Label>
+                      <Input
+                        id="delete-password"
+                        type="password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        placeholder="Your password"
+                        className="mt-2"
+                        data-testid="input-delete-password"
+                      />
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel 
+                    onClick={() => setDeletePassword('')}
+                    disabled={isDeletingAccount}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={handleDeleteAccount}
+                    disabled={!deletePassword || isDeletingAccount}
+                    data-testid="button-confirm-delete"
                   >
-                    Yes, delete my account
+                    {isDeletingAccount ? 'Deleting...' : 'Yes, delete my account'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
