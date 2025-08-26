@@ -53,7 +53,7 @@ export const HeroSection = () => {
                 </Link>
               </Button>
               
-              <Button variant="outline" size="lg" className="text-lg px-8 border-2 hover:bg-muted/50" asChild>
+              <Button variant="outline" size="lg" className="text-lg px-8 border-2 hover:bg-muted/50 hover:text-foreground" asChild>
                 <Link to="/jobs">
                   Browse Opportunities
                   <Briefcase className="w-5 h-5 ml-2" />
