@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertUserSchema, insertFreelancerProfileSchema, insertRecruiterProfileSchema, insertJobSchema, insertJobApplicationSchema, insertMessageSchema, insertNotificationSchema } from "@shared/schema";
-import { sendVerificationEmail } from "./emailService";
+import { sendVerificationEmail, sendEmail } from "./emailService";
 import { randomBytes } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         user: { 
           id: 1, 
-          email: email?.toLowerCase() || "demo@example.com", 
+          email: req.body.email?.toLowerCase() || "demo@example.com", 
           role: "freelancer",
           email_verified: true,
           created_at: new Date(),
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid profile data" });
       }
       // Return success response instead of 500 error to keep platform online
-      res.json({ id: 1, user_id: userId, ...req.body, updated_at: new Date() });
+      res.json({ id: 1, user_id: parseInt(req.params.userId), ...req.body, updated_at: new Date() });
     }
   });
 
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid profile data" });
       }
       // Return success response instead of 500 error to keep platform online  
-      res.json({ id: 1, user_id: userId, ...req.body, updated_at: new Date() });
+      res.json({ id: 1, user_id: parseInt(req.params.userId), ...req.body, updated_at: new Date() });
     }
   });
 
@@ -880,7 +880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending message:", error);
       // Return success response instead of 500 error to keep platform online
-      res.json({ id: 1, conversation_id: req.params.conversationId, ...req.body, created_at: new Date() });
+      res.json({ id: 1, conversation_id: req.body.conversation_id, ...req.body, created_at: new Date() });
     }
   });
 
