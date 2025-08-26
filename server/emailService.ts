@@ -17,13 +17,21 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    await mailService.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
-    });
+    };
+
+    if (params.text) {
+      emailData.text = params.text;
+    }
+    
+    if (params.html) {
+      emailData.html = params.html;
+    }
+
+    await mailService.send(emailData);
     console.log(`✅ Email sent successfully via SendGrid to: ${params.to}`);
     return true;
   } catch (error: any) {
@@ -56,52 +64,150 @@ export async function sendVerificationEmail(
     <html>
     <head>
       <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Verify Your E8 Account</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .logo { width: 120px; height: 120px; margin: 0 auto 20px; }
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          line-height: 1.6; 
+          color: #333; 
+          margin: 0; 
+          padding: 0; 
+          background-color: #f8fafc;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 0 auto; 
+          padding: 40px 20px; 
+          background-color: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 40px; 
+        }
+        .logo { 
+          margin: 0 auto 24px; 
+          display: block;
+        }
+        h1 { 
+          color: #1e293b; 
+          font-size: 32px; 
+          font-weight: 700; 
+          margin: 0 0 16px 0;
+          letter-spacing: -0.5px;
+        }
+        .content {
+          text-align: center;
+          padding: 0 20px;
+        }
+        .content p { 
+          font-size: 16px; 
+          line-height: 1.7; 
+          margin-bottom: 24px; 
+          color: #475569;
+        }
+        .button-container {
+          margin: 40px 0;
+        }
         .button { 
           display: inline-block; 
-          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-          color: white; 
-          padding: 12px 30px; 
+          background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+          color: white !important; 
+          padding: 16px 32px; 
           text-decoration: none; 
-          border-radius: 8px; 
-          font-weight: bold;
+          border-radius: 12px; 
+          font-weight: 600;
+          font-size: 16px;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          transition: all 0.2s ease;
+        }
+        .button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+        .link-text {
+          font-size: 14px;
+          color: #64748b;
+          word-break: break-all;
+          background-color: #f1f5f9;
+          padding: 12px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
           margin: 20px 0;
         }
-        .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        .warning {
+          background-color: #fef3c7;
+          border: 1px solid #f59e0b;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 24px 0;
+          color: #92400e;
+          font-weight: 500;
+        }
+        .footer { 
+          margin-top: 48px; 
+          padding-top: 24px;
+          border-top: 1px solid #e2e8f0;
+          text-align: center;
+        }
+        .footer p {
+          font-size: 14px; 
+          color: #64748b;
+          margin: 8px 0;
+        }
+        .footer .signature {
+          font-weight: 600;
+          color: #475569;
+        }
+        @media (max-width: 640px) {
+          .container {
+            margin: 0;
+            border-radius: 0;
+            padding: 20px;
+          }
+          h1 {
+            font-size: 28px;
+          }
+          .button {
+            padding: 14px 24px;
+            font-size: 15px;
+          }
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
           <div class="logo">
-            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold;">E8</div>
+            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold; margin: 0 auto; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);">E8</div>
           </div>
           <h1>Welcome to E8!</h1>
         </div>
         
-        <p>Thank you for joining E8, the premier platform for event industry professionals.</p>
-        
-        <p>To complete your registration and start connecting with opportunities, please verify your email address by clicking the button below:</p>
-        
-        <div style="text-align: center;">
-          <a href="${verificationUrl}" class="button">Verify Email Address</a>
+        <div class="content">
+          <p>Thank you for joining <strong>E8</strong>, the premier platform for event industry professionals.</p>
+          
+          <p>To complete your registration and start connecting with exciting opportunities, please verify your email address by clicking the button below:</p>
+          
+          <div class="button-container">
+            <a href="${verificationUrl}" class="button">Verify Email Address</a>
+          </div>
+          
+          <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+          <div class="link-text">${verificationUrl}</div>
+          
+          <div class="warning">
+            <strong>⏰ This verification link will expire in 24 hours.</strong>
+          </div>
+          
+          <p style="font-size: 14px; color: #64748b;">If you didn't create an account with E8, you can safely ignore this email.</p>
         </div>
         
-        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-        <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-        
-        <p><strong>This verification link will expire in 24 hours.</strong></p>
-        
-        <p>If you didn't create an account with E8, you can safely ignore this email.</p>
-        
         <div class="footer">
-          <p>Best regards,<br>The E8 Team</p>
-          <p>© 2024 E8. All rights reserved.</p>
+          <p class="signature">Best regards,<br><strong>The E8 Team</strong></p>
+          <p>© 2025 E8. All rights reserved.</p>
         </div>
       </div>
     </body>
