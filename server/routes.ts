@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!emailSent) {
         console.error('Failed to send verification email to:', user.email);
         return res.status(500).json({ 
-          error: "Failed to send verification email. Please try again or contact support." 
+          error: "Failed to send verification email. This may be due to email service configuration. Please contact support if this persists." 
         });
       }
 
@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         console.error('Failed to resend verification email to:', user.email);
         res.status(500).json({ 
-          error: "Failed to send verification email. Please try again or contact support." 
+          error: "Failed to send verification email. This may be due to email service configuration. Please contact support if this persists." 
         });
       }
     } catch (error) {

@@ -38,6 +38,19 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.error('SendGrid email error:', error);
     if (error.response && error.response.body && error.response.body.errors) {
       console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+      
+      // Check for specific SendGrid errors
+      const errors = error.response.body.errors;
+      for (const err of errors) {
+        if (err.message && err.message.includes('does not match a verified Sender Identity')) {
+          console.error('❌ SENDGRID ERROR: Sender email address not verified');
+          console.error('📧 To fix this:');
+          console.error('   1. Go to SendGrid dashboard');
+          console.error('   2. Navigate to Settings > Sender Authentication');
+          console.error('   3. Verify the sender email:', params.from);
+          console.error('   4. Or use a verified sender email address');
+        }
+      }
     }
     
     // Development fallback: If in development and SendGrid fails, simulate successful email delivery
