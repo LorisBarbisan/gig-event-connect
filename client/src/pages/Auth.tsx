@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Building2 } from 'lucide-react';
 
 export default function Auth() {
-  const { user, signUp, signIn, resendVerificationEmail } = useAuth();
+  const { user, signUp, signIn, resendVerificationEmail, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
@@ -35,13 +35,13 @@ export default function Auth() {
 
   // Redirect if already authenticated (but only after loading is complete to ensure validation is done)
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !authLoading) {
       setLocation('/dashboard');
     }
-  }, [user, loading, setLocation]);
+  }, [user, authLoading, setLocation]);
 
   // Show loading during validation to prevent premature redirects
-  if (loading) {
+  if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
