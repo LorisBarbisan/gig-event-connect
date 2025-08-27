@@ -38,8 +38,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email_verification_expires: verificationExpires
       });
 
-      // Send verification email
-      const baseUrl = req.protocol + '://' + req.get('host');
+      // Send verification email using proper Replit domain
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? `${req.protocol}://${req.get('host')}`
+        : `https://${req.get('host')}`;
       const emailSent = await sendVerificationEmail(
         user.email,
         verificationToken,
@@ -231,8 +233,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user with new token
       await storage.updateUserVerificationToken(user.id, verificationToken, verificationExpires);
       
-      // Send verification email
-      const baseUrl = req.protocol + '://' + req.get('host');
+      // Send verification email using proper Replit domain
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? `${req.protocol}://${req.get('host')}`
+        : `https://${req.get('host')}`;
       const emailSent = await sendVerificationEmail(
         user.email,
         verificationToken,

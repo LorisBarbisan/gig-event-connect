@@ -21,6 +21,18 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: params.from,
       subject: params.subject,
+      tracking_settings: {
+        click_tracking: {
+          enable: false,
+          enable_text: false
+        },
+        open_tracking: {
+          enable: false
+        },
+        subscription_tracking: {
+          enable: false
+        }
+      }
     };
 
     if (params.text) {
