@@ -51,7 +51,7 @@ export const HeroSection = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-blue-500 hover:bg-blue-600 text-white text-lg px-8 transition-all duration-200" asChild>
-                <Link to="/auth?tab=signup">
+                <Link to="/auth?tab=signup" data-testid="button-get-started">
                   Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>

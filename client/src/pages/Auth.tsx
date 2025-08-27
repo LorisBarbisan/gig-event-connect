@@ -19,9 +19,10 @@ export default function Auth() {
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [showDirectLink, setShowDirectLink] = useState<string | null>(null);
   
-  // Check URL params to determine initial tab
+  // Check URL params to determine initial tab - force signup if specified
   const urlParams = new URLSearchParams(window.location.search);
-  const initialTab = urlParams.get('tab') === 'signup' ? 'signup' : 'signin';
+  const tabParam = urlParams.get('tab');
+  const initialTab = tabParam === 'signup' ? 'signup' : 'signin';
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
