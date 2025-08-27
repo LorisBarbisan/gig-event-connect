@@ -13,13 +13,12 @@ export default function FreelancerProfile() {
 
   // Fetch freelancer profile data
   const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['/api/freelancers', userId],
+    queryKey: ['/api/freelancer', userId],
     queryFn: async () => {
       if (!userId) throw new Error('No user ID provided');
-      const response = await fetch(`/api/freelancers`);
+      const response = await fetch(`/api/freelancer/${userId}`);
       if (!response.ok) throw new Error('Failed to fetch freelancer data');
-      const freelancers = await response.json();
-      return freelancers.find((f: any) => f.user_id === userId);
+      return await response.json();
     },
     enabled: !!userId,
   });
