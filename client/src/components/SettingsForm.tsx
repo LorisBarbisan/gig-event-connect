@@ -100,22 +100,23 @@ export function SettingsForm({ user }: SettingsFormProps) {
         }),
       });
 
-      toast({
-        title: 'Account deleted',
-        description: 'Your account and all associated data have been permanently deleted.',
-      });
-
-      // Clear the password field
+      // Clear the password field and close dialog immediately
       setDeletePassword('');
       setShowDeleteDialog(false);
       
       // Immediately log out the user and clear their session
       await signOut();
       
-      // Redirect to landing page immediately after logout
+      // Show success message briefly, then redirect
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted. Redirecting...',
+      });
+      
+      // Redirect to landing page immediately
       setTimeout(() => {
         window.location.href = '/';
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
       toast({
