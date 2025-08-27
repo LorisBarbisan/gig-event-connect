@@ -422,6 +422,9 @@ export class DatabaseStorage implements IStorage {
         email: row.otherUserEmail || '',
         role: (row.otherUserRole as 'freelancer' | 'recruiter') || 'freelancer',
         password: '',
+        email_verified: false,
+        email_verification_token: null,
+        email_verification_expires: null,
         created_at: new Date(),
         updated_at: new Date()
       }
@@ -467,6 +470,9 @@ export class DatabaseStorage implements IStorage {
         email: row.senderEmail || '',
         role: (row.senderRole as 'freelancer' | 'recruiter') || 'freelancer',
         password: '',
+        email_verified: false,
+        email_verification_token: null,
+        email_verification_expires: null,
         created_at: new Date(),
         updated_at: new Date()
       }
@@ -512,7 +518,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const result = await db.insert(notifications).values([notification]).returning();
+    const result = await db.insert(notifications).values({
+      ...notification,
+      type: notification.type as "application_update" | "new_message" | "job_update" | "profile_view" | "system"
+    }).returning();
     return result[0];
   }
 
