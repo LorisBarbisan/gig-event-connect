@@ -8,6 +8,7 @@ import { sendVerificationEmail, sendEmail } from "./emailService";
 import { randomBytes } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { nukeAllUserData } from "./clearAllUserData";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -1063,6 +1064,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.sendStatus(500);
     }
   });
+
+  // DEVELOPMENT ONLY: Nuclear cleanup endpoint (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    app.post("/api/nuclear-cleanup", async (req, res) => {
+      try {
+        console.log('🚨 NUCLEAR CLEANUP REQUESTED VIA API');
+        await nukeAllUserData();
+        res.json({ message: "Nuclear cleanup completed - all user data eliminated" });
+      } catch (error) {
+        console.error("Nuclear cleanup API error:", error);
+        res.status(500).json({ error: "Cleanup failed" });
+      }
+    });
+  }
 
   const httpServer = createServer(app);
 

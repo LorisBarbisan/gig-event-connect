@@ -29,7 +29,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
   useEffect(() => {
     const validateStoredUser = async () => {
       // Version-based cache clearing
-      const APP_VERSION = "2025-08-27-optimized"; 
+      const APP_VERSION = "2025-08-27-nuclear-reset-v2"; 
       const storedVersion = localStorage.getItem('app_version');
       
       if (storedVersion !== APP_VERSION) {
