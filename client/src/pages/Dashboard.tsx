@@ -24,6 +24,14 @@ export default function Dashboard() {
     
     if (!user) {
       // Redirect to auth page if not logged in
+      console.log('Dashboard: No user found, redirecting to auth');
+      setLocation('/auth');
+      return;
+    }
+    
+    // Additional validation: check if user object has required fields
+    if (!user.id || !user.email || !user.role) {
+      console.log('Dashboard: Invalid user object, redirecting to auth');
       setLocation('/auth');
       return;
     }

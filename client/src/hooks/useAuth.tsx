@@ -19,33 +19,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // AGGRESSIVE CACHE CLEARING: First, immediately clear any existing auth state
+    const clearAuthState = () => {
+      setUser(null);
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
+    };
+
     // Check for stored user session and validate it against the server
     const validateStoredUser = async () => {
+      // Check if this is a fresh deployment by looking for a version mismatch
+      const APP_VERSION = "2025-08-27-cache-fix"; // Change this when we need to force clear cache
+      const storedVersion = localStorage.getItem('app_version');
+      
+      if (storedVersion !== APP_VERSION) {
+        console.log('App version mismatch, clearing all cache');
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('app_version', APP_VERSION);
+      }
+      
+      // Start with cleared state
+      clearAuthState();
+      
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
+          console.log('Attempting to validate cached user:', parsedUser.id);
+          
           // Validate the user still exists on the server
           try {
             const response = await apiRequest(`/api/users/${parsedUser.id}`);
             // Only set user if we get a valid response with user data
-            if (response && response.id && response.email) {
+            if (response && response.id && response.email && response.id == parsedUser.id) {
+              console.log('User validation successful, setting user');
               setUser(parsedUser);
             } else {
               // Invalid response, clear cache
               console.log('Invalid user validation response, clearing cache');
-              localStorage.removeItem('user');
-              setUser(null);
+              clearAuthState();
             }
           } catch (error) {
             // User no longer exists on server or any API error, clear cache
             console.log('User validation failed, clearing cache:', error);
-            localStorage.removeItem('user');
-            setUser(null);
+            clearAuthState();
           }
         } catch (error) {
-          localStorage.removeItem('user');
-          setUser(null);
+          console.log('Error parsing cached user, clearing cache:', error);
+          clearAuthState();
         }
       }
       setLoading(false);
@@ -106,6 +128,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.clear();
     // Reset user state
     setUser(null);
+    // Force reload to ensure clean state
+    window.location.reload();
   };
 
   return (
