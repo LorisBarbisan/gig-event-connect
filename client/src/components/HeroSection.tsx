@@ -65,21 +65,7 @@ export const HeroSection = () => {
               </Button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 pt-8 border-t">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">100+</div>
-                <div className="text-sm text-muted-foreground">Event Professionals</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">50+</div>
-                <div className="text-sm text-muted-foreground">Successful Placements</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">25+</div>
-                <div className="text-sm text-muted-foreground">Partner Companies</div>
-              </div>
-            </div>
+
           </div>
 
           {/* Right Column - Image & Cards */}
