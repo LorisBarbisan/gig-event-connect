@@ -9,7 +9,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import e8Logo from "@assets/E8 LOGO_1756038316799.png";
 // E8 Logo component using the authentic logo image
-const EvenLinkLogo = ({ size = 48 }: { size?: number }) => (
+const EventLinkLogo = ({ size = 48 }: { size?: number }) => (
   <img 
     src={e8Logo} 
     alt="E8 Logo" 
@@ -50,8 +50,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3" data-testid="logo-header">
-              <EvenLinkLogo size={48} />
-              <span className="text-2xl font-bold text-foreground">EvenLink</span>
+              <EventLinkLogo size={48} />
+              <span className="text-2xl font-bold text-foreground">EventLink</span>
             </Link>
 
             {/* Navigation */}
@@ -169,8 +169,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <EvenLinkLogo size={40} />
-                <span className="font-semibold text-lg">EvenLink</span>
+                <EventLinkLogo size={40} />
+                <span className="font-semibold text-lg">EventLink</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Connecting technical professionals with event opportunities in the corporate events sector.
