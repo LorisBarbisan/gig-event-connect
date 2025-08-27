@@ -206,7 +206,7 @@ export async function sendVerificationEmail(
       <div class="container">
         <div class="header">
           <div class="logo">
-            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold; margin: 0 auto; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2); text-align: center; line-height: 1;">E8</div>
+            <img src="${baseUrl}/attached_assets/E8 LOGO_1756038316799.png" alt="E8 Logo" style="width: 120px; height: 120px; display: block; margin: 0 auto; border-radius: 20px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);" />
           </div>
           <h1>Welcome to EventLink!</h1>
         </div>
