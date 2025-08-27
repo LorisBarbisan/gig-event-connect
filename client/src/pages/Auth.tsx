@@ -18,6 +18,10 @@ export default function Auth() {
   const [showResendOption, setShowResendOption] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [showDirectLink, setShowDirectLink] = useState<string | null>(null);
+  
+  // Check URL params to determine initial tab
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') === 'signup' ? 'signup' : 'signin';
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
@@ -215,7 +219,7 @@ export default function Auth() {
             <CardTitle className="text-center">Get Started</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={initialTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
