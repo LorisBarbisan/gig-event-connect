@@ -19,10 +19,12 @@ export default function Auth() {
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [showDirectLink, setShowDirectLink] = useState<string | null>(null);
   
-  // Check URL params to determine initial tab - force signup if specified
+  // Check URL params to determine initial tab - force signup if specified  
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
+  console.log('URL tab parameter:', tabParam); // Debug log
   const initialTab = tabParam === 'signup' ? 'signup' : 'signin';
+  console.log('Initial tab set to:', initialTab); // Debug log
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
@@ -267,7 +269,7 @@ export default function Auth() {
             <CardTitle className="text-center">Get Started</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={initialTab} className="w-full">
+            <Tabs value={initialTab} defaultValue={initialTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
