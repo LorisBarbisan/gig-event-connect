@@ -28,6 +28,20 @@ export default function Auth() {
     console.log('Initial tab set to:', initialTab);
     return initialTab;
   });
+
+  // Re-check URL parameters on component mount and when URL changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    console.log('Effect - URL tab parameter:', tabParam);
+    if (tabParam === 'signup') {
+      console.log('Effect - Setting tab to signup');
+      setActiveTab('signup');
+    } else {
+      console.log('Effect - Setting tab to signin');
+      setActiveTab('signin');
+    }
+  }, []);
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',

@@ -147,7 +147,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   </Button>
                   
                   <Button size="sm" className="bg-primary hover:bg-primary-hover text-white" asChild>
-                    <Link to="/auth">Get Started</Link>
+                    <Link to="/auth?tab=signup">Get Started</Link>
                   </Button>
                 </>
               )}
@@ -195,7 +195,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     Create Profile
                   </button>
                 </li>
-                <li><Link to="/auth" className="hover:text-foreground">Sign Up</Link></li>
+                <li><Link to="/auth?tab=signup" className="hover:text-foreground">Sign Up</Link></li>
               </ul>
             </div>
             
@@ -217,7 +217,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     Post a Job
                   </button>
                 </li>
-                <li><Link to="/auth" className="hover:text-foreground">Get Started</Link></li>
+                <li><Link to="/auth?tab=signup" className="hover:text-foreground">Get Started</Link></li>
               </ul>
             </div>
             
