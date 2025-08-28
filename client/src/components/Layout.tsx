@@ -49,7 +49,15 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3" data-testid="logo-header">
+            <Link 
+              to="/" 
+              className="flex items-center space-x-3" 
+              data-testid="logo-header"
+              onClick={(e) => {
+                e.preventDefault();
+                setLocation('/');
+              }}
+            >
               <EventLinkLogo size={48} />
               <span className="text-2xl font-bold text-foreground">EventLink</span>
             </Link>
@@ -95,7 +103,12 @@ export const Layout = ({ children }: LayoutProps) => {
                   {/* <NotificationSystem userId={user.id} /> */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        data-testid="user-menu-trigger"
+                      >
                         <Avatar className="w-6 h-6">
                           <AvatarFallback className="bg-gradient-primary text-white text-xs">
                             {getInitials()}
@@ -104,7 +117,7 @@ export const Layout = ({ children }: LayoutProps) => {
                         <span className="hidden md:inline">{getDisplayName()}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
                       <Link to="/dashboard" className="flex items-center gap-2 w-full">
                         <UserCircle className="w-4 h-4" />
