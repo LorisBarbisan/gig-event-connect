@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for stored user session and validate it against the server
     const validateStoredUser = async () => {
       // Check if this is a fresh deployment by looking for a version mismatch
-      const APP_VERSION = "2025-08-27-nuclear-reset-v2"; // Change this when we need to force clear cache
+      const APP_VERSION = "2025-08-28-auth-fix-v1"; // Change this when we need to force clear cache
       const storedVersion = localStorage.getItem('app_version');
       
       if (storedVersion !== APP_VERSION) {
@@ -37,10 +37,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.clear();
         sessionStorage.clear();
         localStorage.setItem('app_version', APP_VERSION);
+        setLoading(false);
+        return;
       }
-      
-      // Start with cleared state
-      clearAuthState();
       
       const storedUser = localStorage.getItem('user');
       if (storedUser) {

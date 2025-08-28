@@ -200,8 +200,10 @@ export default function Auth() {
       
       if (response.ok) {
         const data = await response.json();
-        // Successful signin - handled by useAuth hook
-        window.location.reload(); // Force refresh to trigger auth state update
+        // Store user data and redirect to dashboard
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setLocation('/dashboard');
+        return;
       } else {
         const errorData = await response.json();
         let description = errorData.error;
