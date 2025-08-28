@@ -200,8 +200,9 @@ export default function Auth() {
       
       if (response.ok) {
         const data = await response.json();
-        // Store user data and redirect to dashboard
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Store user data with timestamp for fresh login detection
+        const userWithTimestamp = { ...data.user, timestamp: Date.now() };
+        localStorage.setItem('user', JSON.stringify(userWithTimestamp));
         // Also update app version to prevent cache clearing
         localStorage.setItem('app_version', '2025-08-28-auth-fix-v2');
         setLocation('/dashboard');

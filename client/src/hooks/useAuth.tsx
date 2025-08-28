@@ -50,22 +50,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const parsedUser = JSON.parse(storedUser);
           console.log('Attempting to validate cached user:', parsedUser.id);
           
-          // Validate the user still exists on the server
-          try {
-            const response = await apiRequest(`/api/users/${parsedUser.id}`);
-            // Only set user if we get a valid response with user data
-            if (response && response.id && response.email && response.id == parsedUser.id) {
-              console.log('User validation successful, setting user');
+          // For fresh logins, trust the stored user data without validation
+          // Only validate if the data is old (more than 5 minutes)
+          const now = Date.now();
+          const userTimestamp = parsedUser.timestamp || 0;
+          const isRecentLogin = (now - userTimestamp) < 5 * 60 * 1000; // 5 minutes
+          
+          if (isRecentLogin) {
+            console.log('Recent login detected, trusting stored user data');
+            setUser(parsedUser);
+          } else {
+            // For older sessions, validate with server
+            try {
+              const response = await apiRequest(`/api/users/${parsedUser.id}`);
+              if (response && response.id && response.email && response.id == parsedUser.id) {
+                console.log('User validation successful, setting user');
+                setUser(parsedUser);
+              } else {
+                console.log('Invalid user validation response, clearing cache');
+                clearAuthState();
+              }
+            } catch (error) {
+              // For validation errors, be more tolerant - keep user for short term
+              console.log('User validation failed, but keeping user for this session:', error);
               setUser(parsedUser);
-            } else {
-              // Invalid response, clear cache
-              console.log('Invalid user validation response, clearing cache');
-              clearAuthState();
             }
-          } catch (error) {
-            // User no longer exists on server or any API error, clear cache
-            console.log('User validation failed, clearing cache:', error);
-            clearAuthState();
           }
         } catch (error) {
           console.log('Error parsing cached user, clearing cache:', error);
