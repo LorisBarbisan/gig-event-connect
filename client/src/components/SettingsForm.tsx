@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { apiRequest } from '@/lib/queryClient';
 import { Eye, EyeOff, Trash2, Key } from 'lucide-react';
 import type { User } from '@shared/types';
@@ -18,6 +19,7 @@ interface SettingsFormProps {
 export function SettingsForm({ user }: SettingsFormProps) {
   const { toast } = useToast();
   const { signOut } = useAuth();
+  const { profile } = useProfile();
   const [showEmail, setShowEmail] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -29,6 +31,12 @@ export function SettingsForm({ user }: SettingsFormProps) {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
+  const [accountForm, setAccountForm] = useState({
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
+    company_name: '',
+  });
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
 
   const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -129,6 +137,60 @@ export function SettingsForm({ user }: SettingsFormProps) {
     }
   };
 
+  const handleAccountSave = async () => {
+    setIsSavingAccount(true);
+    try {
+      // Update user account info (first_name, last_name)
+      await apiRequest('/api/auth/update-account', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          first_name: accountForm.first_name,
+          last_name: accountForm.last_name,
+        }),
+      });
+
+      // Update profile info for recruiters (company_name)
+      if (user.role === 'recruiter' && accountForm.company_name) {
+        await apiRequest(`/api/recruiter/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            company_name: accountForm.company_name,
+          }),
+        });
+      }
+
+      toast({
+        title: 'Account updated',
+        description: 'Your account information has been saved successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Update failed',
+        description: error.message || 'Failed to update account information. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingAccount(false);
+    }
+  };
+
+  // Update form when profile data loads
+  React.useEffect(() => {
+    if (profile && user.role === 'recruiter' && 'company_name' in profile) {
+      setAccountForm(prev => ({
+        ...prev,
+        company_name: profile.company_name || '',
+      }));
+    }
+  }, [profile, user.role]);
+
   return (
     <div className="space-y-6">
       {/* Account Information */}
@@ -138,6 +200,55 @@ export function SettingsForm({ user }: SettingsFormProps) {
           <CardDescription>Manage your account details and preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="first_name">First Name</Label>
+              <Input
+                id="first_name"
+                type="text"
+                value={accountForm.first_name}
+                onChange={(e) => setAccountForm(prev => ({ ...prev, first_name: e.target.value }))}
+                placeholder="Enter your first name"
+                data-testid="input-first-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="last_name">Last Name</Label>
+              <Input
+                id="last_name"
+                type="text"
+                value={accountForm.last_name}
+                onChange={(e) => setAccountForm(prev => ({ ...prev, last_name: e.target.value }))}
+                placeholder="Enter your last name"
+                data-testid="input-last-name"
+              />
+            </div>
+          </div>
+
+          {user.role === 'recruiter' && (
+            <div>
+              <Label htmlFor="company_name">Company Name</Label>
+              <Input
+                id="company_name"
+                type="text"
+                value={accountForm.company_name}
+                onChange={(e) => setAccountForm(prev => ({ ...prev, company_name: e.target.value }))}
+                placeholder="Enter your company name"
+                data-testid="input-company-name"
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleAccountSave}
+              disabled={isSavingAccount}
+              data-testid="button-save-account"
+            >
+              {isSavingAccount ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="email">Email Address</Label>

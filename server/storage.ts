@@ -38,6 +38,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string }): Promise<void>;
   deleteUserAccount(userId: number): Promise<void>;
   
   // Email verification methods
@@ -164,6 +165,15 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ 
         password: hashedPassword,
+        updated_at: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string }): Promise<void> {
+    await db.update(users)
+      .set({ 
+        ...accountData,
         updated_at: new Date()
       })
       .where(eq(users.id, userId));

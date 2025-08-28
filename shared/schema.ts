@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().$type<'freelancer' | 'recruiter'>(),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
   email_verified: boolean("email_verified").default(false).notNull(),
   email_verification_token: text("email_verification_token"),
   email_verification_expires: timestamp("email_verification_expires"),

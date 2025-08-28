@@ -354,6 +354,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user account information endpoint
+  app.put("/api/auth/update-account", async (req, res) => {
+    try {
+      const { userId, first_name, last_name } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      // Get user to verify they exist
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update account information
+      await storage.updateUserAccount(userId, { first_name, last_name });
+      
+      res.json({ message: "Account information updated successfully" });
+    } catch (error) {
+      console.error("Update account info error:", error);
+      res.status(500).json({ error: "Failed to update account information" });
+    }
+  });
+
   // Account deletion endpoint
   app.delete("/api/auth/delete-account", async (req, res) => {
     try {
