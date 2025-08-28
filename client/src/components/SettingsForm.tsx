@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,10 @@ export function SettingsForm({ user }: SettingsFormProps) {
     company_name: '',
   });
   const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    profileVisible: true,
+    emailNotifications: true,
+  });
 
   const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -377,7 +382,11 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 Your profile is visible to other users on the platform
               </p>
             </div>
-            <span className="text-sm text-green-600 font-medium">Public</span>
+            <Switch
+              checked={privacySettings.profileVisible}
+              onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, profileVisible: checked }))}
+              data-testid="toggle-profile-visibility"
+            />
           </div>
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -387,17 +396,11 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 Receive notifications about applications and messages
               </p>
             </div>
-            <span className="text-sm text-green-600 font-medium">Enabled</span>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
-              <h4 className="font-medium">Two-Factor Authentication</h4>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security to your account
-              </p>
-            </div>
-            <span className="text-sm text-muted-foreground">Not Available</span>
+            <Switch
+              checked={privacySettings.emailNotifications}
+              onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, emailNotifications: checked }))}
+              data-testid="toggle-email-notifications"
+            />
           </div>
         </CardContent>
       </Card>
