@@ -206,7 +206,9 @@ export async function sendVerificationEmail(
       <div class="container">
         <div class="header">
           <div class="logo">
-            <img src="${baseUrl}/attached_assets/E8 LOGO_1756038316799.png" alt="E8 Logo" style="width: 120px; height: 120px; display: block; margin: 0 auto; border-radius: 20px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);" />
+            <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, #EC9A40 0%, #f1a853 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(236, 154, 64, 0.2);">
+              <span style="color: white; font-size: 48px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">E8</span>
+            </div>
           </div>
           <h1>Welcome to EventLink!</h1>
         </div>
@@ -217,12 +219,12 @@ export async function sendVerificationEmail(
           <p>To complete your registration and start connecting with exciting opportunities, please verify your email address by clicking the button below:</p>
           
           <div class="button-container">
-            <a href="${verificationUrl}" class="button" target="_blank" rel="noopener noreferrer" style="color: white !important; text-decoration: none !important;">Verify Email Address</a>
+            <a href="${verificationUrl}" class="button" style="color: white !important; text-decoration: none !important; display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">Verify Email Address</a>
           </div>
           
           <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
           <div class="link-text">
-            <a href="${verificationUrl}" style="color: #3b82f6; text-decoration: none;">${verificationUrl}</a>
+            ${verificationUrl}
           </div>
           
           <div class="warning">
