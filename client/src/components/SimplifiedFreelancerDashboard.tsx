@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useNotifications } from '@/hooks/useNotifications';
 import { apiRequest } from '@/lib/queryClient';
 import { Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, MessageCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { ProfileForm } from './ProfileForm';
 import { ApplicationCard } from './ApplicationCard';
 import { MessagingInterface } from './MessagingInterface';
@@ -15,6 +16,7 @@ import type { JobApplication } from '@shared/types';
 
 export default function SimplifiedFreelancerDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
 
   // Use custom hooks - temporarily disabled to prevent errors
@@ -113,12 +115,19 @@ export default function SimplifiedFreelancerDashboard() {
                 const savedProfile = await response.json();
                 console.log('Profile saved successfully:', savedProfile);
                 
-                // Show success message
-                alert('Profile saved successfully! Your changes have been updated.');
+                // Show success message with toast
+                toast({
+                  title: "Profile saved successfully!",
+                  description: "Your changes have been updated.",
+                });
                 
               } catch (error) {
                 console.error('Error saving profile:', error);
-                alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+                toast({
+                  title: "Failed to save profile",
+                  description: `${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+                  variant: "destructive",
+                });
               }
             }}
             isSaving={false}
