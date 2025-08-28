@@ -91,11 +91,11 @@ export default function SimplifiedFreelancerDashboard() {
                 console.log('Saving freelancer profile data:', formData);
                 
                 // Use the correct API endpoint for freelancer profiles
-                const response = await fetch('/api/freelancers/profile', {
+                const response = await fetch(`/api/freelancer/${user.id}`, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    userId: user.id,
+                  body: JSON.stringify({
+                    user_id: user.id,
                     ...formData
                   })
                 });
