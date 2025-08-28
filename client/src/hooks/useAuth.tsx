@@ -29,16 +29,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for stored user session and validate it against the server
     const validateStoredUser = async () => {
       // Check if this is a fresh deployment by looking for a version mismatch
-      const APP_VERSION = "2025-08-28-auth-fix-v1"; // Change this when we need to force clear cache
+      const APP_VERSION = "2025-08-28-auth-fix-v2"; // Change this when we need to force clear cache
       const storedVersion = localStorage.getItem('app_version');
       
       if (storedVersion !== APP_VERSION) {
-        console.log('App version mismatch, clearing all cache');
-        localStorage.clear();
-        sessionStorage.clear();
+        console.log('App version mismatch detected');
+        // Only clear if there's no fresh user data (to avoid clearing fresh logins)
+        const storedUser = localStorage.getItem('user');
+        if (!storedUser) {
+          console.log('No user data found, clearing all cache');
+          localStorage.clear();
+          sessionStorage.clear();
+        }
         localStorage.setItem('app_version', APP_VERSION);
-        setLoading(false);
-        return;
       }
       
       const storedUser = localStorage.getItem('user');

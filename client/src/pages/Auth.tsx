@@ -202,6 +202,8 @@ export default function Auth() {
         const data = await response.json();
         // Store user data and redirect to dashboard
         localStorage.setItem('user', JSON.stringify(data.user));
+        // Also update app version to prevent cache clearing
+        localStorage.setItem('app_version', '2025-08-28-auth-fix-v2');
         setLocation('/dashboard');
         return;
       } else {
