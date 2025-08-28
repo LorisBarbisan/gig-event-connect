@@ -6,13 +6,8 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Health check endpoint before any complex middleware
+// Keep only one health check endpoint
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
-});
-
-// Additional health check for monitoring
-app.get("/api/health", (req, res) => {
   res.status(200).json({ 
     status: "healthy", 
     service: "EventLink",
