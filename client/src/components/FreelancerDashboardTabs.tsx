@@ -529,7 +529,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
+                    <Label htmlFor="first_name">First Name (Optional)</Label>
                     <Input
                       id="first_name"
                       value={freelancerProfile.first_name}
@@ -538,7 +538,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
+                    <Label htmlFor="last_name">Last Name (Optional)</Label>
                     <Input
                       id="last_name"
                       value={freelancerProfile.last_name}
@@ -549,7 +549,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="title">Professional Title</Label>
+                  <Label htmlFor="title">Professional Title (Optional)</Label>
                   <Input
                     id="title"
                     value={freelancerProfile.title}
@@ -559,7 +559,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio">Bio (Optional)</Label>
                   <Textarea
                     id="bio"
                     value={freelancerProfile.bio}
@@ -571,7 +571,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">Location (Optional)</Label>
                     <Input
                       id="location"
                       value={freelancerProfile.location}
@@ -581,7 +581,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="rate">Rate (£)</Label>
+                      <Label htmlFor="rate">Rate (£) (Optional)</Label>
                       <Select 
                         value={freelancerProfile.rate_type} 
                         onValueChange={(value: 'hourly' | 'daily') => setFreelancerProfile(prev => ({ ...prev, rate_type: value }))}
@@ -604,7 +604,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="experience_years">Years of Experience</Label>
+                    <Label htmlFor="experience_years">Years of Experience (Optional)</Label>
                     <Input
                       id="experience_years"
                       type="number"
@@ -616,7 +616,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Skills</Label>
+                  <Label>Skills (Optional)</Label>
                   <div className="flex gap-2 mb-3">
                     <Input
                       value={newSkill}
