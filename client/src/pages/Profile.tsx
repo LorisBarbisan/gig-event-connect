@@ -115,9 +115,10 @@ export default function Profile() {
               availability_status: data.availability_status || 'available',
               profile_photo_url: data.profile_photo_url || ''
             });
-            console.log('Freelancer profile set:', freelancerProfile);
+            console.log('Freelancer profile set:', data);
           } else {
-            console.log('No data received from API');
+            console.log('No freelancer profile found, showing create profile message');
+            setFreelancerProfile(null);
           }
         } catch (error) {
           console.log('No freelancer profile found:', error);
