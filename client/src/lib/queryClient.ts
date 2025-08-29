@@ -23,5 +23,11 @@ export async function apiRequest(url: string, options?: RequestInit) {
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
+  // Handle empty responses gracefully
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0' || !contentLength) {
+    return { success: true }; // Return a default success response for empty bodies
+  }
+
   return response.json();
 }

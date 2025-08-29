@@ -527,6 +527,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profileData = insertRecruiterProfileSchema.partial().parse(req.body);
       
       const result = await storage.updateRecruiterProfile(userId, profileData);
+      
+      if (!result) {
+        // If no profile exists, create one
+        const newProfile = await storage.createRecruiterProfile({
+          user_id: userId,
+          company_name: profileData.company_name || '',
+          contact_name: profileData.contact_name || '',
+          company_type: profileData.company_type || '',
+          location: profileData.location || '',
+          description: profileData.description || '',
+          website_url: profileData.website_url || '',
+          linkedin_url: profileData.linkedin_url || '',
+          company_logo_url: profileData.company_logo_url || ''
+        });
+        return res.json(newProfile);
+      }
+      
       res.json(result);
     } catch (error: any) {
       console.error("Update recruiter profile error:", error);
