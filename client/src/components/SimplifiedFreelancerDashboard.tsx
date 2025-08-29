@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,11 +12,12 @@ import { ProfileForm } from './ProfileForm';
 import { ApplicationCard } from './ApplicationCard';
 import { MessagingInterface } from './MessagingInterface';
 import { NewConversationModal } from './NewConversationModal';
-import type { JobApplication } from '@shared/types';
+import type { JobApplication, FreelancerFormData } from '@shared/types';
 
 export default function SimplifiedFreelancerDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
 
   // Fetch freelancer profile data
@@ -107,12 +108,13 @@ export default function SimplifiedFreelancerDashboard() {
                 console.log('Saving freelancer profile data:', formData);
                 
                 // Use the correct API endpoint for freelancer profiles
-                // Convert string values to numbers for numeric fields
+                // Convert string values to numbers for numeric fields (ensure we're working with freelancer data)
+                const freelancerData = formData as FreelancerFormData;
                 const processedData = {
                   user_id: user.id,
-                  ...formData,
-                  hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : undefined,
-                  experience_years: formData.experience_years ? parseInt(formData.experience_years) : undefined,
+                  ...freelancerData,
+                  hourly_rate: freelancerData.hourly_rate ? parseFloat(freelancerData.hourly_rate.toString()) : undefined,
+                  experience_years: freelancerData.experience_years ? parseInt(freelancerData.experience_years.toString()) : undefined,
                 };
 
                 const response = await fetch(`/api/freelancer/${user.id}`, {
@@ -128,6 +130,9 @@ export default function SimplifiedFreelancerDashboard() {
                 
                 const savedProfile = await response.json();
                 console.log('Profile saved successfully:', savedProfile);
+                
+                // Invalidate and refetch the profile data to ensure UI stays in sync
+                queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile', user?.id] });
                 
                 // Show success message with toast
                 toast({
