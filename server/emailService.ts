@@ -225,8 +225,8 @@ export async function sendVerificationEmail(
       <div class="container">
         <div class="header">
           <div class="logo">
-            <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, #EC9A40 0%, #f1a853 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(236, 154, 64, 0.2);">
-              <span style="color: white; font-size: 48px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">E8</span>
+            <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);">
+              <span style="color: white; font-size: 24px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); letter-spacing: -1px;">EventLink</span>
             </div>
           </div>
           <h1>Welcome to EventLink!</h1>
