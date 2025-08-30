@@ -158,10 +158,18 @@ export default function Profile() {
     console.log('Profile useEffect triggered:', { user, authLoading, userId });
     if (!authLoading) {
       if (userId) {
-        // Viewing someone else's profile
-        console.log('Fetching other profile for userId:', userId);
-        setIsOwnProfile(false);
-        fetchOtherProfile(userId);
+        // Check if viewing own profile via URL parameter
+        const isViewingOwnProfile = user && userId === user.id.toString();
+        if (isViewingOwnProfile) {
+          console.log('Viewing own profile via URL parameter for user:', user);
+          setIsOwnProfile(true);
+          fetchProfile();
+        } else {
+          // Viewing someone else's profile
+          console.log('Fetching other profile for userId:', userId);
+          setIsOwnProfile(false);
+          fetchOtherProfile(userId);
+        }
       } else if (user) {
         // Viewing own profile
         console.log('Fetching own profile for user:', user);
