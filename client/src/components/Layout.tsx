@@ -33,21 +33,20 @@ export const Layout = ({ children }: LayoutProps) => {
   // Temporarily disable notifications hook to debug black screen
   // useNotifications({ userId: user?.id });
   
-  // Get display name based on user role and profile
+  // Get display name based on user account data
   const getDisplayName = () => {
     if (!user) return '';
     
-    console.log('getDisplayName called:', { user: user?.role, profile: profile });
-    
-    if (profile) {
-      if (user.role === 'freelancer') {
-        const freelancerProfile = profile as any;
-        const firstName = freelancerProfile.first_name || '';
-        const lastName = freelancerProfile.last_name || '';
-        const fullName = `${firstName} ${lastName}`.trim();
-        console.log('Freelancer name constructed:', { firstName, lastName, fullName });
-        return fullName || user.email.split('@')[0];
-      } else if (user.role === 'recruiter') {
+    // Use user account data (what shows in Account Information)
+    if (user.role === 'freelancer') {
+      const firstName = user.first_name || '';
+      const lastName = user.last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      console.log('User account name:', { firstName, lastName, fullName });
+      return fullName || user.email.split('@')[0];
+    } else if (user.role === 'recruiter') {
+      // For recruiters, we still need to check the profile for company name
+      if (profile) {
         const recruiterProfile = profile as any;
         const companyName = recruiterProfile.company_name || '';
         console.log('Recruiter company name:', companyName);
@@ -55,7 +54,7 @@ export const Layout = ({ children }: LayoutProps) => {
       }
     }
     
-    // Fallback to email-based name if no profile
+    // Fallback to email-based name
     const fallback = user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     console.log('Using fallback name:', fallback);
     return fallback;
@@ -64,27 +63,25 @@ export const Layout = ({ children }: LayoutProps) => {
   const getInitials = () => {
     if (!user) return '';
     
-    if (profile) {
-      if (user.role === 'freelancer') {
-        const freelancerProfile = profile as any;
-        const firstName = freelancerProfile.first_name || '';
-        const lastName = freelancerProfile.last_name || '';
-        if (firstName && lastName) {
-          const initials = `${firstName[0]}${lastName[0]}`.toUpperCase();
-          console.log('Freelancer initials:', { firstName, lastName, initials });
-          return initials;
-        } else if (firstName) {
-          return firstName[0].toUpperCase();
-        }
-      } else if (user.role === 'recruiter') {
-        const recruiterProfile = profile as any;
-        const companyName = recruiterProfile.company_name || '';
-        if (companyName) {
-          const words = companyName.split(' ');
-          return words.length > 1 
-            ? `${words[0][0]}${words[1][0]}`.toUpperCase()
-            : companyName.slice(0, 2).toUpperCase();
-        }
+    // Use user account data for freelancers
+    if (user.role === 'freelancer') {
+      const firstName = user.first_name || '';
+      const lastName = user.last_name || '';
+      if (firstName && lastName) {
+        const initials = `${firstName[0]}${lastName[0]}`.toUpperCase();
+        console.log('User account initials:', { firstName, lastName, initials });
+        return initials;
+      } else if (firstName) {
+        return firstName[0].toUpperCase();
+      }
+    } else if (user.role === 'recruiter' && profile) {
+      const recruiterProfile = profile as any;
+      const companyName = recruiterProfile.company_name || '';
+      if (companyName) {
+        const words = companyName.split(' ');
+        return words.length > 1 
+          ? `${words[0][0]}${words[1][0]}`.toUpperCase()
+          : companyName.slice(0, 2).toUpperCase();
       }
     }
     
