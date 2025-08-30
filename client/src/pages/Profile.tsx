@@ -190,6 +190,12 @@ export default function Profile() {
         try {
           const data = await apiRequest(`/api/freelancer/${userProfile.id}`);
           console.log('Profile data received:', data);
+          console.log('CV fields in data:', {
+            cv_file_url: data.cv_file_url,
+            cv_file_name: data.cv_file_name,
+            cv_file_type: data.cv_file_type,
+            cv_file_size: data.cv_file_size
+          });
           if (data) {
             setFreelancerProfile({
               id: data.id,
