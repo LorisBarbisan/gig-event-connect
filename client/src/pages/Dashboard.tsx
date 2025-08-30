@@ -52,12 +52,15 @@ export default function Dashboard() {
   const fetchProfile = async () => {
     try {
       if (user) {
+        console.log('Dashboard fetchProfile - user data:', { id: user.id, role: user.role, email: user.email });
         // Since we have user data with role, we can set the profile directly
-        setProfile({
+        const profileData = {
           id: user.id.toString(),
           role: user.role,
           email: user.email
-        });
+        };
+        console.log('Dashboard fetchProfile - setting profile data:', profileData);
+        setProfile(profileData);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -97,6 +100,9 @@ export default function Dashboard() {
       </Layout>
     );
   }
+
+  console.log('Dashboard render - profile data:', profile);
+  console.log('Dashboard render - showing:', profile.role === 'freelancer' ? 'FreelancerDashboard' : 'RecruiterDashboard');
 
   return (
     <Layout>
