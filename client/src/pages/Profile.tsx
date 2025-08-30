@@ -160,6 +160,7 @@ export default function Profile() {
       if (userId) {
         // Check if viewing own profile via URL parameter
         const isViewingOwnProfile = user && userId === user.id.toString();
+        console.log('Profile comparison debug:', { userId, userIdType: typeof userId, userIdNum: user?.id, userIdStr: user?.id.toString(), isViewingOwnProfile });
         if (isViewingOwnProfile) {
           console.log('Viewing own profile via URL parameter for user:', user);
           setIsOwnProfile(true);
@@ -277,13 +278,16 @@ export default function Profile() {
 
   const fetchOtherProfile = async (targetUserId: string) => {
     try {
+      console.log('fetchOtherProfile called with targetUserId:', targetUserId);
       // First get the user basic info to determine their role
       const userData = await apiRequest(`/api/users/${targetUserId}`);
+      console.log('User data received:', userData);
       const userProfile: Profile = {
         id: targetUserId,
         role: userData.role as 'freelancer' | 'recruiter',
         email: userData.email
       };
+      console.log('Setting profile in fetchOtherProfile:', userProfile);
       setProfile(userProfile);
 
       if (userProfile.role === 'freelancer') {
