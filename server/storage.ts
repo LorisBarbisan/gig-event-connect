@@ -283,6 +283,12 @@ export class DatabaseStorage implements IStorage {
       updateData.profile_photo_url = profile.profile_photo_url;
     }
     
+    // CV fields
+    if (profile.cv_file_url !== undefined) updateData.cv_file_url = profile.cv_file_url;
+    if (profile.cv_file_name !== undefined) updateData.cv_file_name = profile.cv_file_name;
+    if (profile.cv_file_type !== undefined) updateData.cv_file_type = profile.cv_file_type;
+    if (profile.cv_file_size !== undefined) updateData.cv_file_size = profile.cv_file_size;
+    
     const result = await db.update(freelancer_profiles)
       .set(updateData)
       .where(eq(freelancer_profiles.user_id, userId))
@@ -305,7 +311,11 @@ export class DatabaseStorage implements IStorage {
         linkedin_url: updateData.linkedin_url || '',
         website_url: updateData.website_url || '',
         availability_status: updateData.availability_status || 'available',
-        profile_photo_url: updateData.profile_photo_url || ''
+        profile_photo_url: updateData.profile_photo_url || '',
+        cv_file_url: updateData.cv_file_url || null,
+        cv_file_name: updateData.cv_file_name || null,
+        cv_file_type: updateData.cv_file_type || null,
+        cv_file_size: updateData.cv_file_size || null
       };
       const createResult = await db.insert(freelancer_profiles).values([newProfile]).returning();
       return createResult[0];
