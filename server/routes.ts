@@ -1050,15 +1050,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Update freelancer profile with CV information
+      console.log('CV Upload - Looking for freelancer profile for userId:', userId);
       const freelancerProfile = await storage.getFreelancerProfile(userId);
+      console.log('CV Upload - Found freelancer profile:', freelancerProfile ? 'Yes' : 'No');
+      
       if (freelancerProfile) {
-        await storage.updateFreelancerProfile(userId, {
+        console.log('CV Upload - Updating profile with CV data:', {
+          normalizedPath,
+          fileName,
+          fileType,
+          fileSize
+        });
+        
+        const updateResult = await storage.updateFreelancerProfile(userId, {
           ...freelancerProfile,
           cv_file_url: normalizedPath,
           cv_file_name: fileName,
           cv_file_type: fileType,
           cv_file_size: fileSize,
         });
+        
+        console.log('CV Upload - Update result:', updateResult ? 'Success' : 'Failed');
+      } else {
+        console.log('CV Upload - No freelancer profile found for userId:', userId);
       }
 
       res.json({ 
