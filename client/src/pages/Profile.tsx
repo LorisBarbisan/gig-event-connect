@@ -504,7 +504,9 @@ export default function Profile() {
                           Send Message
                         </Button>
                       )}
-                      {!isOwnProfile && freelancerProfile?.cv_file_url && user?.role === 'recruiter' && (
+                      {freelancerProfile?.cv_file_url && (
+                        (!isOwnProfile && user?.role === 'recruiter') || isOwnProfile
+                      ) && (
                         <Button
                           onClick={() => handleDownloadCV(freelancerProfile)}
                           className="flex items-center gap-2"
