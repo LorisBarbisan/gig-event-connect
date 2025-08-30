@@ -290,3 +290,202 @@ The EventLink Team
     text: textContent,
   });
 }
+
+export async function sendPasswordResetEmail(
+  email: string,
+  resetToken: string,
+  baseUrl: string,
+  firstName?: string | null
+): Promise<boolean> {
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+  
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset Request – EventLink</title>
+      <style>
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          line-height: 1.6; 
+          color: #333; 
+          margin: 0; 
+          padding: 0; 
+          background-color: #f8fafc;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 0 auto; 
+          padding: 40px 20px; 
+          background-color: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 40px; 
+        }
+        .logo { 
+          margin: 0 auto 24px; 
+          display: block;
+        }
+        h1 { 
+          color: #1e293b; 
+          font-size: 32px; 
+          font-weight: 700; 
+          margin: 0 0 16px 0;
+          letter-spacing: -0.5px;
+        }
+        .content {
+          text-align: center;
+          padding: 0 20px;
+        }
+        .content p { 
+          font-size: 16px; 
+          line-height: 1.7; 
+          margin-bottom: 24px; 
+          color: #475569;
+        }
+        .button-container {
+          margin: 40px 0;
+        }
+        .button { 
+          display: inline-block; 
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: white !important; 
+          padding: 16px 32px; 
+          text-decoration: none; 
+          border-radius: 12px; 
+          font-weight: 600;
+          font-size: 16px;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          transition: all 0.2s ease;
+        }
+        .button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+        .link-text {
+          font-size: 14px;
+          color: #64748b;
+          word-break: break-all;
+          background-color: #f1f5f9;
+          padding: 12px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          margin: 20px 0;
+        }
+        .warning {
+          background-color: #fef3c7;
+          border: 1px solid #f59e0b;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 24px 0;
+          color: #92400e;
+          font-weight: 500;
+        }
+        .footer { 
+          margin-top: 48px; 
+          padding-top: 24px;
+          border-top: 1px solid #e2e8f0;
+          text-align: center;
+        }
+        .footer p {
+          font-size: 14px; 
+          color: #64748b;
+          margin: 8px 0;
+        }
+        .footer .signature {
+          font-weight: 600;
+          color: #475569;
+        }
+        @media (max-width: 640px) {
+          .container {
+            margin: 0;
+            border-radius: 0;
+            padding: 20px;
+          }
+          h1 {
+            font-size: 28px;
+          }
+          .button {
+            padding: 14px 24px;
+            font-size: 15px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">
+            <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);">
+              <span style="color: white; font-size: 24px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); letter-spacing: -1px;">EventLink</span>
+            </div>
+          </div>
+          <h1>Password Reset Request</h1>
+        </div>
+        
+        <div class="content">
+          <p>${firstName ? `Hi ${firstName},` : 'Hello,'}</p>
+          
+          <p>We received a request to reset your password for your <strong>EventLink</strong> account.</p>
+          
+          <p>To reset your password, click the button below:</p>
+          
+          <div class="button-container">
+            <a href="${resetUrl}" class="button" style="color: white !important; text-decoration: none !important; display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Reset Password</a>
+          </div>
+          
+          <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+          <div class="link-text">
+            ${resetUrl}
+          </div>
+          
+          <div class="warning">
+            <strong>⏰ This link will expire in 1 hour.</strong>
+          </div>
+          
+          <p style="font-size: 14px; color: #64748b;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+        </div>
+        
+        <div class="footer">
+          <p class="signature">Best regards,<br><strong>The EventLink Team</strong></p>
+          <p>© 2025 EventLink. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textContent = `
+Password Reset Request - EventLink
+
+${firstName ? `Hi ${firstName},` : 'Hello,'}
+
+We received a request to reset your password for your EventLink account.
+
+To reset your password, visit this link:
+${resetUrl}
+
+This link will expire in 1 hour.
+
+If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+
+Best regards,
+The EventLink Team
+
+© 2025 EventLink. All rights reserved.
+  `;
+
+  // Use verified SendGrid sender address
+  return await sendEmail({
+    to: email,
+    from: 'verification@eventlink.one', // Verified sender identity
+    subject: 'Password Reset Request – EventLink',
+    html: htmlContent,
+    text: textContent,
+  });
+}

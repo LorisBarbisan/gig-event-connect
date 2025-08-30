@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertUserSchema, insertFreelancerProfileSchema, insertRecruiterProfileSchema, insertJobSchema, insertJobApplicationSchema, insertMessageSchema, insertNotificationSchema } from "@shared/schema";
-import { sendVerificationEmail, sendEmail } from "./emailService";
+import { sendVerificationEmail, sendEmail, sendPasswordResetEmail } from "./emailService";
 import { randomBytes } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -270,6 +270,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </body>
         </html>
       `);
+    }
+  });
+
+  // Rate limiting for password reset requests (in-memory store)
+  const resetAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const RESET_LIMIT = 3; // Max 3 attempts per hour per IP
+  const RESET_WINDOW = 60 * 60 * 1000; // 1 hour
+
+  // Password Reset Request endpoint
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+      const now = Date.now();
+      
+      // Check rate limiting
+      const attempts = resetAttempts.get(clientIp);
+      if (attempts) {
+        // Reset counter if window has passed
+        if (now - attempts.lastAttempt > RESET_WINDOW) {
+          resetAttempts.delete(clientIp);
+        } else if (attempts.count >= RESET_LIMIT) {
+          return res.status(429).json({ 
+            error: "Too many password reset requests. Please try again later." 
+          });
+        }
+      }
+      
+      const { email } = req.body;
+      
+      if (!email || !email.trim()) {
+        return res.status(400).json({ error: "Please enter your email address." });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Please enter a valid email address." });
+      }
+
+      // Check if user exists (but don't reveal if email exists for security)
+      const user = await storage.getUserByEmail(email.toLowerCase());
+      
+      // Always return the same message to prevent email enumeration
+      const successMessage = "If this email is registered, you will receive a password reset link.";
+      
+      if (user) {
+        // Generate password reset token (1 hour expiration)
+        const resetToken = randomBytes(32).toString('hex');
+        const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        
+        await storage.setPasswordResetToken(user.email, resetToken, resetExpires);
+        
+        // Send password reset email
+        const baseUrl = process.env.NODE_ENV === 'development' 
+          ? `${req.protocol}://${req.get('host')}`
+          : `https://${req.get('host')}`;
+        
+        await sendPasswordResetEmail(user.email, resetToken, baseUrl, user.first_name);
+      }
+      
+      // Update rate limiting counter
+      const currentAttempts = resetAttempts.get(clientIp) || { count: 0, lastAttempt: 0 };
+      resetAttempts.set(clientIp, {
+        count: currentAttempts.count + 1,
+        lastAttempt: now
+      });
+      
+      res.json({ message: successMessage });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ error: "Server error occurred. Please try again." });
+    }
+  });
+
+  // Password Reset Validation and Update endpoint
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password, confirmPassword } = req.body;
+      
+      if (!token || !password || !confirmPassword) {
+        return res.status(400).json({ error: "All fields are required." });
+      }
+
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: "Passwords do not match." });
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long." });
+      }
+
+      // Validate token
+      const { isValid, userId } = await storage.validatePasswordResetToken(token);
+      
+      if (!isValid || !userId) {
+        return res.status(400).json({ 
+          error: "This link is invalid or expired. Please request a new password reset." 
+        });
+      }
+
+      // Get current user to check if new password is different
+      const user = await storage.getUser(userId);
+      if (user) {
+        const isSamePassword = await bcrypt.compare(password, user.password);
+        if (isSamePassword) {
+          return res.status(400).json({ error: "New password cannot be the same as the old password." });
+        }
+      }
+
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const resetSuccess = await storage.resetPassword(userId, hashedPassword);
+      
+      if (!resetSuccess) {
+        return res.status(500).json({ error: "Failed to reset password. Please try again." });
+      }
+
+      res.json({ message: "Your password has been reset successfully. Please log in with your new password." });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ error: "Server error occurred. Please try again." });
     }
   });
 

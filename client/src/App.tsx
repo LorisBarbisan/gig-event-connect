@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -25,6 +27,8 @@ const App = () => (
           <Switch>
             <Route path="/" component={Index} />
             <Route path="/auth" component={Auth} />
+            <Route path="/forgot-password" component={ForgotPassword} />
+            <Route path="/reset-password" component={ResetPassword} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/profile" component={Profile} />
             <Route path="/profile/:userId" component={Profile} />

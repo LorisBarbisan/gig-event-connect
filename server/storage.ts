@@ -170,6 +170,61 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async setPasswordResetToken(email: string, token: string, expires: Date): Promise<boolean> {
+    try {
+      const result = await db.update(users)
+        .set({
+          password_reset_token: token,
+          password_reset_expires: expires,
+          updated_at: new Date()
+        })
+        .where(eq(users.email, email));
+      return true;
+    } catch (error) {
+      console.error('Error setting password reset token:', error);
+      return false;
+    }
+  }
+
+  async validatePasswordResetToken(token: string): Promise<{ isValid: boolean; userId?: number }> {
+    try {
+      const result = await db.select().from(users)
+        .where(eq(users.password_reset_token, token))
+        .limit(1);
+      
+      if (!result[0]) return { isValid: false };
+      
+      const user = result[0];
+      
+      // Check if token has expired
+      if (user.password_reset_expires && new Date() > user.password_reset_expires) {
+        return { isValid: false };
+      }
+      
+      return { isValid: true, userId: user.id };
+    } catch (error) {
+      console.error('Error validating password reset token:', error);
+      return { isValid: false };
+    }
+  }
+
+  async resetPassword(userId: number, hashedPassword: string): Promise<boolean> {
+    try {
+      await db.update(users)
+        .set({
+          password: hashedPassword,
+          password_reset_token: null,
+          password_reset_expires: null,
+          updated_at: new Date()
+        })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
+    }
+  }
+
   async updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string }): Promise<void> {
     await db.update(users)
       .set({ 
@@ -456,9 +511,13 @@ export class DatabaseStorage implements IStorage {
         email: row.otherUserEmail || '',
         role: (row.otherUserRole as 'freelancer' | 'recruiter') || 'freelancer',
         password: '',
+        first_name: null,
+        last_name: null,
         email_verified: false,
         email_verification_token: null,
         email_verification_expires: null,
+        password_reset_token: null,
+        password_reset_expires: null,
         created_at: new Date(),
         updated_at: new Date()
       }
@@ -504,9 +563,13 @@ export class DatabaseStorage implements IStorage {
         email: row.senderEmail || '',
         role: (row.senderRole as 'freelancer' | 'recruiter') || 'freelancer',
         password: '',
+        first_name: null,
+        last_name: null,
         email_verified: false,
         email_verification_token: null,
         email_verification_expires: null,
+        password_reset_token: null,
+        password_reset_expires: null,
         created_at: new Date(),
         updated_at: new Date()
       }

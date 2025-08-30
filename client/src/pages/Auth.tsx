@@ -323,9 +323,21 @@ export default function Auth() {
                     type="submit" 
                     className="w-full bg-gradient-primary hover:bg-primary-hover text-white font-semibold py-2 mt-4" 
                     disabled={loading}
+                    data-testid="button-signin"
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
+                  
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setLocation('/forgot-password')}
+                      className="text-primary hover:text-primary-hover underline text-sm"
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                 </form>
               </TabsContent>
               
