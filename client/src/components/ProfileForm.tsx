@@ -205,7 +205,6 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
 }
 
 function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
-  
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
