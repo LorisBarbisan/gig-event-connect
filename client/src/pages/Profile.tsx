@@ -156,6 +156,8 @@ export default function Profile() {
 
   useEffect(() => {
     console.log('Profile useEffect triggered:', { user, authLoading, userId });
+    console.log('URL userId parameter received:', userId, 'type:', typeof userId);
+    
     if (!authLoading) {
       if (userId) {
         // Check if viewing own profile via URL parameter
@@ -279,6 +281,7 @@ export default function Profile() {
   const fetchOtherProfile = async (targetUserId: string) => {
     try {
       console.log('fetchOtherProfile called with targetUserId:', targetUserId);
+      console.log('Making API request to:', `/api/users/${targetUserId}`);
       // First get the user basic info to determine their role
       const userData = await apiRequest(`/api/users/${targetUserId}`);
       console.log('User data received:', userData);
