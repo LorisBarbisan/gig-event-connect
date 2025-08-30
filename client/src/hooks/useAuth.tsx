@@ -9,6 +9,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any; user?: any }>;
   signOut: () => Promise<{ error: any }>;
   resendVerificationEmail: (email: string) => Promise<{ error: any; message?: string }>;
+  refreshUser: () => Promise<void>;
   clearAllCache: () => void;
 }
 
@@ -139,6 +140,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const refreshUser = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Refreshing user data from server...');
+      const response = await apiRequest(`/api/users/${user.id}`);
+      if (response && response.id && response.email) {
+        const userWithTimestamp = {
+          ...response,
+          timestamp: Date.now()
+        };
+        setUser(userWithTimestamp);
+        localStorage.setItem('user', JSON.stringify(userWithTimestamp));
+        console.log('User data refreshed successfully');
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   const clearAllCache = () => {
     // Clear all localStorage data for this application
     localStorage.clear();
@@ -158,6 +179,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn,
       signOut,
       resendVerificationEmail,
+      refreshUser,
       clearAllCache
     }}>
       {children}

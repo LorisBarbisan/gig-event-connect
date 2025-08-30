@@ -19,7 +19,7 @@ interface SettingsFormProps {
 
 export function SettingsForm({ user }: SettingsFormProps) {
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut, refreshUser } = useAuth();
   // const { profile } = useProfile(); // Temporarily disabled to prevent errors
   const [showEmail, setShowEmail] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -170,6 +170,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
           }),
         });
       }
+
+      // Refresh user data to update the display
+      await refreshUser();
 
       toast({
         title: 'Account updated',

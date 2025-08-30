@@ -42,22 +42,18 @@ export const Layout = ({ children }: LayoutProps) => {
       const firstName = user.first_name || '';
       const lastName = user.last_name || '';
       const fullName = `${firstName} ${lastName}`.trim();
-      console.log('User account name:', { firstName, lastName, fullName });
       return fullName || user.email.split('@')[0];
     } else if (user.role === 'recruiter') {
       // For recruiters, we still need to check the profile for company name
       if (profile) {
         const recruiterProfile = profile as any;
         const companyName = recruiterProfile.company_name || '';
-        console.log('Recruiter company name:', companyName);
         return companyName || user.email.split('@')[0];
       }
     }
     
     // Fallback to email-based name
-    const fallback = user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    console.log('Using fallback name:', fallback);
-    return fallback;
+    return user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getInitials = () => {
@@ -68,9 +64,7 @@ export const Layout = ({ children }: LayoutProps) => {
       const firstName = user.first_name || '';
       const lastName = user.last_name || '';
       if (firstName && lastName) {
-        const initials = `${firstName[0]}${lastName[0]}`.toUpperCase();
-        console.log('User account initials:', { firstName, lastName, initials });
-        return initials;
+        return `${firstName[0]}${lastName[0]}`.toUpperCase();
       } else if (firstName) {
         return firstName[0].toUpperCase();
       }
@@ -87,9 +81,7 @@ export const Layout = ({ children }: LayoutProps) => {
     
     // Fallback to email-based initials
     const name = user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const initials = name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
-    console.log('Using fallback initials:', { name, initials });
-    return initials;
+    return name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
   };
   const isHomePage = location === '/';
 
