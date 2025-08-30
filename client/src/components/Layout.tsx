@@ -26,18 +26,60 @@ export const Layout = ({ children }: LayoutProps) => {
   const [location, setLocation] = useLocation();
   const { user, signOut } = useAuth();
   
+  // Get profile data based on user role
+  const userType = user?.role === 'freelancer' ? 'freelancer' : 'recruiter';
+  const { profile } = useProfile({ userType, userId: user?.id || 0 });
+  
   // Temporarily disable notifications hook to debug black screen
   // useNotifications({ userId: user?.id });
   
-  // Simplified profile handling
+  // Get display name based on user role and profile
   const getDisplayName = () => {
     if (!user) return '';
+    
+    if (profile) {
+      if (user.role === 'freelancer') {
+        const freelancerProfile = profile as any;
+        const firstName = freelancerProfile.first_name || '';
+        const lastName = freelancerProfile.last_name || '';
+        return `${firstName} ${lastName}`.trim() || user.email.split('@')[0];
+      } else if (user.role === 'recruiter') {
+        const recruiterProfile = profile as any;
+        return recruiterProfile.company_name || user.email.split('@')[0];
+      }
+    }
+    
+    // Fallback to email-based name if no profile
     return user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getInitials = () => {
     if (!user) return '';
-    const name = getDisplayName();
+    
+    if (profile) {
+      if (user.role === 'freelancer') {
+        const freelancerProfile = profile as any;
+        const firstName = freelancerProfile.first_name || '';
+        const lastName = freelancerProfile.last_name || '';
+        if (firstName && lastName) {
+          return `${firstName[0]}${lastName[0]}`.toUpperCase();
+        } else if (firstName) {
+          return firstName[0].toUpperCase();
+        }
+      } else if (user.role === 'recruiter') {
+        const recruiterProfile = profile as any;
+        const companyName = recruiterProfile.company_name || '';
+        if (companyName) {
+          const words = companyName.split(' ');
+          return words.length > 1 
+            ? `${words[0][0]}${words[1][0]}`.toUpperCase()
+            : companyName.slice(0, 2).toUpperCase();
+        }
+      }
+    }
+    
+    // Fallback to email-based initials
+    const name = user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     return name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
   };
   const isHomePage = location === '/';
