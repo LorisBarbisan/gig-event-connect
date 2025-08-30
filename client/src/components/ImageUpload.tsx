@@ -68,6 +68,7 @@ export function ImageUpload({
         ctx.drawImage(img, 0, 0, width, height);
         
         const compressedData = canvas.toDataURL('image/jpeg', 0.8);
+        console.log('ImageUpload: Generated compressed data URL, length:', compressedData.length);
         onChange(compressedData);
       };
       img.src = reader.result as string;

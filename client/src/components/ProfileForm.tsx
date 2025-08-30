@@ -95,6 +95,7 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
   }, [profile, userType]);
 
   const handleInputChange = (field: string, value: string) => {
+    console.log('ProfileForm handleInputChange:', { field, valueLength: value.length, isImageUpload: field.includes('url') });
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -122,6 +123,10 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
   };
 
   const handleSave = () => {
+    console.log('ProfileForm handleSave - formData being saved:', formData);
+    if (userType === 'recruiter') {
+      console.log('Recruiter form data company_logo_url:', (formData as RecruiterFormData).company_logo_url?.length);
+    }
     onSave(formData);
     setIsEditing(false);
   };

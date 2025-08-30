@@ -23,6 +23,10 @@ export function useProfile({ userId, userType }: UseProfileProps) {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (profileData: FreelancerFormData | RecruiterFormData) => {
+      console.log('useProfile updateMutation - sending data to API:', profileData);
+      if (userType === 'recruiter') {
+        console.log('Recruiter data company_logo_url length:', (profileData as RecruiterFormData).company_logo_url?.length);
+      }
       return await apiRequest(`/api/${userType}/${userId}`, {
         method: 'PUT',
         body: JSON.stringify(profileData),
@@ -48,6 +52,10 @@ export function useProfile({ userId, userType }: UseProfileProps) {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (profileData: FreelancerFormData | RecruiterFormData) => {
+      console.log('useProfile createMutation - sending data to API:', profileData);
+      if (userType === 'recruiter') {
+        console.log('Recruiter create data company_logo_url length:', (profileData as RecruiterFormData).company_logo_url?.length);
+      }
       return await apiRequest(`/api/${userType}`, {
         method: 'POST',
         body: JSON.stringify({ user_id: userId, ...profileData }),
