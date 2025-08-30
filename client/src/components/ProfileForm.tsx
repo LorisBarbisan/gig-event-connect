@@ -7,8 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Building2, MapPin, Globe, Plus, X, User } from 'lucide-react';
+import { Building2, MapPin, Globe, Plus, X, User, FileText, Download } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
+import { CVUploader } from '@/components/CVUploader';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import type { FreelancerProfile, RecruiterProfile, FreelancerFormData, RecruiterFormData } from '@shared/types';
 
 interface ProfileFormProps {
@@ -19,6 +22,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileFormProps) {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(!profile);
   const [formData, setFormData] = useState<FreelancerFormData | RecruiterFormData>(() => {
     if (userType === 'freelancer') {
@@ -244,6 +248,119 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
           </div>
         </div>
       )}
+      <CVViewerSection profile={profile} />
+    </div>
+  );
+}
+
+// CV Viewer component for recruiters to see and download CVs
+function CVViewerSection({ profile }: { profile: FreelancerProfile }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Only show CV section if user is a recruiter or if viewing own profile
+  const canViewCV = user?.role === 'recruiter' || user?.id === profile.user_id;
+  
+  if (!canViewCV) {
+    return null;
+  }
+
+  const handleDownloadCV = async () => {
+    if (!profile.cv_file_url || !user) {
+      toast({
+        title: "Error",
+        description: "CV not available for download",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const response = await fetch(
+        `/api/cv/download/${profile.user_id}?userId=${user.id}`,
+        {
+          method: 'GET',
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to download CV');
+      }
+
+      // Create blob and download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = profile.cv_file_name || `${profile.first_name}_${profile.last_name}_CV.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "CV downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error downloading CV:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download CV",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <div>
+      <Separator className="my-4" />
+      <div>
+        <h4 className="font-medium mb-2">CV</h4>
+        {profile.cv_file_url ? (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-blue-600" />
+                  <div>
+                    <p className="font-medium">{profile.cv_file_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.cv_file_type} • {profile.cv_file_size ? formatFileSize(profile.cv_file_size) : 'Unknown size'}
+                    </p>
+                  </div>
+                </div>
+                {user?.role === 'recruiter' && (
+                  <Button
+                    onClick={handleDownloadCV}
+                    disabled={isDownloading}
+                    data-testid="button-download-cv"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {isDownloading ? 'Downloading...' : 'Download CV'}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <p className="text-muted-foreground">This freelancer has not uploaded a CV yet.</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -475,7 +592,45 @@ function FreelancerFormFields({
           onChange={(url: string) => onInputChange('profile_photo_url', url)}
         />
       </div>
+
+      <div>
+        <Label>CV Upload (Optional)</Label>
+        <p className="text-sm text-muted-foreground mb-2">
+          Upload your CV for recruiters to view. Accepted formats: PDF, DOC, DOCX (max 5MB)
+        </p>
+        <CVUploadSection />
+      </div>
     </>
+  );
+}
+
+// CV Upload section for freelancers when editing their profile
+function CVUploadSection() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Only show if user is a freelancer
+  if (!user || user.role !== 'freelancer') {
+    return null;
+  }
+
+  // Get current CV from the freelancer profile if available
+  // This would need to be passed down from parent component or fetched
+  // For now, we'll use the CVUploader component which handles this internally
+  
+  const handleUploadComplete = () => {
+    toast({
+      title: "Success",
+      description: "Your CV has been uploaded successfully!",
+    });
+  };
+
+  return (
+    <CVUploader 
+      userId={user.id}
+      onUploadComplete={handleUploadComplete}
+      data-testid="cv-uploader"
+    />
   );
 }
 

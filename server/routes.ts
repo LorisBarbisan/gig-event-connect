@@ -1098,6 +1098,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CV Download endpoint - only accessible to recruiters
+  app.get("/api/cv/download/:freelancerId", async (req, res) => {
+    try {
+      const freelancerId = parseInt(req.params.freelancerId);
+      const requestingUserId = req.query.userId as string;
+      
+      if (!requestingUserId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Verify requesting user is a recruiter
+      const requestingUser = await storage.getUser(parseInt(requestingUserId));
+      if (!requestingUser || requestingUser.role !== 'recruiter') {
+        return res.status(403).json({ error: "Access denied. Only recruiters can download CVs" });
+      }
+
+      // Get freelancer profile with CV information
+      const freelancerProfile = await storage.getFreelancerProfile(freelancerId);
+      if (!freelancerProfile || !freelancerProfile.cv_file_url) {
+        return res.status(404).json({ error: "CV not found" });
+      }
+
+      // Use object storage service to download the file
+      const objectStorageService = new ObjectStorageService();
+      const file = await objectStorageService.searchPublicObject(freelancerProfile.cv_file_url);
+      
+      if (!file) {
+        return res.status(404).json({ error: "CV file not found in storage" });
+      }
+
+      // Set appropriate filename for download
+      const filename = freelancerProfile.cv_file_name || `${freelancerProfile.first_name}_${freelancerProfile.last_name}_CV.pdf`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      // Stream the file to response
+      await objectStorageService.downloadObject(file, res, 0); // No caching for CVs
+    } catch (error) {
+      console.error("Error downloading CV:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  });
+
   // Messaging routes
   app.get("/api/conversations", async (req, res) => {
     try {
