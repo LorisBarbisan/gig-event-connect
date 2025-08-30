@@ -504,6 +504,16 @@ export default function Profile() {
                           Send Message
                         </Button>
                       )}
+                      {!isOwnProfile && freelancerProfile?.cv_file_url && user?.role === 'recruiter' && (
+                        <Button
+                          onClick={() => handleDownloadCV(freelancerProfile)}
+                          className="flex items-center gap-2"
+                          variant="outline"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download CV
+                        </Button>
+                      )}
                       {isOwnProfile && (
                         <Button 
                           variant="outline"
@@ -643,15 +653,6 @@ export default function Profile() {
                         </p>
                       </div>
                     </div>
-                    {(user?.role === 'recruiter' || user?.id === freelancerProfile.user_id) && (
-                      <Button
-                        onClick={() => handleDownloadCV(freelancerProfile)}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download CV
-                      </Button>
-                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">This freelancer has not uploaded a CV yet.</p>
