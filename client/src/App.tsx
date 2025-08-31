@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Route, Router, Switch } from "wouter";
 import { AuthProvider } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
+import { TabNotificationManager } from "@/components/TabNotificationManager";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -22,6 +23,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <TabNotificationManager />
         <Router>
           <Switch>
             <Route path="/" component={Index} />

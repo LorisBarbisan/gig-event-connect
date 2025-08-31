@@ -58,6 +58,7 @@ export interface IStorage {
   // Job management
   getAllJobs(): Promise<Job[]>;
   getJobsByRecruiterId(recruiterId: number): Promise<Job[]>;
+  getJobById(jobId: number): Promise<Job | undefined>;
   createJob(job: InsertJob): Promise<Job>;
   updateJob(jobId: number, job: Partial<InsertJob>): Promise<Job | undefined>;
   deleteJob(jobId: number): Promise<void>;
@@ -372,6 +373,11 @@ export class DatabaseStorage implements IStorage {
 
   async getJobsByRecruiterId(recruiterId: number): Promise<Job[]> {
     return await db.select().from(jobs).where(eq(jobs.recruiter_id, recruiterId));
+  }
+
+  async getJobById(jobId: number): Promise<Job | undefined> {
+    const result = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
+    return result[0];
   }
 
   async createJob(job: InsertJob): Promise<Job> {

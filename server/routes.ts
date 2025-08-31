@@ -874,6 +874,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       console.log("Job application created:", application);
+      
+      // Create notification for the recruiter when a new application is received
+      try {
+        const job = await storage.getJobById(jobId);
+        const freelancer = await storage.getUser(freelancerId);
+        const freelancerProfile = await storage.getFreelancerProfile(freelancerId);
+        
+        if (job && job.recruiter_id && freelancer) {
+          const freelancerName = freelancerProfile?.first_name && freelancerProfile?.last_name 
+            ? `${freelancerProfile.first_name} ${freelancerProfile.last_name}`
+            : freelancer.email;
+          
+          await storage.createNotification({
+            user_id: job.recruiter_id,
+            type: 'application_update',
+            title: 'New Job Application',
+            message: `${freelancerName} applied for "${job.title}"`,
+            priority: 'high',
+            related_entity_type: 'application',
+            related_entity_id: jobId,
+            action_url: '/dashboard?tab=applications',
+          });
+          
+          console.log('Notification created for recruiter:', job.recruiter_id);
+          
+          // Broadcast notification via WebSocket if available
+          broadcastNotificationToUser(job.recruiter_id, {
+            title: 'New Job Application',
+            message: `${freelancerName} applied for "${job.title}"`,
+            type: 'application_update',
+            priority: 'high'
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to create notification for new application:', notificationError);
+        // Don't fail the application creation if notification fails
+      }
+      
       res.json(application);
     } catch (error) {
       console.error("Create job application error:", error);
