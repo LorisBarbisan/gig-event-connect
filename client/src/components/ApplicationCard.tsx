@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star } from 'lucide-react';
+import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star, Send } from 'lucide-react';
 import { RatingDialog } from './RatingDialog';
+import { RatingRequestDialog } from './RatingRequestDialog';
 import type { JobApplication } from '@shared/types';
 
 interface ApplicationCardProps {
@@ -26,6 +27,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   const [showHireConfirm, setShowHireConfirm] = useState(false);
   const [rejectionMessage, setRejectionMessage] = useState('');
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [showRatingRequestDialog, setShowRatingRequestDialog] = useState(false);
 
   const rejectMutation = useMutation({
     mutationFn: async () => {
@@ -340,15 +342,49 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                 )}
               </>
             )}
+
+            {/* Actions for freelancers viewing their own applications */}
+            {userType === 'freelancer' && (
+              <>
+                <Button variant="outline" size="sm" data-testid={`button-view-details-${application.id}`}>
+                  <Eye className="w-4 h-4 mr-1" />
+                  View Details
+                </Button>
+                
+                {/* Rating request button for hired/completed jobs */}
+                {application.status === 'hired' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowRatingRequestDialog(true)}
+                    data-testid={`button-request-rating-${application.id}`}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    Request Rating
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </CardContent>
 
-      {/* Rating Dialog */}
+      {/* Rating Dialog for recruiters */}
       {userType === 'recruiter' && (
         <RatingDialog
           open={showRatingDialog}
           onOpenChange={setShowRatingDialog}
+          application={application}
+          currentUserId={currentUserId}
+        />
+      )}
+
+      {/* Rating Request Dialog for freelancers */}
+      {userType === 'freelancer' && (
+        <RatingRequestDialog
+          open={showRatingRequestDialog}
+          onOpenChange={setShowRatingRequestDialog}
           application={application}
           currentUserId={currentUserId}
         />

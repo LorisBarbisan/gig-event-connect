@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Menu, User, LogOut, Settings, UserCircle } from "lucide-react";
+import { Search, Menu, User, LogOut, Settings, UserCircle, Star } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -173,6 +173,14 @@ export const Layout = ({ children }: LayoutProps) => {
                         My Profile
                       </Link>
                     </DropdownMenuItem>
+                    {user?.role === 'freelancer' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/ratings" className="flex items-center gap-2 w-full">
+                          <Star className="w-4 h-4" />
+                          My Ratings
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="flex items-center gap-2 w-full">
                         <Settings className="w-4 h-4" />
