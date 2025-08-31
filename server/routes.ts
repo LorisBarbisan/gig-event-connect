@@ -1486,5 +1486,222 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return notification;
   }
 
+  // Rating submission endpoint
+  app.post("/api/ratings", async (req, res) => {
+    try {
+      const { job_application_id, freelancer_id, rating } = req.body;
+      
+      if (!job_application_id || !freelancer_id || !rating) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+
+      // Get recruiter ID from the job application
+      const application = await storage.getJobApplicationById(job_application_id);
+      if (!application) {
+        return res.status(404).json({ error: "Job application not found" });
+      }
+
+      const job = await storage.getJobById(application.job_id);
+      if (!job?.recruiter_id) {
+        return res.status(404).json({ error: "Job or recruiter not found" });
+      }
+
+      const recruiterId = job.recruiter_id;
+
+      // Check if recruiter can rate this freelancer
+      const canRate = await storage.canRecruiterRateFreelancer(recruiterId, freelancer_id, job_application_id);
+      if (!canRate) {
+        return res.status(403).json({ error: "You cannot rate this freelancer" });
+      }
+
+      // Create the rating
+      const newRating = await storage.createRating({
+        job_application_id,
+        recruiter_id: recruiterId,
+        freelancer_id,
+        rating
+      });
+
+      // Create notification for the freelancer
+      try {
+        const recruiter = await storage.getUser(recruiterId);
+        const recruiterName = recruiter?.first_name && recruiter?.last_name 
+          ? `${recruiter.first_name} ${recruiter.last_name}` 
+          : 'A recruiter';
+
+        await createAndBroadcastNotification({
+          user_id: freelancer_id,
+          type: 'rating_received',
+          title: `New ${rating}-star rating received!`,
+          message: `${recruiterName} rated your work ${rating} stars for "${job?.title || 'a job'}".`,
+          priority: 'normal',
+          related_entity_type: 'rating',
+          related_entity_id: newRating.id,
+          action_url: '/dashboard'
+        });
+      } catch (notificationError) {
+        console.error("Error creating rating notification:", notificationError);
+      }
+
+      // Update rating request status if it exists
+      try {
+        const ratingRequest = await storage.getRatingRequestByJobApplication(job_application_id);
+        if (ratingRequest) {
+          await storage.updateRatingRequestStatus(ratingRequest.id, 'completed');
+        }
+      } catch (requestError) {
+        console.error("Error updating rating request:", requestError);
+      }
+
+      res.status(201).json(newRating);
+    } catch (error) {
+      console.error("Rating submission error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get freelancer ratings
+  app.get("/api/ratings/freelancer/:freelancerId", async (req, res) => {
+    try {
+      const freelancerId = parseInt(req.params.freelancerId);
+      const ratings = await storage.getFreelancerRatings(freelancerId);
+      res.json(ratings);
+    } catch (error) {
+      console.error("Get freelancer ratings error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get freelancer average rating
+  app.get("/api/ratings/freelancer/:freelancerId/average", async (req, res) => {
+    try {
+      const freelancerId = parseInt(req.params.freelancerId);
+      const averageRating = await storage.getFreelancerAverageRating(freelancerId);
+      res.json(averageRating);
+    } catch (error) {
+      console.error("Get freelancer average rating error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Create rating request
+  app.post("/api/rating-requests", async (req, res) => {
+    try {
+      const { job_application_id, freelancer_id, recruiter_id } = req.body;
+      
+      if (!job_application_id || !freelancer_id || !recruiter_id) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check if request already exists
+      const existingRequest = await storage.getRatingRequestByJobApplication(job_application_id);
+      if (existingRequest) {
+        return res.status(409).json({ error: "Rating request already exists for this job application" });
+      }
+
+      // Check if rating already exists
+      const existingRating = await storage.getRatingByJobApplication(job_application_id);
+      if (existingRating) {
+        return res.status(409).json({ error: "This job application has already been rated" });
+      }
+
+      // Create the rating request
+      const ratingRequest = await storage.createRatingRequest({
+        job_application_id,
+        freelancer_id,
+        recruiter_id
+      });
+
+      // Create notification for the recruiter
+      try {
+        const freelancer = await storage.getUser(freelancer_id);
+        const freelancerName = freelancer?.first_name && freelancer?.last_name 
+          ? `${freelancer.first_name} ${freelancer.last_name}` 
+          : 'A freelancer';
+
+        await createAndBroadcastNotification({
+          user_id: recruiter_id,
+          type: 'rating_request',
+          title: 'Rating request received',
+          message: `${freelancerName} has requested a rating for their work.`,
+          priority: 'normal',
+          related_entity_type: 'rating',
+          related_entity_id: ratingRequest.id,
+          action_url: '/dashboard'
+        });
+      } catch (notificationError) {
+        console.error("Error creating rating request notification:", notificationError);
+      }
+
+      res.status(201).json(ratingRequest);
+    } catch (error) {
+      console.error("Rating request creation error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get rating requests for recruiter
+  app.get("/api/rating-requests/recruiter/:recruiterId", async (req, res) => {
+    try {
+      const recruiterId = parseInt(req.params.recruiterId);
+      const ratingRequests = await storage.getRecruiterRatingRequests(recruiterId);
+      res.json(ratingRequests);
+    } catch (error) {
+      console.error("Get recruiter rating requests error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get rating requests for freelancer
+  app.get("/api/rating-requests/freelancer/:freelancerId", async (req, res) => {
+    try {
+      const freelancerId = parseInt(req.params.freelancerId);
+      const ratingRequests = await storage.getFreelancerRatingRequests(freelancerId);
+      res.json(ratingRequests);
+    } catch (error) {
+      console.error("Get freelancer rating requests error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Respond to rating request (decline)
+  app.put("/api/rating-requests/:requestId/decline", async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.requestId);
+      
+      const updatedRequest = await storage.updateRatingRequestStatus(requestId, 'declined');
+      
+      // Create notification for the freelancer
+      try {
+        const recruiter = await storage.getUser(updatedRequest.recruiter_id);
+        const recruiterName = recruiter?.first_name && recruiter?.last_name 
+          ? `${recruiter.first_name} ${recruiter.last_name}` 
+          : 'The recruiter';
+
+        await createAndBroadcastNotification({
+          user_id: updatedRequest.freelancer_id,
+          type: 'rating_request',
+          title: 'Rating request declined',
+          message: `${recruiterName} has declined to provide a rating at this time.`,
+          priority: 'low',
+          related_entity_type: 'rating',
+          related_entity_id: requestId,
+          action_url: '/dashboard'
+        });
+      } catch (notificationError) {
+        console.error("Error creating rating request decline notification:", notificationError);
+      }
+
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error("Rating request decline error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }

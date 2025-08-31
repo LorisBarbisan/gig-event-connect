@@ -9,6 +9,8 @@ import {
   conversations,
   messages,
   notifications,
+  ratings,
+  rating_requests,
   type User, 
   type InsertUser,
   type FreelancerProfile,
@@ -24,7 +26,11 @@ import {
   type InsertConversation,
   type InsertMessage,
   type Notification,
-  type InsertNotification
+  type InsertNotification,
+  type Rating,
+  type InsertRating,
+  type RatingRequest,
+  type InsertRatingRequest
 } from "@shared/schema";
 import { eq, desc, isNull, and, or, sql } from "drizzle-orm";
 
@@ -76,7 +82,8 @@ export interface IStorage {
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
   getFreelancerApplications(freelancerId: number): Promise<JobApplication[]>;
   getJobApplications(jobId: number): Promise<JobApplication[]>;
-  updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired'): Promise<JobApplication>;
+  getJobApplicationById(applicationId: number): Promise<JobApplication | undefined>;
+  updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired', rejectionMessage?: string): Promise<JobApplication>;
   
   // Messaging management
   getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation>;
@@ -94,6 +101,20 @@ export interface IStorage {
   markAllNotificationsAsRead(userId: number): Promise<void>;
   deleteNotification(notificationId: number): Promise<void>;
   deleteExpiredNotifications(): Promise<void>;
+
+  // Rating management
+  createRating(rating: InsertRating): Promise<Rating>;
+  getRatingByJobApplication(jobApplicationId: number): Promise<Rating | undefined>;
+  getFreelancerRatings(freelancerId: number): Promise<Array<Rating & { recruiter: User; job_title?: string }>>;
+  getFreelancerAverageRating(freelancerId: number): Promise<{ average: number; count: number }>;
+  canRecruiterRateFreelancer(recruiterId: number, freelancerId: number, jobApplicationId: number): Promise<boolean>;
+
+  // Rating request management
+  createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest>;
+  getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined>;
+  getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
+  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>>;
+  updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -445,6 +466,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(job_applications).where(eq(job_applications.freelancer_id, freelancerId));
   }
 
+  async getJobApplicationById(applicationId: number): Promise<JobApplication | undefined> {
+    const result = await db.select().from(job_applications).where(eq(job_applications.id, applicationId)).limit(1);
+    return result[0];
+  }
+
   async updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired', rejectionMessage?: string): Promise<JobApplication> {
     const updateData: any = { 
       status: status,
@@ -743,6 +769,186 @@ export class DatabaseStorage implements IStorage {
       console.error('Error during account deletion:', error);
       throw new Error('Failed to delete user account. Please try again.');
     }
+  }
+
+  // Rating management methods
+  async createRating(rating: InsertRating): Promise<Rating> {
+    const result = await db.insert(ratings).values([rating as any]).returning();
+    return result[0];
+  }
+
+  async getRatingByJobApplication(jobApplicationId: number): Promise<Rating | undefined> {
+    const result = await db.select().from(ratings).where(eq(ratings.job_application_id, jobApplicationId)).limit(1);
+    return result[0];
+  }
+
+  async getFreelancerRatings(freelancerId: number): Promise<Array<Rating & { recruiter: User; job_title?: string }>> {
+    const result = await db.select({
+      id: ratings.id,
+      job_application_id: ratings.job_application_id,
+      recruiter_id: ratings.recruiter_id,
+      freelancer_id: ratings.freelancer_id,
+      rating: ratings.rating,
+      created_at: ratings.created_at,
+      updated_at: ratings.updated_at,
+      recruiter: {
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        email_verification_token: users.email_verification_token,
+        email_verification_expires: users.email_verification_expires,
+        password_reset_token: users.password_reset_token,
+        password_reset_expires: users.password_reset_expires,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        password: users.password
+      },
+      job_title: jobs.title
+    })
+    .from(ratings)
+    .leftJoin(users, eq(ratings.recruiter_id, users.id))
+    .leftJoin(job_applications, eq(ratings.job_application_id, job_applications.id))
+    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+    .where(eq(ratings.freelancer_id, freelancerId))
+    .orderBy(desc(ratings.created_at));
+
+    return result as Array<Rating & { recruiter: User; job_title?: string }>;
+  }
+
+  async getFreelancerAverageRating(freelancerId: number): Promise<{ average: number; count: number }> {
+    const result = await db.select({
+      average: sql<number>`ROUND(AVG(${ratings.rating}), 1)`,
+      count: sql<number>`count(*)::int`
+    })
+    .from(ratings)
+    .where(eq(ratings.freelancer_id, freelancerId));
+
+    return {
+      average: Number(result[0]?.average || 0),
+      count: Number(result[0]?.count || 0)
+    };
+  }
+
+  async canRecruiterRateFreelancer(recruiterId: number, freelancerId: number, jobApplicationId: number): Promise<boolean> {
+    // Check if this is a valid hired job application
+    const application = await db.select()
+      .from(job_applications)
+      .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+      .where(and(
+        eq(job_applications.id, jobApplicationId),
+        eq(job_applications.freelancer_id, freelancerId),
+        eq(job_applications.status, 'hired'),
+        eq(jobs.recruiter_id, recruiterId)
+      ))
+      .limit(1);
+
+    if (!application.length) return false;
+
+    // Check if rating already exists
+    const existingRating = await this.getRatingByJobApplication(jobApplicationId);
+    return !existingRating;
+  }
+
+  // Rating request management methods
+  async createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest> {
+    const result = await db.insert(rating_requests).values([request as any]).returning();
+    return result[0];
+  }
+
+  async getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined> {
+    const result = await db.select().from(rating_requests).where(eq(rating_requests.job_application_id, jobApplicationId)).limit(1);
+    return result[0];
+  }
+
+  async getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>> {
+    const result = await db.select({
+      id: rating_requests.id,
+      job_application_id: rating_requests.job_application_id,
+      freelancer_id: rating_requests.freelancer_id,
+      recruiter_id: rating_requests.recruiter_id,
+      status: rating_requests.status,
+      requested_at: rating_requests.requested_at,
+      responded_at: rating_requests.responded_at,
+      created_at: rating_requests.created_at,
+      updated_at: rating_requests.updated_at,
+      freelancer: {
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        email_verification_token: users.email_verification_token,
+        email_verification_expires: users.email_verification_expires,
+        password_reset_token: users.password_reset_token,
+        password_reset_expires: users.password_reset_expires,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        password: users.password
+      },
+      job_title: jobs.title
+    })
+    .from(rating_requests)
+    .leftJoin(users, eq(rating_requests.freelancer_id, users.id))
+    .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
+    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+    .where(eq(rating_requests.recruiter_id, recruiterId))
+    .orderBy(desc(rating_requests.requested_at));
+
+    return result as Array<RatingRequest & { freelancer: User; job_title?: string }>;
+  }
+
+  async getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>> {
+    const result = await db.select({
+      id: rating_requests.id,
+      job_application_id: rating_requests.job_application_id,
+      freelancer_id: rating_requests.freelancer_id,
+      recruiter_id: rating_requests.recruiter_id,
+      status: rating_requests.status,
+      requested_at: rating_requests.requested_at,
+      responded_at: rating_requests.responded_at,
+      created_at: rating_requests.created_at,
+      updated_at: rating_requests.updated_at,
+      recruiter: {
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        email_verification_token: users.email_verification_token,
+        email_verification_expires: users.email_verification_expires,
+        password_reset_token: users.password_reset_token,
+        password_reset_expires: users.password_reset_expires,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        password: users.password
+      },
+      job_title: jobs.title
+    })
+    .from(rating_requests)
+    .leftJoin(users, eq(rating_requests.recruiter_id, users.id))
+    .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
+    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+    .where(eq(rating_requests.freelancer_id, freelancerId))
+    .orderBy(desc(rating_requests.requested_at));
+
+    return result as Array<RatingRequest & { recruiter: User; job_title?: string }>;
+  }
+
+  async updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest> {
+    const result = await db.update(rating_requests)
+      .set({ 
+        status: status,
+        responded_at: new Date(),
+        updated_at: sql`now()`
+      })
+      .where(eq(rating_requests.id, requestId))
+      .returning();
+    return result[0];
   }
 }
 

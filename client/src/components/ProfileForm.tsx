@@ -10,8 +10,10 @@ import { Separator } from '@/components/ui/separator';
 import { Building2, MapPin, Globe, Plus, X, User, FileText, Download } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
 import { CVUploader } from '@/components/CVUploader';
+import { RatingDisplay } from './StarRating';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useFreelancerAverageRating } from '@/hooks/useRatings';
 import type { FreelancerProfile, RecruiterProfile, FreelancerFormData, RecruiterFormData } from '@shared/types';
 
 interface ProfileFormProps {
@@ -210,6 +212,8 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
 }
 
 function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
+  const { data: averageRating } = useFreelancerAverageRating(profile.user_id);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -229,12 +233,22 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
             <User className="w-8 h-8 text-white" />
           )}
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="text-xl font-semibold">{profile.first_name} {profile.last_name}</h3>
           <p className="text-muted-foreground">{profile.title}</p>
-          <Badge variant="secondary" className="mt-1">
-            {profile.availability_status}
-          </Badge>
+          <div className="flex items-center gap-3 mt-1">
+            <Badge variant="secondary">
+              {profile.availability_status}
+            </Badge>
+            {averageRating && (
+              <RatingDisplay
+                average={averageRating.average}
+                count={averageRating.count}
+                size="sm"
+                data-testid={`rating-display-${profile.user_id}`}
+              />
+            )}
+          </div>
         </div>
       </div>
       <Separator />

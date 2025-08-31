@@ -1,0 +1,113 @@
+Epic: Freelancer Star Rating System
+Goal: Allow recruiters to rate freelancers after a confirmed booking (or upon request by freelancer), showing a simple 1–5 star score with average rating & number of reviews on the freelancer’s profile.
+________________________________________
+ User Stories
+1. Rating Submission (Recruiter → Freelancer)
+As a Recruiter, I want to rate a freelancer with 1–5 stars after a confirmed booking ends, so that I can provide feedback on their performance.
+•	AC1: Recruiter can only submit rating for freelancers they had a confirmed booking with.
+•	AC2: Rating scale is limited to whole stars (1–5).
+•	AC3: Once submitted, rating is stored against the freelancer’s profile.
+•	AC4: Recruiter sees a confirmation message (“Thanks for rating [Freelancer Name]”).
+________________________________________
+2. Rating Upon Request (Freelancer → Recruiter)
+As a Freelancer, I want to request a rating from a recruiter I worked with, so that my profile reflects verified feedback.
+•	AC1: Freelancer can send rating requests only to recruiters with whom they had a confirmed booking.
+•	AC2: Recruiter receives notification/email with a link to rate the freelancer.
+•	AC3: Recruiter can choose to accept, ignore, or decline the request.
+•	AC4: Once rated, request is marked as “completed” in the freelancer’s profile history.
+________________________________________
+3. Display Ratings on Freelancer Profile
+As a Recruiter or Freelancer viewing a profile, I want to see the freelancer’s average rating and number of ratings, so that I can quickly assess their reliability.
+•	AC1: Display average score (1–5) at the top of the freelancer’s profile.
+•	AC2: Display total number of ratings (e.g., “⭐ 4.6 (23 ratings)”).
+•	AC3: Average score updates in real-time when a new rating is submitted.
+•	AC4: If no ratings yet → show placeholder text (“No ratings yet”).
+________________________________________
+4. Prevent Rating Abuse
+As a Platform Admin, I want to ensure ratings are only submitted by valid recruiters, so that the system is fair and cannot be manipulated.
+•	AC1: A recruiter can only rate a freelancer once per confirmed booking.
+•	AC2: Duplicate ratings for the same job are blocked.
+•	AC3: Suspicious rating patterns (e.g., multiple 1-star spam) trigger an admin review flag.
+•	AC4: Admin can delete inappropriate or abusive ratings.
+________________________________________
+5. Freelancer Rating Dashboard 
+As a Freelancer, I want to see my detailed rating history, so that I can understand my strengths and areas for improvement.
+•	AC1: Freelancer can see a list of all ratings given by recruiters.
+•	AC2: Ratings displayed with recruiter name, job reference, and date.
+•	AC3: No written reviews at MVP stage (future enhancement).
+________________________________________
+6. Notifications
+As a Freelancer, I want to be notified when a recruiter rates me, so that I know my profile has been updated.
+•	AC1: System sends in-app notification after rating is submitted.
+•	AC2: Optional: Email notification confirming rating.
+•	AC3: Recruiter notified if rating request is accepted and submitted.
+________________________________________
+User Story: Freelancer Requests Rating from Recruiter
+Story:
+As a Freelancer, I want to request a rating from a recruiter I worked with, so that my profile reflects verified feedback even if the recruiter hasn’t rated me yet.
+________________________________________
+✅ Acceptance Criteria
+AC1 – Eligibility
+•	Freelancer can only request a rating from recruiters tied to completed confirmed bookings.
+•	A freelancer cannot send a request if the recruiter has already rated them for that booking.
+•	Each booking allows only one rating request.
+AC2 – Request Action
+•	On the booking details page, freelancer sees a “Request Rating” button.
+•	Clicking triggers confirmation modal: “Do you want to request a rating from [Recruiter Name]?”
+•	Once confirmed, request is logged and cannot be resent.
+AC3 – Recruiter Notification
+•	Recruiter receives notification/email:
+o	Subject: “[Freelancer Name] has requested a rating for your recent booking”
+o	Body: Contains freelancer name, booking reference, and direct link to rating form.
+•	Recruiter can choose to:
+o	Submit Rating (redirects to rating form).
+o	Ignore Request (no response needed).
+o	Decline Request (optional feature, sends polite decline to freelancer).
+AC4 – Tracking Requests
+•	Freelancer can see status of requests:
+o	Pending – waiting on recruiter.
+o	Completed – rating submitted.
+o	Declined – recruiter declined (if feature enabled).
+•	Recruiter can see list of pending rating requests in their dashboard.
+AC5 – Security & Validation
+•	Rating requests tied to booking ID to prevent spamming recruiters.
+•	Only authenticated freelancers can request.
+•	Recruiters can only submit rating once per booking (same as direct flow).
+AC6 – Notifications
+•	Freelancer notified when recruiter responds (rating submitted or declined).
+•	Recruiter notified when freelancer sends request.
+AC7 – Error Handling
+•	If freelancer tries to request without valid booking → show: “You cannot request a rating for this recruiter.”
+•	If recruiter tries to follow expired/invalid link → show: “This rating request is no longer valid.”
+•	If server error → retry logic or message: “Unable to send request, please try again.”
+________________________________________
+🏗 Technical Tasks
+Frontend (Freelancer side)
+1.	Add “Request Rating” button to booking history details.
+2.	Add confirmation modal before sending request.
+3.	Show request status tracker on booking details page.
+4.	Handle error and success messages.
+Frontend (Recruiter side)
+1.	Add notifications panel entry when request is received.
+2.	Create rating request inbox in recruiter dashboard.
+3.	Add “Submit Rating” button linking to existing rating form.
+4.	Optional: Add “Decline Request” action.
+Backend
+1.	Create API endpoint to send rating requests (POST /api/ratings/request).
+2.	Store requests in database (RatingRequests { id, booking_id, freelancer_id, recruiter_id, status, created_at }).
+3.	Trigger email/notification to recruiter.
+4.	When recruiter submits rating via link, update request status = “completed.”
+Database
+•	New table: RatingRequests.
+•	Foreign keys to Bookings, Recruiters, Freelancers.
+•	Status field: [Pending, Completed, Declined].
+Notifications & Email
+•	In-app notification to recruiter upon request.
+•	Email integration (SendGrid, SES, etc.) for rating request.
+•	Notify freelancer when recruiter completes action.
+Testing
+•	Unit tests for request submission API.
+•	Integration tests for end-to-end flow (Freelancer → Recruiter → Rating).
+•	UI tests for request button, status tracker, recruiter inbox.
+•	Negative tests: multiple requests for same booking, invalid users.
+

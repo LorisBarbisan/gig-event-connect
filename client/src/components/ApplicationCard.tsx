@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX } from 'lucide-react';
+import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star } from 'lucide-react';
+import { RatingDialog } from './RatingDialog';
 import type { JobApplication } from '@shared/types';
 
 interface ApplicationCardProps {
@@ -24,6 +25,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [showHireConfirm, setShowHireConfirm] = useState(false);
   const [rejectionMessage, setRejectionMessage] = useState('');
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
 
   const rejectMutation = useMutation({
     mutationFn: async () => {
@@ -322,11 +324,35 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                     </Dialog>
                   </>
                 )}
+                
+                {/* Rating button for hired applications */}
+                {application.status === 'hired' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowRatingDialog(true)}
+                    data-testid={`button-rate-${application.id}`}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <Star className="w-4 h-4 mr-1" />
+                    Rate Freelancer
+                  </Button>
+                )}
               </>
             )}
           </div>
         </div>
       </CardContent>
+
+      {/* Rating Dialog */}
+      {userType === 'recruiter' && (
+        <RatingDialog
+          open={showRatingDialog}
+          onOpenChange={setShowRatingDialog}
+          application={application}
+          currentUserId={currentUserId}
+        />
+      )}
     </Card>
   );
 }

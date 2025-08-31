@@ -107,17 +107,39 @@ export const messages = pgTable("messages", {
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull().$type<'application_update' | 'new_message' | 'job_update' | 'profile_view' | 'system'>(),
+  type: text("type").notNull().$type<'application_update' | 'new_message' | 'job_update' | 'profile_view' | 'rating_received' | 'rating_request' | 'system'>(),
   title: text("title").notNull(),
   message: text("message").notNull(),
   is_read: boolean("is_read").default(false).notNull(),
   priority: text("priority").default('normal').$type<'low' | 'normal' | 'high' | 'urgent'>(),
-  related_entity_type: text("related_entity_type").$type<'job' | 'application' | 'message' | 'profile' | null>(),
+  related_entity_type: text("related_entity_type").$type<'job' | 'application' | 'message' | 'profile' | 'rating' | null>(),
   related_entity_id: integer("related_entity_id"),
   action_url: text("action_url"), // URL to navigate to when clicked
   metadata: text("metadata"), // JSON string for additional data
   expires_at: timestamp("expires_at"), // Optional expiration for temporary notifications
   created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ratings = pgTable("ratings", {
+  id: serial("id").primaryKey(),
+  job_application_id: integer("job_application_id").notNull().references(() => job_applications.id, { onDelete: "cascade" }),
+  recruiter_id: integer("recruiter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  freelancer_id: integer("freelancer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull().$type<1 | 2 | 3 | 4 | 5>(), // 1-5 stars
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const rating_requests = pgTable("rating_requests", {
+  id: serial("id").primaryKey(),
+  job_application_id: integer("job_application_id").notNull().references(() => job_applications.id, { onDelete: "cascade" }),
+  freelancer_id: integer("freelancer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  recruiter_id: integer("recruiter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").default('pending').$type<'pending' | 'completed' | 'declined'>(),
+  requested_at: timestamp("requested_at").defaultNow().notNull(),
+  responded_at: timestamp("responded_at"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -184,6 +206,28 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   user_id: z.number(),
 });
 
+export const insertRatingSchema = createInsertSchema(ratings).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+}).extend({
+  job_application_id: z.number(),
+  recruiter_id: z.number(),
+  freelancer_id: z.number(),
+  rating: z.number().min(1).max(5),
+});
+
+export const insertRatingRequestSchema = createInsertSchema(rating_requests).omit({
+  id: true,
+  requested_at: true,
+  created_at: true,
+  updated_at: true,
+}).extend({
+  job_application_id: z.number(),
+  freelancer_id: z.number(),
+  recruiter_id: z.number(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type FreelancerProfile = typeof freelancer_profiles.$inferSelect;
@@ -200,3 +244,7 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Rating = typeof ratings.$inferSelect;
+export type InsertRating = z.infer<typeof insertRatingSchema>;
+export type RatingRequest = typeof rating_requests.$inferSelect;
+export type InsertRatingRequest = z.infer<typeof insertRatingRequestSchema>;
