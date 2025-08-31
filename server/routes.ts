@@ -121,10 +121,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if email is verified
       console.log("Email verified:", user.email_verified);
       if (!user.email_verified) {
+        console.log("LOGIN FAILED: Email not verified");
         return res.status(403).json({ 
           error: "Please verify your email address before signing in. Check your email for the verification link." 
         });
       }
+      console.log("Email verification passed");
 
       // Check password
       console.log("Password from request:", password);
