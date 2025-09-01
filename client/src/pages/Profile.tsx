@@ -96,6 +96,10 @@ export default function Profile() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Handle temporary unavailability gracefully
+        if (response.status === 503) {
+          throw new Error(errorData.message || 'CV download temporarily unavailable');
+        }
         throw new Error(errorData.error || 'Failed to download CV');
       }
 
