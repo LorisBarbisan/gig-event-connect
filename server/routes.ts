@@ -48,45 +48,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).send("EventLink API is running");
   });
 
-  // OAuth Routes
+  // OAuth Routes (only if corresponding strategies are configured)
   // Google OAuth
-  app.get('/api/auth/google', passport.authenticate('google', { 
-    scope: ['profile', 'email'] 
-  }));
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get('/api/auth/google', passport.authenticate('google', { 
+      scope: ['profile', 'email'] 
+    }));
 
-  app.get('/api/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/auth?error=google_auth_failed' }),
-    (req, res) => {
-      // Successful authentication, redirect to frontend
-      res.redirect('/dashboard');
-    }
-  );
+    app.get('/api/auth/google/callback', 
+      passport.authenticate('google', { failureRedirect: '/auth?error=google_auth_failed' }),
+      (req, res) => {
+        // Successful authentication, redirect to frontend
+        res.redirect('/dashboard');
+      }
+    );
+  }
 
-  // Facebook OAuth  
-  app.get('/api/auth/facebook', passport.authenticate('facebook', { 
-    scope: ['email'] 
-  }));
+  // Facebook OAuth
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    app.get('/api/auth/facebook', passport.authenticate('facebook', { 
+      scope: ['email'] 
+    }));
 
-  app.get('/api/auth/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: '/auth?error=facebook_auth_failed' }),
-    (req, res) => {
-      // Successful authentication, redirect to frontend
-      res.redirect('/dashboard');
-    }
-  );
+    app.get('/api/auth/facebook/callback',
+      passport.authenticate('facebook', { failureRedirect: '/auth?error=facebook_auth_failed' }),
+      (req, res) => {
+        // Successful authentication, redirect to frontend
+        res.redirect('/dashboard');
+      }
+    );
+  }
 
   // Apple OAuth
-  app.get('/api/auth/apple', passport.authenticate('apple', { 
-    scope: ['name', 'email'] 
-  }));
+  if (process.env.APPLE_CLIENT_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY_PATH) {
+    app.get('/api/auth/apple', passport.authenticate('apple', { 
+      scope: ['name', 'email'] 
+    }));
 
-  app.get('/api/auth/apple/callback',
-    passport.authenticate('apple', { failureRedirect: '/auth?error=apple_auth_failed' }),
-    (req, res) => {
-      // Successful authentication, redirect to frontend  
-      res.redirect('/dashboard');
-    }
-  );
+    app.get('/api/auth/apple/callback',
+      passport.authenticate('apple', { failureRedirect: '/auth?error=apple_auth_failed' }),
+      (req, res) => {
+        // Successful authentication, redirect to frontend  
+        res.redirect('/dashboard');
+      }
+    );
+  }
 
   // Get current user session info
   app.get('/api/auth/session', (req, res) => {
