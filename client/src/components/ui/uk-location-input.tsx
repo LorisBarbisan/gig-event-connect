@@ -50,6 +50,8 @@ export function UKLocationInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>()
+  const cacheRef = useRef<Map<string, UKLocation[]>>(new Map())
+  const lastQueryRef = useRef<string>('')
 
   // Check if input looks like a postcode
   const isPostcodeInput = (input: string) => {
@@ -85,12 +87,28 @@ export function UKLocationInput({
     return parts.join(', ')
   }
 
-  // Search UK locations using Nominatim API
+  // Search UK locations using API with client-side caching
   const searchLocations = async (query: string) => {
     if (query.length < 3) {
       setSuggestions([])
       return
     }
+
+    const normalizedQuery = query.toLowerCase().trim()
+    
+    // Check client-side cache first
+    const cached = cacheRef.current.get(normalizedQuery)
+    if (cached) {
+      setSuggestions(cached)
+      setShowSuggestions(true)
+      return
+    }
+
+    // Avoid duplicate requests for the same query
+    if (lastQueryRef.current === normalizedQuery) {
+      return
+    }
+    lastQueryRef.current = normalizedQuery
 
     setIsLoading(true)
     setError(null)
@@ -130,6 +148,17 @@ export function UKLocationInput({
         lon: item.lon
       }))
 
+      // Cache the results
+      cacheRef.current.set(normalizedQuery, locations)
+      
+      // Limit cache size to prevent memory issues
+      if (cacheRef.current.size > 100) {
+        const firstKey = cacheRef.current.keys().next().value
+        if (firstKey) {
+          cacheRef.current.delete(firstKey)
+        }
+      }
+
       setSuggestions(locations)
       setShowSuggestions(true)
     } catch (err) {
@@ -138,6 +167,7 @@ export function UKLocationInput({
       setSuggestions([])
     } finally {
       setIsLoading(false)
+      lastQueryRef.current = ''
     }
   }
 
@@ -152,10 +182,10 @@ export function UKLocationInput({
       clearTimeout(debounceRef.current)
     }
 
-    // Debounce search requests
+    // Debounce search requests - increased to 500ms for better performance
     debounceRef.current = setTimeout(() => {
       searchLocations(newValue)
-    }, 300)
+    }, 500)
   }
 
   // Handle suggestion selection

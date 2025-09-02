@@ -1810,6 +1810,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Location search cache (in-memory cache with TTL)
+  const locationCache = new Map<string, { data: any; timestamp: number }>();
+  const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
   // UK Location search proxy to avoid CORS issues
   app.get("/api/locations/search", async (req, res) => {
     try {
@@ -1819,11 +1823,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
+      const query = (q as string).toLowerCase().trim();
+      const now = Date.now();
+
+      // Check cache first
+      const cached = locationCache.get(query);
+      if (cached && (now - cached.timestamp) < CACHE_TTL) {
+        res.set('Cache-Control', 'public, max-age=300'); // 5 minutes browser cache
+        return res.json(cached.data);
+      }
+
       const searchParams = new URLSearchParams({
         q: q as string,
         format: 'json',
         countrycodes: 'gb',
-        limit: '10',
+        limit: '8', // Reduced from 10 for faster responses
         addressdetails: '1',
         'accept-language': 'en'
       });
@@ -1852,6 +1866,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
+
+      // Cache the result
+      locationCache.set(query, { data, timestamp: now });
+
+      // Clean old cache entries periodically
+      if (locationCache.size > 1000) { // Keep max 1000 entries
+        const cutoff = now - CACHE_TTL;
+        const keysToDelete: string[] = [];
+        locationCache.forEach((value, key) => {
+          if (value.timestamp < cutoff) {
+            keysToDelete.push(key);
+          }
+        });
+        keysToDelete.forEach(key => locationCache.delete(key));
+      }
+
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes browser cache
       res.json(data);
     } catch (error) {
       console.error('Location search error:', error);
