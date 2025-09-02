@@ -829,6 +829,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get individual job by ID
+  app.get("/api/jobs/:id", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      if (isNaN(jobId)) {
+        return res.status(400).json({ error: "Invalid job ID" });
+      }
+
+      const job = await storage.getJobById(jobId);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      res.json(job);
+    } catch (error) {
+      console.error("Get job by ID error:", error);
+      res.status(500).json({ error: "Failed to fetch job" });
+    }
+  });
+
   // Helper function for preset descriptions
   function getPresetDescription(preset: string): string {
     const descriptions: Record<string, string> = {

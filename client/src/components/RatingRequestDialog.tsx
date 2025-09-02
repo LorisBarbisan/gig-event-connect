@@ -25,13 +25,21 @@ export function RatingRequestDialog({
 
   const requestRatingMutation = useMutation({
     mutationFn: async () => {
+      // First get the job details to find the recruiter ID
+      const jobResponse = await apiRequest(`/api/jobs/${application.job_id}`);
+      const recruiterId = jobResponse?.recruiter_id;
+      
+      if (!recruiterId) {
+        throw new Error('Unable to find recruiter for this job');
+      }
+
       return await apiRequest('/api/rating-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job_application_id: application.id,
           freelancer_id: currentUserId,
-          recruiter_id: 1 // Will get from job when available
+          recruiter_id: recruiterId
         }),
       });
     },
