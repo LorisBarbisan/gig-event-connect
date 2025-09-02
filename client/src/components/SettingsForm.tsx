@@ -145,8 +145,15 @@ export function SettingsForm({ user }: SettingsFormProps) {
   const handleAccountSave = async () => {
     setIsSavingAccount(true);
     try {
+      console.log('SettingsForm: Starting account save with data:', {
+        userId: user.id,
+        first_name: accountForm.first_name,
+        last_name: accountForm.last_name,
+        company_name: accountForm.company_name
+      });
+
       // Update user account info (first_name, last_name)
-      await apiRequest('/api/auth/update-account', {
+      const response = await apiRequest('/api/auth/update-account', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -157,10 +164,13 @@ export function SettingsForm({ user }: SettingsFormProps) {
           last_name: accountForm.last_name,
         }),
       });
+      
+      console.log('SettingsForm: Account update response:', response);
 
       // Update profile info for recruiters (company_name)
       if (user.role === 'recruiter' && accountForm.company_name) {
-        await apiRequest(`/api/recruiter/${user.id}`, {
+        console.log('SettingsForm: Updating recruiter profile with company name');
+        const profileResponse = await apiRequest(`/api/recruiter/${user.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -169,16 +179,20 @@ export function SettingsForm({ user }: SettingsFormProps) {
             company_name: accountForm.company_name,
           }),
         });
+        console.log('SettingsForm: Recruiter profile update response:', profileResponse);
       }
 
       // Refresh user data to update the display
+      console.log('SettingsForm: Refreshing user data');
       await refreshUser();
+      console.log('SettingsForm: User data refreshed successfully');
 
       toast({
         title: 'Account updated',
         description: 'Your account information has been saved successfully.',
       });
     } catch (error: any) {
+      console.error('SettingsForm: Save failed with error:', error);
       toast({
         title: 'Update failed',
         description: error.message || 'Failed to update account information. Please try again.',
