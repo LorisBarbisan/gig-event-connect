@@ -1771,7 +1771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         await createAndBroadcastNotification({
           user_id: recruiter_id,
-          type: 'rating_request',
+          type: 'system',
           title: 'Rating request received',
           message: `${freelancerName} has requested a rating for their work.`,
           priority: 'normal',
