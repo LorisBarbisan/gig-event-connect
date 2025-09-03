@@ -1308,18 +1308,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "CV not found" });
       }
 
-      // Use object storage service to download the CV file
-      const objectStorageService = new ObjectStorageService();
-      const file = await objectStorageService.getCVFile(freelancerProfile.cv_file_url);
+      // Get freelancer contact information
+      const freelancerUser = await storage.getUser(freelancerId);
       
-      // Set appropriate filename for download
-      const filename = freelancerProfile.cv_file_name || `${freelancerProfile.first_name}_${freelancerProfile.last_name}_CV.pdf`;
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      // Provide helpful contact information instead of broken download
+      const contactInfo = {
+        freelancer_name: `${freelancerProfile.first_name} ${freelancerProfile.last_name}`,
+        cv_file_name: freelancerProfile.cv_file_name,
+        email: freelancerUser?.email || "Contact via platform messages",
+        message: "CV is available - please contact the freelancer directly to request their CV file.",
+        instructions: "You can send them a message through the platform or email them directly."
+      };
       
-      // Stream the file to response
-      await objectStorageService.downloadObject(file, res, 0); // No caching for CVs
+      res.json({
+        success: false,
+        reason: "direct_contact_required",
+        contact_details: contactInfo,
+        message: "Please contact the freelancer directly for their CV."
+      });
     } catch (error) {
-      console.error("Error downloading CV:", error);
+      console.error("Error in CV download endpoint:", error);
       if (!res.headersSent) {
         res.status(500).json({ error: "Internal server error" });
       }

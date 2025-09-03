@@ -103,9 +103,15 @@ export default function Profile() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Handle temporary unavailability gracefully
-        if (response.status === 503) {
-          throw new Error(errorData.message || 'CV download temporarily unavailable');
+        // Handle contact info response for CV access
+        if (errorData.reason === "direct_contact_required") {
+          const contactDetails = errorData.contact_details;
+          toast({
+            title: "Contact Required for CV",
+            description: `${contactDetails.message} Email: ${contactDetails.email}`,
+            variant: "default"
+          });
+          return;
         }
         throw new Error(errorData.error || 'Failed to download CV');
       }
