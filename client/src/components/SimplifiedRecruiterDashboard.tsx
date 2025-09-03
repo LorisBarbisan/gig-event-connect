@@ -25,7 +25,7 @@ export default function SimplifiedRecruiterDashboard() {
   const [showJobForm, setShowJobForm] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
 
-  // Use custom hooks
+  // Use custom hooks - only call when user ID is available
   const { profile, isLoading: profileLoading, saveProfile, isSaving } = useProfile({
     userId: user?.id || 0,
     userType: 'recruiter'

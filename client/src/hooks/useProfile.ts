@@ -13,10 +13,11 @@ export function useProfile({ userId, userType }: UseProfileProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch profile
+  // Fetch profile - only when userId is valid
   const { data: profile, isLoading } = useQuery({
     queryKey: [`/api/${userType}`, userId],
     queryFn: () => apiRequest(`/api/${userType}/${userId}`),
+    enabled: userId > 0, // Only fetch when we have a valid user ID
     retry: false,
   });
 
