@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { WebSocketServer, WebSocket } from "ws";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { insertUserSchema, insertFreelancerProfileSchema, insertRecruiterProfileSchema, insertJobSchema, insertJobApplicationSchema, insertMessageSchema, insertNotificationSchema } from "@shared/schema";
 import { sendVerificationEmail, sendEmail, sendPasswordResetEmail } from "./emailService";
@@ -18,6 +19,38 @@ import { performanceMonitor } from "./performanceMonitor";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMonitor.middleware());
+  
+  // Strict rate limiting for password operations
+  const passwordRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 3, // Only 3 password attempts per 15 minutes
+    message: { error: 'Too many password attempts. Please try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true, // Don't count successful requests
+  });
+  
+  // Apply strict rate limiting to sensitive routes
+  app.use('/api/auth/signin', passwordRateLimit);
+  app.use('/api/auth/forgot-password', passwordRateLimit);
+  app.use('/api/auth/reset-password', passwordRateLimit);
+  
+  // Input sanitization middleware for authentication
+  const sanitizeAuthInput = (req: any, res: any, next: any) => {
+    if (req.body) {
+      // Trim whitespace and normalize email
+      if (req.body.email) {
+        req.body.email = req.body.email.trim().toLowerCase();
+      }
+      // Ensure password length limits
+      if (req.body.password && req.body.password.length > 128) {
+        return res.status(400).json({ error: 'Password too long' });
+      }
+    }
+    next();
+  };
+  
+  app.use('/api/auth', sanitizeAuthInput);
 
   // Health check endpoint for monitoring
   app.get('/api/health', (req, res) => {
@@ -32,15 +65,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(analytics);
   });
 
-  // Session configuration for OAuth
+  // Enhanced session configuration for OAuth with security
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'eventlink-dev-secret-key',
+    secret: process.env.SESSION_SECRET || 'eventlink-dev-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
+    name: 'eventlink.sid', // Custom session name for security
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      httpOnly: true, // Prevent XSS attacks
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax' // CSRF protection while allowing OAuth redirects
+    },
+    rolling: true // Reset expiry on activity
   }));
 
   // Initialize Passport
@@ -70,14 +107,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth Routes (only if corresponding strategies are configured)
   // Google OAuth
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    app.get('/api/auth/google', passport.authenticate('google', { 
-      scope: ['profile', 'email'] 
-    }));
+    app.get('/api/auth/google', 
+      // Add security headers for OAuth initiation
+      (req, res, next) => {
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        next();
+      },
+      passport.authenticate('google', { 
+        scope: ['profile', 'email'] 
+      })
+    );
 
     app.get('/api/auth/google/callback', 
-      passport.authenticate('google', { failureRedirect: '/auth?error=google_auth_failed' }),
+      passport.authenticate('google', { 
+        failureRedirect: '/auth?error=google_auth_failed',
+        failureMessage: true 
+      }),
       (req, res) => {
-        // Successful authentication, redirect to frontend
+        // Successful authentication with enhanced security redirect
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.redirect('/dashboard');
       }
     );
@@ -85,30 +133,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Facebook OAuth
   if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-    app.get('/api/auth/facebook', passport.authenticate('facebook', { 
-      scope: ['email'] 
-    }));
+    app.get('/api/auth/facebook', 
+      // Add security headers for OAuth initiation
+      (req, res, next) => {
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        next();
+      },
+      passport.authenticate('facebook', { 
+        scope: ['email'] 
+      })
+    );
 
     app.get('/api/auth/facebook/callback',
-      passport.authenticate('facebook', { failureRedirect: '/auth?error=facebook_auth_failed' }),
+      passport.authenticate('facebook', { 
+        failureRedirect: '/auth?error=facebook_auth_failed',
+        failureMessage: true 
+      }),
       (req, res) => {
-        // Successful authentication, redirect to frontend
+        // Successful authentication with enhanced security redirect
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.redirect('/dashboard');
       }
     );
   }
 
 
-  // LinkedIn OAuth
+  // LinkedIn OAuth  
   if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
-    app.get('/api/auth/linkedin', passport.authenticate('linkedin', { 
-      scope: ['r_liteprofile', 'r_emailaddress'] 
-    }));
+    app.get('/api/auth/linkedin', 
+      // Add security headers for OAuth initiation
+      (req, res, next) => {
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        next();
+      },
+      passport.authenticate('linkedin', { 
+        scope: ['r_liteprofile', 'r_emailaddress'] 
+      })
+    );
 
     app.get('/api/auth/linkedin/callback',
-      passport.authenticate('linkedin', { failureRedirect: '/auth?error=linkedin_auth_failed' }),
+      passport.authenticate('linkedin', { 
+        failureRedirect: '/auth?error=linkedin_auth_failed',
+        failureMessage: true 
+      }),
       (req, res) => {
-        // Successful authentication, redirect to frontend
+        // Successful authentication with enhanced security redirect
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.redirect('/dashboard');
       }
     );
@@ -134,10 +204,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Authentication routes
+  // Authentication routes with enhanced security
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { email, password, role } = insertUserSchema.parse(req.body as any);
+      
+      // Enhanced password validation for security
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+      
+      // Check password complexity
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        return res.status(400).json({ 
+          error: "Password must contain at least 8 characters with uppercase, lowercase, and number" 
+        });
+      }
       
       // Check if user already exists (case-insensitive)
       const existingUser = await storage.getUserByEmail(email.toLowerCase());
@@ -145,8 +228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User already exists" });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Hash password with increased rounds for security
+      const hashedPassword = await bcrypt.hash(password, 12);
       
       // Generate verification token
       const verificationToken = randomBytes(32).toString('hex');
