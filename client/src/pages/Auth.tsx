@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 // Removed unused imports: UserCheck, Building2
-import { FaGoogle, FaFacebook, FaApple } from 'react-icons/fa';
+import { FaGoogle, FaFacebook, FaLinkedin } from 'react-icons/fa';
 
 export default function Auth() {
   const { user, signUp, signIn, resendVerificationEmail, loading: authLoading } = useAuth();
@@ -369,13 +369,14 @@ export default function Auth() {
                       type="button"
                       variant="outline"
                       className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/apple'}
+                      onClick={() => window.location.href = '/api/auth/linkedin'}
                       disabled={loading}
-                      data-testid="button-apple-signin"
+                      data-testid="button-linkedin-signin"
                     >
-                      <FaApple className="text-black dark:text-white" />
-                      Continue with Apple
+                      <FaLinkedin className="text-blue-600" />
+                      Continue with LinkedIn
                     </Button>
+
                   </div>
                   
                   <div className="text-center mt-4">
@@ -522,13 +523,14 @@ export default function Auth() {
                       type="button"
                       variant="outline"
                       className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/apple'}
+                      onClick={() => window.location.href = '/api/auth/linkedin'}
                       disabled={loading}
-                      data-testid="button-apple-signup"
+                      data-testid="button-linkedin-signup"
                     >
-                      <FaApple className="text-black dark:text-white" />
-                      Continue with Apple
+                      <FaLinkedin className="text-blue-600" />
+                      Continue with LinkedIn
                     </Button>
+
                   </div>
                 </form>
               </TabsContent>

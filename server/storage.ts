@@ -105,10 +105,10 @@ export interface IStorage {
   updateUserVerificationToken(userId: number, token: string | null, expires: Date | null): Promise<void>;
   
   // Social auth methods
-  getUserBySocialProvider(provider: 'google' | 'facebook' | 'apple', providerId: string): Promise<User | undefined>;
+  getUserBySocialProvider(provider: 'google' | 'facebook' | 'linkedin', providerId: string): Promise<User | undefined>;
   createSocialUser(user: any): Promise<User>;
-  linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'apple', providerId: string, profilePhotoUrl?: string): Promise<void>;
-  updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'apple'): Promise<void>;
+  linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'linkedin', providerId: string, profilePhotoUrl?: string): Promise<void>;
+  updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'linkedin'): Promise<void>;
   
   // Freelancer profile management
   getFreelancerProfile(userId: number): Promise<FreelancerProfile | undefined>;
@@ -280,7 +280,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Social auth methods
-  async getUserBySocialProvider(provider: 'google' | 'facebook' | 'apple' | 'linkedin', providerId: string): Promise<User | undefined> {
+  async getUserBySocialProvider(provider: 'google' | 'facebook' | 'linkedin', providerId: string): Promise<User | undefined> {
     const cacheKey = `user:${provider}:${providerId}`;
     const cached = cache.get<User>(cacheKey);
     if (cached) return cached;
@@ -292,9 +292,6 @@ export class DatabaseStorage implements IStorage {
         break;
       case 'facebook':
         condition = eq(users.facebook_id, providerId);
-        break;
-      case 'apple':
-        condition = eq(users.apple_id, providerId);
         break;
       case 'linkedin':
         condition = eq(users.linkedin_id, providerId);
@@ -312,10 +309,9 @@ export class DatabaseStorage implements IStorage {
     email: string;
     first_name?: string;
     last_name?: string;
-    auth_provider: 'google' | 'facebook' | 'apple' | 'linkedin';
+    auth_provider: 'google' | 'facebook' | 'linkedin';
     google_id?: string;
     facebook_id?: string;
-    apple_id?: string;
     linkedin_id?: string;
     profile_photo_url?: string;
     email_verified: boolean;
@@ -330,7 +326,6 @@ export class DatabaseStorage implements IStorage {
       auth_provider: userData.auth_provider,
       google_id: userData.google_id,
       facebook_id: userData.facebook_id,
-      apple_id: userData.apple_id,
       linkedin_id: userData.linkedin_id,
       profile_photo_url: userData.profile_photo_url,
       email_verified: userData.email_verified,
@@ -346,7 +341,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'apple' | 'linkedin', providerId: string, profilePhotoUrl?: string): Promise<void> {
+  async linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'linkedin', providerId: string, profilePhotoUrl?: string): Promise<void> {
     const updateData: any = { updated_at: new Date() };
     
     switch (provider) {
@@ -355,9 +350,6 @@ export class DatabaseStorage implements IStorage {
         break;
       case 'facebook':
         updateData.facebook_id = providerId;
-        break;
-      case 'apple':
-        updateData.apple_id = providerId;
         break;
       case 'linkedin':
         updateData.linkedin_id = providerId;
@@ -377,7 +369,7 @@ export class DatabaseStorage implements IStorage {
     cache.clearPattern(`user:${provider}:`);
   }
 
-  async updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'apple' | 'linkedin'): Promise<void> {
+  async updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'linkedin'): Promise<void> {
     await db.update(users)
       .set({
         last_login_method: method,

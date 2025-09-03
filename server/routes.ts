@@ -98,20 +98,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     );
   }
 
-  // Apple OAuth
-  if (process.env.APPLE_CLIENT_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY_PATH) {
-    app.get('/api/auth/apple', passport.authenticate('apple', { 
-      scope: ['name', 'email'] 
-    }));
-
-    app.get('/api/auth/apple/callback',
-      passport.authenticate('apple', { failureRedirect: '/auth?error=apple_auth_failed' }),
-      (req, res) => {
-        // Successful authentication, redirect to frontend  
-        res.redirect('/dashboard');
-      }
-    );
-  }
 
   // LinkedIn OAuth
   if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {

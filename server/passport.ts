@@ -1,7 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
-import { Strategy as AppleStrategy } from 'passport-apple';
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
@@ -119,62 +118,6 @@ export function initializePassport() {
     }));
   }
 
-  // Apple OAuth Strategy (only if credentials are available)
-  if (process.env.APPLE_CLIENT_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY_PATH) {
-    passport.use(new AppleStrategy({
-      clientID: process.env.APPLE_CLIENT_ID,
-      teamID: process.env.APPLE_TEAM_ID,
-      keyID: process.env.APPLE_KEY_ID,
-      privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH,
-      callbackURL: "/api/auth/apple/callback",
-      scope: ['name', 'email']
-    }, async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
-      try {
-        // Apple provides user info differently
-        const appleId = profile.id;
-        const email = profile.emails?.[0]?.value || '';
-        const firstName = profile.name?.givenName;
-        const lastName = profile.name?.familyName;
-
-        // Check if user already exists with Apple ID
-        const existingUser = await storage.getUserBySocialProvider('apple', appleId);
-        
-        if (existingUser) {
-          await storage.updateUserLastLogin(existingUser.id, 'apple');
-          return done(null, existingUser);
-        }
-
-        // Check if user exists with same email (if provided)
-        if (email) {
-          const emailUser = await storage.getUserByEmail(email);
-          
-          if (emailUser) {
-            // Link Apple account to existing email user
-            await storage.linkSocialProvider(emailUser.id, 'apple', appleId);
-            await storage.updateUserLastLogin(emailUser.id, 'apple');
-            return done(null, emailUser);
-          }
-        }
-
-        // Create new user with Apple auth
-        const newUser = await storage.createSocialUser({
-          email: email || `apple_${appleId}@eventlink.temp`, // Fallback for hidden email
-          first_name: firstName,
-          last_name: lastName,
-          auth_provider: 'apple',
-          apple_id: appleId,
-          email_verified: true, // Apple accounts are pre-verified
-          role: 'freelancer' as const, // Default role, can be changed later
-        });
-
-        await storage.updateUserLastLogin(newUser.id, 'apple');
-        return done(null, newUser);
-      } catch (error) {
-        console.error('Apple OAuth error:', error);
-        return done(error as Error, undefined);
-      }
-    }));
-  }
 
   // LinkedIn OAuth Strategy (only if credentials are available)
   if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
