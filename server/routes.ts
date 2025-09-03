@@ -149,30 +149,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // OAuth configuration helper endpoint
   app.get("/api/oauth-config", (req, res) => {
-    const domain = process.env.REPLIT_DOMAINS;
+    const primaryDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
     res.json({
-      domain: domain,
+      domain: primaryDomain,
       callbackUrls: {
-        google: `https://${domain}/api/auth/google/callback`,
-        facebook: `https://${domain}/api/auth/facebook/callback`,
-        linkedin: `https://${domain}/api/auth/linkedin/callback`
+        google: `https://${primaryDomain}/api/auth/google/callback`,
+        facebook: `https://${primaryDomain}/api/auth/facebook/callback`,
+        linkedin: `https://${primaryDomain}/api/auth/linkedin/callback`
       },
       instructions: {
         facebook: {
           step1: "Go to https://developers.facebook.com/apps/",
           step2: "Select your app and go to 'App Settings' > 'Basic'",
-          step3: `Add '${domain}' to 'App Domains'`,
-          step4: `Add 'https://${domain}/api/auth/facebook/callback' to 'Valid OAuth Redirect URIs'`
+          step3: `Add '${primaryDomain}' to 'App Domains'`,
+          step4: `Add 'https://${primaryDomain}/api/auth/facebook/callback' to 'Valid OAuth Redirect URIs'`
         },
         google: {
           step1: "Go to https://console.developers.google.com/",
           step2: "Select your project and go to 'Credentials'",
-          step3: `Add 'https://${domain}/api/auth/google/callback' to 'Authorized redirect URIs'`
+          step3: `Add 'https://${primaryDomain}/api/auth/google/callback' to 'Authorized redirect URIs'`
         },
         linkedin: {
           step1: "Go to https://www.linkedin.com/developers/apps/",
           step2: "Select your app and go to 'Auth' tab",
-          step3: `Add 'https://${domain}/api/auth/linkedin/callback' to 'Authorized redirect URLs for your app'`
+          step3: `Add 'https://${primaryDomain}/api/auth/linkedin/callback' to 'Authorized redirect URLs for your app'`
         }
       }
     });
