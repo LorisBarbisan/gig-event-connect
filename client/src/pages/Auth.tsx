@@ -61,6 +61,36 @@ export default function Auth() {
     }
   }, [user, authLoading, setLocation]);
 
+  // Handle OAuth error messages from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthError = urlParams.get('oauth_error');
+    const provider = urlParams.get('provider');
+    const message = urlParams.get('message');
+
+    if (oauthError && provider) {
+      let errorMessage = '';
+      
+      if (oauthError === 'access_denied') {
+        errorMessage = `${provider} permission required. Please allow access to email and profile to continue.`;
+      } else if (oauthError === 'token_revoked') {
+        errorMessage = `${provider} session expired. Please sign in again.`;
+      } else {
+        errorMessage = `${provider} authentication failed. Please try again.`;
+      }
+
+      toast({
+        title: "Authentication Notice",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      // Clean up URL parameters
+      const newUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [toast]);
+
   // Show loading during validation to prevent premature redirects
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">

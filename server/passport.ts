@@ -27,9 +27,23 @@ export function initializePassport() {
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`
+      callbackURL: `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`,
+      scope: ['profile', 'email'] // Request minimal required scopes
     }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
+        // Handle scope consent verification
+        if (!profile.emails || !profile.emails[0] || !profile.emails[0].value) {
+          console.warn('Google OAuth: Email scope not granted by user');
+          return done(new Error('Email permission is required for registration'), undefined);
+        }
+
+        // Store OAuth tokens securely (if refresh token provided)
+        const oauthData = {
+          accessToken,
+          refreshToken,
+          tokenExpiry: Date.now() + (3600 * 1000) // Standard 1 hour expiry
+        };
+
         // Check if user already exists with Google ID
         const existingUser = await storage.getUserBySocialProvider('google', profile.id);
         

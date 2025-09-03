@@ -72,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     saveUninitialized: false,
     name: 'eventlink.sid', // Custom session name for security
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      secure: true, // Always require HTTPS for OAuth security
       httpOnly: true, // Prevent XSS attacks
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax' // CSRF protection while allowing OAuth redirects
@@ -102,6 +102,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API root endpoint health check  
   app.get("/api", (req, res) => {
     res.status(200).send("EventLink API is running");
+  });
+
+  // OAuth error handling for scope denial and token issues
+  app.get('/api/auth/oauth-error', (req, res) => {
+    const { error, error_description, provider } = req.query;
+    
+    if (error === 'access_denied') {
+      // User denied permission - redirect with helpful message
+      return res.redirect(`/?oauth_error=access_denied&provider=${provider}&message=Permission required for sign-in`);
+    }
+    
+    if (error === 'invalid_grant' || error === 'token_expired') {
+      // Token revoked or expired - clear session and retry
+      req.session.destroy(() => {
+        res.redirect(`/?oauth_error=token_revoked&provider=${provider}&message=Please sign in again`);
+      });
+      return;
+    }
+    
+    // General OAuth error
+    res.redirect(`/?oauth_error=general&provider=${provider}&message=Authentication failed`);
+  });
+
+  // Token revocation handler
+  app.post('/api/auth/revoke-token', async (req, res) => {
+    try {
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const user = req.user as any;
+      
+      // For now, we'll just destroy the session
+      // In the future, we could add token clearing functionality to storage
+      
+      // Destroy session to revoke access
+      req.session.destroy(() => {
+        res.json({ success: true, message: 'Session revoked successfully' });
+      });
+    } catch (error) {
+      console.error('Token revocation error:', error);
+      res.status(500).json({ error: 'Failed to revoke tokens' });
+    }
   });
 
   // OAuth configuration helper endpoint
