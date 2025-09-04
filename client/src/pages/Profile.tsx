@@ -12,6 +12,7 @@ import { RatingDisplay } from '@/components/StarRating';
 import { useFreelancerAverageRating } from '@/hooks/useRatings';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { MessageModal } from '@/components/MessageModal';
 
 interface Profile {
   id: string;
@@ -65,6 +66,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [profileDataLoaded, setProfileDataLoaded] = useState(false);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -142,34 +144,6 @@ export default function Profile() {
     }
   };
 
-  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  // Create conversation mutation - moved here to ensure hooks are always called
-  const createConversationMutation = useMutation({
-    mutationFn: async (otherUserId: number) => {
-      return apiRequest('/api/conversations', {
-        method: 'POST',
-        body: JSON.stringify({
-          userOneId: user!.id,
-          userTwoId: otherUserId
-        }),
-      });
-    },
-    onSuccess: (conversation) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-      toast({
-        title: "Conversation started",
-        description: "You can now message this user from your Messages tab.",
-      });
-      setLocation('/dashboard');
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start conversation. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
 
   useEffect(() => {
     console.log('Profile useEffect triggered:', { user, authLoading, userId });
@@ -456,9 +430,7 @@ export default function Profile() {
       return;
     }
     
-    if (profile?.id) {
-      createConversationMutation.mutate(parseInt(profile.id));
-    }
+    setIsMessageModalOpen(true);
   };
 
   return (
@@ -540,7 +512,6 @@ export default function Profile() {
                       {!isOwnProfile && (
                         <Button 
                           onClick={handleContactClick}
-                          disabled={createConversationMutation.isPending}
                           className="bg-gradient-primary hover:bg-primary-hover"
                         >
                           <MessageCircle className="w-4 h-4 mr-2" />
@@ -622,7 +593,6 @@ export default function Profile() {
                       {!isOwnProfile && (
                         <Button 
                           onClick={handleContactClick}
-                          disabled={createConversationMutation.isPending}
                           className="bg-gradient-primary hover:bg-primary-hover"
                         >
                           <MessageCircle className="w-4 h-4 mr-2" />
@@ -758,6 +728,21 @@ export default function Profile() {
           )}
         </div>
       </div>
+
+      {/* Message Modal */}
+      {profile && user && (
+        <MessageModal
+          isOpen={isMessageModalOpen}
+          onClose={() => setIsMessageModalOpen(false)}
+          recipientId={parseInt(profile.id)}
+          recipientName={
+            profile.role === 'freelancer' 
+              ? `${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`
+              : recruiterProfile?.company_name || 'User'
+          }
+          senderId={user.id}
+        />
+      )}
     </Layout>
   );
 }
