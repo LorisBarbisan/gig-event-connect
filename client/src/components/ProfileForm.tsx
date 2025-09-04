@@ -294,7 +294,7 @@ function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 bg-gradient-primary rounded-lg flex items-center justify-center overflow-hidden">
+        <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
           {profile.company_logo_url && 
            profile.company_logo_url.trim() !== '' && 
            profile.company_logo_url !== 'null' ? (
@@ -310,12 +310,14 @@ function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
             <Building2 className="w-8 h-8 text-white" />
           )}
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="text-xl font-semibold">{profile.company_name}</h3>
           <p className="text-muted-foreground">{profile.contact_name}</p>
-          <Badge variant="secondary" className="mt-1">
-            {profile.company_type}
-          </Badge>
+          <div className="flex items-center gap-3 mt-1">
+            <Badge variant="secondary">
+              {profile.company_type}
+            </Badge>
+          </div>
         </div>
       </div>
       <Separator />
