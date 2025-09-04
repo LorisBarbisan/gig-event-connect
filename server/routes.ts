@@ -1125,6 +1125,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get hired jobs (bookings) for freelancer
+  app.get("/api/freelancer/:freelancerId/bookings", async (req, res) => {
+    try {
+      const freelancerId = parseInt(req.params.freelancerId);
+      
+      // Get all applications for this freelancer with 'hired' status
+      const applications = await storage.getJobApplicationsByFreelancer(freelancerId);
+      const hiredApplications = applications.filter((app: any) => app.status === 'hired');
+      
+      // Get full job details for each hired application
+      const bookings = await Promise.all(
+        hiredApplications.map(async (app: any) => {
+          const job = await storage.getJobById(app.job_id);
+          return {
+            id: app.id,
+            application_id: app.id,
+            job_id: app.job_id,
+            job_title: job?.title || 'Job Title',
+            company_name: job?.company_name || 'Company',
+            location: job?.location || 'Location',
+            event_date: job?.event_date || job?.created_at,
+            rate: job?.salary_range || 'Rate not specified',
+            status: 'confirmed', // hired applications are confirmed bookings
+            description: job?.description || '',
+            applied_at: app.applied_at,
+            hired_at: app.updated_at
+          };
+        })
+      );
+      
+      res.json(bookings);
+    } catch (error) {
+      console.error("Get freelancer bookings error:", error);
+      res.status(500).json({ error: "Failed to fetch bookings" });
+    }
+  });
+
   // Job application routes
   app.post("/api/jobs/:jobId/apply", async (req, res) => {
     try {

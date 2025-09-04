@@ -343,38 +343,11 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
     rejectionMessage: application.rejection_message
   }));
 
-  const profileBookings = [
-    {
-      id: 1,
-      event: 'Corporate Annual Conference',
-      client: 'Live Nation Events',
-      date: 'March 15-17, 2025',
-      location: `${freelancerProfile.location?.split(',')[0] || 'London'} ExCeL`,
-      role: freelancerProfile.title || 'Senior Sound Engineer',
-      rate: `£${freelancerProfile.hourly_rate || 450}/${freelancerProfile.rate_type || 'day'}`,
-      status: 'confirmed'
-    },
-    {
-      id: 2,
-      event: 'Product Launch Event',
-      client: 'Corporate AV Solutions',
-      date: 'February 28, 2025',
-      location: 'Manchester Convention Centre',  
-      role: freelancerProfile.skills[2] || 'AV Specialist',
-      rate: `£${(freelancerProfile.hourly_rate || 450) - 50}/${freelancerProfile.rate_type || 'day'}`,
-      status: 'completed'
-    },
-    {
-      id: 3,
-      event: 'Tech Conference 2025',
-      client: 'Conference Tech Ltd',
-      date: 'April 10-12, 2025',
-      location: 'Birmingham NEC',
-      role: freelancerProfile.skills[3] || 'Technical Director',
-      rate: `£${(freelancerProfile.hourly_rate || 450) + 100}/${freelancerProfile.rate_type || 'day'}`,
-      status: 'pending'
-    }
-  ];
+  // Get bookings (hired jobs) for the freelancer
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ['/api/freelancer', freelancerProfile?.user_id, 'bookings'],
+    enabled: !!freelancerProfile?.user_id,
+  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -869,58 +842,80 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {profileBookings.map((booking) => (
-                    <div key={booking.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{booking.event}</h4>
-                            <Badge 
-                              variant={booking.status === 'confirmed' ? 'default' : 
-                                     booking.status === 'completed' ? 'secondary' : 'outline'}
-                              className={`text-xs ${booking.status === 'confirmed' ? 'bg-green-600' : ''}`}
-                            >
-                              <div className="flex items-center gap-1">
-                                {booking.status === 'confirmed' && <CheckCircle className="h-3 w-3" />}
-                                {booking.status === 'completed' && <CheckCircle className="h-3 w-3" />}
-                                {booking.status === 'pending' && <Clock className="h-3 w-3" />}
-                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                              </div>
-                            </Badge>
-                          </div>
-                          <div className="space-y-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-4">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {booking.location}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {booking.date}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Coins className="h-3 w-3" />
-                                {booking.rate}
-                              </span>
+                {bookingsLoading ? (
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ) : bookings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium text-muted-foreground mb-2">No Bookings Yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      When you get hired for jobs, they'll appear here as confirmed bookings.
+                    </p>
+                    <Button variant="outline" onClick={() => setActiveTab('find-jobs')}>
+                      <Search className="h-4 w-4 mr-2" />
+                      Browse Jobs
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking: any) => (
+                      <div key={booking.id} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold">{booking.job_title}</h4>
+                              <Badge 
+                                variant={booking.status === 'confirmed' ? 'default' : 
+                                       booking.status === 'completed' ? 'secondary' : 'outline'}
+                                className={`text-xs ${booking.status === 'confirmed' ? 'bg-green-600' : ''}`}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {booking.status === 'confirmed' && <CheckCircle className="h-3 w-3" />}
+                                  {booking.status === 'completed' && <CheckCircle className="h-3 w-3" />}
+                                  {booking.status === 'pending' && <Clock className="h-3 w-3" />}
+                                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </div>
+                              </Badge>
                             </div>
-                            <p className="font-medium text-foreground">{booking.client}</p>
-                            <p className="text-primary font-medium">{booking.role}</p>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-4">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {booking.location}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'Date TBD'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Coins className="h-3 w-3" />
+                                  {booking.rate}
+                                </span>
+                              </div>
+                              <p className="font-medium text-foreground">{booking.company_name}</p>
+                              <p className="text-primary font-medium">Hired on {new Date(booking.hired_at).toLocaleDateString()}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            <Mail className="h-4 w-4 mr-1" />
-                            Contact
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            View Details
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              <Mail className="h-4 w-4 mr-1" />
+                              Contact
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              View Details
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
