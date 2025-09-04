@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star
 import { RatingDialog } from './RatingDialog';
 import { RatingRequestDialog } from './RatingRequestDialog';
 import type { JobApplication } from '@shared/types';
+import type { Job } from '@shared/schema';
 
 interface ApplicationCardProps {
   application: JobApplication;
@@ -28,6 +29,13 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   const [rejectionMessage, setRejectionMessage] = useState('');
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [showRatingRequestDialog, setShowRatingRequestDialog] = useState(false);
+  const [showJobDetailsDialog, setShowJobDetailsDialog] = useState(false);
+
+  // Fetch full job details when dialog opens
+  const { data: jobDetails } = useQuery<Job>({
+    queryKey: [`/api/jobs/${application.job_id}`],
+    enabled: showJobDetailsDialog && !!application.job_id,
+  });
 
   const rejectMutation = useMutation({
     mutationFn: async () => {
@@ -209,7 +217,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                   Message
                 </Button>
                 
-                {(application.status === 'applied' || application.status === 'reviewed') && (
+                {(application.status === 'pending' || application.status === 'reviewed') && (
                   <>
                     {/* Hire Confirmation Dialog */}
                     <AlertDialog open={showHireConfirm} onOpenChange={setShowHireConfirm}>
@@ -346,10 +354,110 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
             {/* Actions for freelancers viewing their own applications */}
             {userType === 'freelancer' && (
               <>
-                <Button variant="outline" size="sm" data-testid={`button-view-details-${application.id}`}>
-                  <Eye className="w-4 h-4 mr-1" />
-                  View Details
-                </Button>
+                <Dialog open={showJobDetailsDialog} onOpenChange={setShowJobDetailsDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" data-testid={`button-view-details-${application.id}`}>
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Job Details</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-1">Job Title</p>
+                          <p className="font-semibold">{jobDetails?.title || application.job_title}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-1">Company</p>
+                          <p className="font-semibold">{jobDetails?.company || application.job_company}</p>
+                        </div>
+                      </div>
+
+                      {jobDetails && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="font-medium text-sm text-muted-foreground mb-1">Location</p>
+                              <p>{jobDetails.location}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm text-muted-foreground mb-1">Job Type</p>
+                              <p className="capitalize">{jobDetails.type}</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="font-medium text-sm text-muted-foreground mb-1">Rate</p>
+                            <p>{jobDetails.rate}</p>
+                          </div>
+
+                          {jobDetails.description && (
+                            <div>
+                              <p className="font-medium text-sm text-muted-foreground mb-2">Job Description</p>
+                              <div className="p-3 bg-muted rounded-lg max-h-40 overflow-y-auto">
+                                <p className="text-sm whitespace-pre-wrap">{jobDetails.description}</p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      <div>
+                        <p className="font-medium text-sm text-muted-foreground mb-1">Application Status</p>
+                        <Badge variant={
+                          application.status === 'hired' ? 'default' :
+                          application.status === 'rejected' ? 'destructive' :
+                          application.status === 'reviewed' ? 'secondary' : 'outline'
+                        }>
+                          {application.status === 'hired' ? 'Hired' :
+                           application.status === 'rejected' ? 'Rejected' :
+                           application.status === 'reviewed' ? 'Under Review' : 'Pending'}
+                        </Badge>
+                      </div>
+
+                      {application.cover_letter && (
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-2">Your Cover Letter</p>
+                          <div className="p-3 bg-muted rounded-lg">
+                            <p className="text-sm whitespace-pre-wrap">{application.cover_letter}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {application.rejection_message && application.status === 'rejected' && (
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-2">Rejection Message</p>
+                          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-700 dark:text-red-300">{application.rejection_message}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <div>
+                          <p className="font-medium mb-1">Applied On</p>
+                          <p>{new Date(application.applied_at).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit', 
+                            year: 'numeric'
+                          })}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium mb-1">Last Updated</p>
+                          <p>{new Date(application.updated_at).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 
                 {/* Rating request button for hired/completed jobs */}
                 {application.status === 'hired' && (
