@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Menu, User, LogOut, Settings, UserCircle, Star } from "lucide-react";
+import { Search, Menu, User, LogOut, Settings, UserCircle, Star, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationSystem } from "@/components/NotificationSystem";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import e8Logo from "@assets/E8 LOGO_1756038316799.png";
+import { useState } from "react";
 // E8 Logo component using the authentic logo image
 const EventLinkLogo = ({ size = 48 }: { size?: number }) => (
   <img 
@@ -25,6 +27,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const [location, setLocation] = useLocation();
   const { user, signOut } = useAuth();
+  const [showFeedback, setShowFeedback] = useState(false);
   
   // Get profile data based on user role
   const userType = user?.role === 'freelancer' ? 'freelancer' : 'recruiter';
@@ -124,6 +127,14 @@ export const Layout = ({ children }: LayoutProps) => {
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 Dashboard
+              </button>
+              <button 
+                onClick={() => setShowFeedback(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                data-testid="link-feedback"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Feedback
               </button>
             </nav>
 
@@ -226,6 +237,12 @@ export const Layout = ({ children }: LayoutProps) => {
 
       {/* Main Content */}
       <main>{children}</main>
+
+      {/* Feedback Modal */}
+      <FeedbackForm 
+        open={showFeedback} 
+        onOpenChange={setShowFeedback} 
+      />
 
       {/* Footer */}
       <footer className="bg-card border-t mt-auto">

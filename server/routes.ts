@@ -2168,5 +2168,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feedback endpoint
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const { feedbackType, message, pageUrl, timestamp, source } = req.body;
+      
+      if (!feedbackType || !message) {
+        return res.status(400).json({ error: 'Feedback type and message are required' });
+      }
+
+      // Get user info if logged in
+      let userInfo = 'Anonymous User';
+      if (req.isAuthenticated && req.isAuthenticated()) {
+        const user = req.user as any;
+        try {
+          const userData = await storage.getUserById(user.id);
+          if (userData) {
+            const firstName = userData.first_name || '';
+            const lastName = userData.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            userInfo = fullName || userData.email || 'Authenticated User';
+          }
+        } catch (error) {
+          console.error('Error getting user data for feedback:', error);
+          userInfo = 'Authenticated User';
+        }
+      }
+
+      // Map frontend feedback types to user-friendly labels
+      const feedbackTypeLabels = {
+        malfunction: 'Bug Report',
+        'feature-missing': 'Feature Request',
+        suggestion: 'Suggestion',
+        other: 'Other'
+      };
+
+      const feedbackLabel = feedbackTypeLabels[feedbackType] || feedbackType;
+
+      // Send email to admin
+      const subject = `EventLink Feedback: ${feedbackLabel}`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">EventLink User Feedback</h2>
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #374151;">Feedback Details</h3>
+            <p><strong>Type:</strong> ${feedbackLabel}</p>
+            <p><strong>User:</strong> ${userInfo}</p>
+            <p><strong>Source:</strong> ${source === 'header' ? 'Header Link' : 'Automatic Popup'}</p>
+            <p><strong>Page:</strong> ${pageUrl || 'Unknown'}</p>
+            <p><strong>Submitted:</strong> ${new Date(timestamp).toLocaleString()}</p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 20px; border-left: 4px solid #2563eb; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #374151;">Message</h3>
+            <p style="white-space: pre-wrap; line-height: 1.6;">${message}</p>
+          </div>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+            <p>This feedback was submitted through the EventLink platform.</p>
+          </div>
+        </div>
+      `;
+
+      await sendEmail({
+        to: 'loris.barbisan@outlook.com',
+        subject,
+        html
+      });
+
+      res.json({ success: true, message: 'Feedback sent successfully' });
+    } catch (error) {
+      console.error('Feedback submission error:', error);
+      res.status(500).json({ error: 'Failed to send feedback' });
+    }
+  });
+
   return httpServer;
 }
