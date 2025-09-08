@@ -2182,7 +2182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.isAuthenticated && req.isAuthenticated()) {
         const user = req.user as any;
         try {
-          const userData = await storage.getUserById(user.id);
+          const userData = await storage.getUserByEmail(user.email);
           if (userData) {
             const firstName = userData.first_name || '';
             const lastName = userData.last_name || '';
@@ -2203,7 +2203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         other: 'Other'
       };
 
-      const feedbackLabel = feedbackTypeLabels[feedbackType] || feedbackType;
+      const feedbackLabel = feedbackTypeLabels[feedbackType as keyof typeof feedbackTypeLabels] || feedbackType;
 
       // Send email to admin
       const subject = `EventLink Feedback: ${feedbackLabel}`;
@@ -2232,6 +2232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
 
       await sendEmail({
+        from: 'noreply@eventlink.com',
         to: 'loris.barbisan@outlook.com',
         subject,
         html
