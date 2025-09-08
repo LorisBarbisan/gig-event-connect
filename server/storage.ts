@@ -11,6 +11,7 @@ import {
   notifications,
   ratings,
   rating_requests,
+  feedback,
   type User, 
   type InsertUser,
   type FreelancerProfile,
@@ -30,7 +31,9 @@ import {
   type Rating,
   type InsertRating,
   type RatingRequest,
-  type InsertRatingRequest
+  type InsertRatingRequest,
+  type Feedback,
+  type InsertFeedback
 } from "@shared/schema";
 import { eq, desc, isNull, and, or, sql } from "drizzle-orm";
 
@@ -172,8 +175,17 @@ export interface IStorage {
   createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest>;
   getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined>;
   getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
-  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>>;
+  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
   updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest>;
+
+  // Feedback management for admin dashboard
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  getAllFeedback(): Promise<Array<Feedback & { user?: User }>>;
+  getFeedbackById(id: number): Promise<Feedback | undefined>;
+  updateFeedbackStatus(id: number, status: 'pending' | 'in_review' | 'resolved' | 'closed', adminUserId?: number): Promise<Feedback>;
+  addAdminResponse(id: number, response: string, adminUserId: number): Promise<Feedback>;
+  getFeedbackByStatus(status: 'pending' | 'in_review' | 'resolved' | 'closed'): Promise<Array<Feedback & { user?: User }>>;
+  getFeedbackStats(): Promise<{ total: number; pending: number; resolved: number; byType: Record<string, number> }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1169,6 +1181,181 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rating_requests.id, requestId))
       .returning();
     return result[0];
+  }
+
+  // Feedback management methods for admin dashboard
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const result = await db.insert(feedback).values([feedbackData as any]).returning();
+    return result[0];
+  }
+
+  async getAllFeedback(): Promise<Array<Feedback & { user?: User }>> {
+    const result = await db.select({
+      id: feedback.id,
+      user_id: feedback.user_id,
+      feedback_type: feedback.feedback_type,
+      message: feedback.message,
+      page_url: feedback.page_url,
+      source: feedback.source,
+      user_email: feedback.user_email,
+      user_name: feedback.user_name,
+      status: feedback.status,
+      admin_response: feedback.admin_response,
+      admin_user_id: feedback.admin_user_id,
+      priority: feedback.priority,
+      created_at: feedback.created_at,
+      updated_at: feedback.updated_at,
+      resolved_at: feedback.resolved_at,
+      user: {
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        email_verification_token: users.email_verification_token,
+        email_verification_expires: users.email_verification_expires,
+        password_reset_token: users.password_reset_token,
+        password_reset_expires: users.password_reset_expires,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        password: users.password,
+        auth_provider: users.auth_provider,
+        google_id: users.google_id,
+        facebook_id: users.facebook_id,
+        linkedin_id: users.linkedin_id,
+        profile_photo_url: users.profile_photo_url,
+        last_login_method: users.last_login_method,
+        last_login_at: users.last_login_at,
+      }
+    })
+    .from(feedback)
+    .leftJoin(users, eq(feedback.user_id, users.id))
+    .orderBy(desc(feedback.created_at));
+
+    return result as Array<Feedback & { user?: User }>;
+  }
+
+  async getFeedbackById(id: number): Promise<Feedback | undefined> {
+    const result = await db.select().from(feedback).where(eq(feedback.id, id)).limit(1);
+    return result[0];
+  }
+
+  async updateFeedbackStatus(id: number, status: 'pending' | 'in_review' | 'resolved' | 'closed', adminUserId?: number): Promise<Feedback> {
+    const updateData: any = {
+      status: status,
+      updated_at: sql`now()`,
+    };
+
+    if (adminUserId) {
+      updateData.admin_user_id = adminUserId;
+    }
+
+    if (status === 'resolved' || status === 'closed') {
+      updateData.resolved_at = new Date();
+    }
+
+    const result = await db.update(feedback)
+      .set(updateData)
+      .where(eq(feedback.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async addAdminResponse(id: number, response: string, adminUserId: number): Promise<Feedback> {
+    const result = await db.update(feedback)
+      .set({ 
+        admin_response: response,
+        admin_user_id: adminUserId,
+        status: 'in_review',
+        updated_at: sql`now()`
+      })
+      .where(eq(feedback.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async getFeedbackByStatus(status: 'pending' | 'in_review' | 'resolved' | 'closed'): Promise<Array<Feedback & { user?: User }>> {
+    const result = await db.select({
+      id: feedback.id,
+      user_id: feedback.user_id,
+      feedback_type: feedback.feedback_type,
+      message: feedback.message,
+      page_url: feedback.page_url,
+      source: feedback.source,
+      user_email: feedback.user_email,
+      user_name: feedback.user_name,
+      status: feedback.status,
+      admin_response: feedback.admin_response,
+      admin_user_id: feedback.admin_user_id,
+      priority: feedback.priority,
+      created_at: feedback.created_at,
+      updated_at: feedback.updated_at,
+      resolved_at: feedback.resolved_at,
+      user: {
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        email_verification_token: users.email_verification_token,
+        email_verification_expires: users.email_verification_expires,
+        password_reset_token: users.password_reset_token,
+        password_reset_expires: users.password_reset_expires,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        password: users.password,
+        auth_provider: users.auth_provider,
+        google_id: users.google_id,
+        facebook_id: users.facebook_id,
+        linkedin_id: users.linkedin_id,
+        profile_photo_url: users.profile_photo_url,
+        last_login_method: users.last_login_method,
+        last_login_at: users.last_login_at,
+      }
+    })
+    .from(feedback)
+    .leftJoin(users, eq(feedback.user_id, users.id))
+    .where(eq(feedback.status, status))
+    .orderBy(desc(feedback.created_at));
+
+    return result as Array<Feedback & { user?: User }>;
+  }
+
+  async getFeedbackStats(): Promise<{ total: number; pending: number; resolved: number; byType: Record<string, number> }> {
+    // Get total count and status counts
+    const statusStats = await db.select({
+      total: sql<number>`count(*)::int`,
+      pending: sql<number>`count(case when status = 'pending' then 1 end)::int`,
+      in_review: sql<number>`count(case when status = 'in_review' then 1 end)::int`,
+      resolved: sql<number>`count(case when status = 'resolved' then 1 end)::int`,
+      closed: sql<number>`count(case when status = 'closed' then 1 end)::int`,
+    })
+    .from(feedback);
+
+    // Get type breakdown
+    const typeStats = await db.select({
+      feedback_type: feedback.feedback_type,
+      count: sql<number>`count(*)::int`
+    })
+    .from(feedback)
+    .groupBy(feedback.feedback_type);
+
+    const byType: Record<string, number> = {};
+    typeStats.forEach(stat => {
+      if (stat.feedback_type) {
+        byType[stat.feedback_type] = Number(stat.count);
+      }
+    });
+
+    const stats = statusStats[0];
+    return {
+      total: Number(stats?.total || 0),
+      pending: Number(stats?.pending || 0),
+      resolved: Number((stats?.resolved || 0) + (stats?.closed || 0)),
+      byType
+    };
   }
 }
 

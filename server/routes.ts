@@ -2179,20 +2179,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user info if logged in
       let userInfo = 'Anonymous User';
+      let userId = null;
+      let userEmail = null;
+      let userName = null;
+      
       if (req.isAuthenticated && req.isAuthenticated()) {
         const user = req.user as any;
         try {
           const userData = await storage.getUserByEmail(user.email);
           if (userData) {
+            userId = userData.id;
+            userEmail = userData.email;
             const firstName = userData.first_name || '';
             const lastName = userData.last_name || '';
             const fullName = `${firstName} ${lastName}`.trim();
-            userInfo = fullName || userData.email || 'Authenticated User';
+            userName = fullName || userData.email;
+            userInfo = userName || 'Authenticated User';
           }
         } catch (error) {
           console.error('Error getting user data for feedback:', error);
           userInfo = 'Authenticated User';
         }
+      }
+
+      // Store feedback in database for admin dashboard
+      try {
+        const feedbackData = {
+          user_id: userId,
+          feedback_type: feedbackType as 'malfunction' | 'feature-missing' | 'suggestion' | 'other',
+          message: message,
+          page_url: pageUrl || null,
+          source: source as 'header' | 'popup' | null,
+          user_email: userEmail,
+          user_name: userName,
+          status: 'pending' as const,
+          priority: 'normal' as const,
+        };
+
+        const storedFeedback = await storage.createFeedback(feedbackData);
+        console.log('Feedback stored in database:', storedFeedback.id);
+      } catch (dbError) {
+        console.error('Database storage error (non-blocking):', dbError);
+        // Continue with email sending even if database storage fails
       }
 
       // Map frontend feedback types to user-friendly labels
@@ -2226,7 +2254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
-            <p>This feedback was submitted through the EventLink platform.</p>
+            <p>This feedback was submitted through the EventLink platform and is also available in the admin dashboard.</p>
           </div>
         </div>
       `;
