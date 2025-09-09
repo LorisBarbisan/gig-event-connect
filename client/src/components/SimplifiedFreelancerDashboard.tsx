@@ -180,14 +180,16 @@ export default function SimplifiedFreelancerDashboard() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {jobApplications.map((application: JobApplication) => (
-                <ApplicationCard
-                  key={application.id}
-                  application={application}
-                  userType="freelancer"
-                  currentUserId={user.id}
-                />
-              ))}
+              {jobApplications
+                .filter((application: JobApplication) => application.status !== 'hired')
+                .map((application: JobApplication) => (
+                  <ApplicationCard
+                    key={application.id}
+                    application={application}
+                    userType="freelancer"
+                    currentUserId={user.id}
+                  />
+                ))}
             </div>
           )}
 
@@ -275,15 +277,32 @@ export default function SimplifiedFreelancerDashboard() {
             <p className="text-muted-foreground">Manage your confirmed job bookings and schedule</p>
           </div>
 
-          <Card>
-            <CardContent className="p-8 text-center">
-              <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Bookings Yet</h3>
-              <p className="text-muted-foreground">
-                When you get hired for jobs, they will appear here.
-              </p>
-            </CardContent>
-          </Card>
+          {applicationsLoading ? (
+            <div className="flex justify-center p-8">Loading bookings...</div>
+          ) : jobApplications.filter((app: JobApplication) => app.status === 'hired').length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Bookings Yet</h3>
+                <p className="text-muted-foreground">
+                  When you get hired for jobs, they will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {jobApplications
+                .filter((application: JobApplication) => application.status === 'hired')
+                .map((application: JobApplication) => (
+                  <ApplicationCard
+                    key={application.id}
+                    application={application}
+                    userType="freelancer"
+                    currentUserId={user.id}
+                  />
+                ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
