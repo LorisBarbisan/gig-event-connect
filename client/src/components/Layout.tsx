@@ -214,7 +214,10 @@ export const Layout = ({ children }: LayoutProps) => {
                       onClick={async () => {
                         console.log('Refreshing user data...');
                         await refreshUser();
-                        window.location.reload();
+                        // Force a hard refresh to ensure admin role is loaded
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 100);
                       }}
                       className="cursor-pointer"
                     >
