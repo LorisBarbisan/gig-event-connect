@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Building2, MapPin, Globe, Plus, X } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
-import { CVUploader } from '@/components/CVUploader';
+import { SimplifiedCVUploader } from '@/components/SimplifiedCVUploader';
 import { RatingDisplay } from './StarRating';
 import { UKLocationInput } from '@/components/ui/uk-location-input';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useFreelancerAverageRating } from '@/hooks/useRatings';
 import type { FreelancerProfile, RecruiterProfile, FreelancerFormData, RecruiterFormData } from '@shared/types';
@@ -25,7 +25,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileFormProps) {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const [isEditing, setIsEditing] = useState(!profile);
   const [formData, setFormData] = useState<FreelancerFormData | RecruiterFormData>(() => {
     if (userType === 'freelancer') {
@@ -547,7 +547,7 @@ function FreelancerFormFields({
 
 // CV Upload section for freelancers when editing their profile
 function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const { toast } = useToast();
   
   // Only show if user is a freelancer
@@ -573,11 +573,10 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   } : undefined;
 
   return (
-    <CVUploader 
+    <SimplifiedCVUploader 
       userId={user.id}
       currentCV={currentCV}
       onUploadComplete={handleUploadComplete}
-      data-testid="cv-uploader"
     />
   );
 }

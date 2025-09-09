@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Menu, User, LogOut, Settings, UserCircle, Star, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationSystem } from "@/components/NotificationSystem";
@@ -27,7 +27,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const [location, setLocation] = useLocation();
-  const { user, signOut, refreshUser } = useAuth();
+  const { user, signOut } = useOptimizedAuth();
   const [showFeedback, setShowFeedback] = useState(false);
   
   // Get profile data based on user role
@@ -245,20 +245,6 @@ export const Layout = ({ children }: LayoutProps) => {
                       </>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={async () => {
-                        console.log('Force clearing all cache and refreshing...');
-                        // Clear all localStorage and sessionStorage
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        // Force reload to get fresh data
-                        window.location.reload();
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Clear Cache & Refresh
-                    </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={async () => {
                         await signOut();
