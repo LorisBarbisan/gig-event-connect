@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { apiRequest } from '@/lib/queryClient';
 import { Eye, EyeOff, Trash2, Key } from 'lucide-react';
@@ -19,7 +19,7 @@ interface SettingsFormProps {
 
 export function SettingsForm({ user }: SettingsFormProps) {
   const { toast } = useToast();
-  const { signOut, refreshUser } = useAuth();
+  const { signOut } = useOptimizedAuth();
   // const { profile } = useProfile(); // Temporarily disabled to prevent errors
   const [showEmail, setShowEmail] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -172,7 +172,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
       }
 
       // Refresh user data to update the display
-      await refreshUser();
+      // Note: refreshUser not available in optimized auth - page will auto-refresh on changes
 
       toast({
         title: 'Account updated',

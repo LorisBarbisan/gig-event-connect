@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UKLocationInput } from '@/components/ui/uk-location-input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Search, MapPin, Clock, Coins, Calendar, Filter, RefreshCw, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Jobs() {
   const { toast } = useToast();
-  const { user: currentUser, loading: userLoading } = useAuth();
+  const { user: currentUser, loading: userLoading } = useOptimizedAuth();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);

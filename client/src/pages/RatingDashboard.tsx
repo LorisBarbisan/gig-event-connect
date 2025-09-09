@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Layout } from '@/components/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useFreelancerRatings, useFreelancerAverageRating } from '@/hooks/useRatings';
 import { RatingDisplay, StarRating } from '@/components/StarRating';
 import { Star, TrendingUp, Award, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function RatingDashboard() {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const { data: ratings = [], isLoading: ratingsLoading } = useFreelancerRatings(user?.id || 0);
   const { data: averageRating } = useFreelancerAverageRating(user?.id || 0);
 

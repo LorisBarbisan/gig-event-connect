@@ -2,7 +2,7 @@
 export interface User {
   id: number;
   email: string;
-  role: 'freelancer' | 'recruiter';
+  role: 'freelancer' | 'recruiter' | 'admin';
   first_name?: string | null;
   last_name?: string | null;
   created_at: string | Date;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +59,7 @@ interface RecruiterProfile {
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { userId } = useParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useOptimizedAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile | null>(null);
   const [recruiterProfile, setRecruiterProfile] = useState<RecruiterProfile | null>(null);

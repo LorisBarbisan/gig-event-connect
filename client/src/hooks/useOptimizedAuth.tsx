@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 interface User {
   id: number;
   email: string;
-  role: 'freelancer' | 'recruiter';
+  role: 'freelancer' | 'recruiter' | 'admin';
   email_verified: boolean;
   created_at: string;
   updated_at: string;

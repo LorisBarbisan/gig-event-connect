@@ -10,7 +10,7 @@ import { Search, MapPin, Star, User, Coins, Calendar, Filter } from 'lucide-reac
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { ContactModal } from '@/components/ContactModal';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 export default function Freelancers() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,7 +19,7 @@ export default function Freelancers() {
   const [, setLocation] = useLocation();
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedFreelancer, setSelectedFreelancer] = useState<any>(null);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useOptimizedAuth();
   const [highlightedFreelancer, setHighlightedFreelancer] = useState<string | null>(null);
 
   // Check for highlight parameter in URL

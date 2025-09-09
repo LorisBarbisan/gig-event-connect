@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useNotifications } from '@/hooks/useNotifications';
 import { apiRequest } from '@/lib/queryClient';
@@ -17,7 +17,7 @@ import { NewConversationModal } from './NewConversationModal';
 import type { JobApplication, FreelancerFormData } from '@shared/types';
 
 export default function SimplifiedFreelancerDashboard() {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   

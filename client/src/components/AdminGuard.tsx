@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminGuardProps {
@@ -8,7 +8,7 @@ interface AdminGuardProps {
 }
 
 export function AdminGuard({ children }: AdminGuardProps) {
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useOptimizedAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 

@@ -1,12 +1,12 @@
 import { useLocation } from 'wouter';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Layout } from '@/components/Layout';
 import { SettingsForm } from '@/components/SettingsForm';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Settings() {
   const [, setLocation] = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading } = useOptimizedAuth();
 
   if (loading) {
     return (

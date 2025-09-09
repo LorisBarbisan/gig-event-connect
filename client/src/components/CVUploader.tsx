@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, X, CheckCircle, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 interface CVUploaderProps {
   userId: number;
@@ -17,7 +17,7 @@ interface CVUploaderProps {
 }
 
 export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid": dataTestId }: CVUploaderProps) {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
