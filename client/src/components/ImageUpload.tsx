@@ -67,7 +67,13 @@ export function ImageUpload({
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
         
-        const compressedData = canvas.toDataURL('image/jpeg', 0.8);
+        // WebP support with JPEG fallback for better compression
+        let compressedData = '';
+        if (canvas.toDataURL('image/webp').indexOf('webp') !== -1) {
+          compressedData = canvas.toDataURL('image/webp', 0.8);
+        } else {
+          compressedData = canvas.toDataURL('image/jpeg', 0.8);
+        }
         console.log('ImageUpload: Generated compressed data URL, length:', compressedData.length);
         onChange(compressedData);
       };

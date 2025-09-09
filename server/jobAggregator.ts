@@ -111,6 +111,10 @@ export class JobAggregator {
   private reedApiKey: string | undefined;
   private adzunaApiKey: string | undefined;
   private adzunaAppId: string | undefined;
+  
+  // Performance: In-memory cache for external jobs (refresh every 30 minutes)
+  private jobCache: { data: ExternalJob[], timestamp: number } | null = null;
+  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
   constructor() {
     this.reedApiKey = process.env.REED_API_KEY;
@@ -295,6 +299,12 @@ export class JobAggregator {
     reedOptions?: Parameters<typeof this.fetchReedJobs>[2],
     adzunaOptions?: Parameters<typeof this.fetchAdzunaJobs>[2]
   ): Promise<ExternalJob[]> {
+    // Check cache first for performance
+    if (this.jobCache && Date.now() - this.jobCache.timestamp < this.CACHE_DURATION) {
+      console.log(`⚡ Returning cached external jobs: ${this.jobCache.data.length} jobs`);
+      return this.jobCache.data;
+    }
+    
     console.log('Starting fetchAllExternalJobs...');
     
     const [reedJobs, adzunaJobs] = await Promise.all([
@@ -316,6 +326,12 @@ export class JobAggregator {
 
     const finalJobs = uniqueJobs.slice(0, 50);
     console.log(`Final jobs to return: ${finalJobs.length} jobs`);
+    
+    // Cache the results for performance
+    this.jobCache = {
+      data: finalJobs,
+      timestamp: Date.now()
+    };
     
     return finalJobs;
   }
