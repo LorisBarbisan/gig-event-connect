@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useNotifications } from '@/hooks/useNotifications';
 import { apiRequest } from '@/lib/queryClient';
@@ -18,7 +18,7 @@ import { NewConversationModal } from './NewConversationModal';
 import type { Job, JobApplication, JobFormData } from '@shared/types';
 
 export default function SimplifiedRecruiterDashboard() {
-  const { user } = useAuth();
+  const { user } = useOptimizedAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
