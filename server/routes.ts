@@ -1116,6 +1116,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/jobs/:jobId", async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
+      
+      // Get job details first for notifications
+      const job = await storage.getJob(jobId);
+      if (!job) {
+        return res.json({ success: true });
+      }
+      
+      // Get hired freelancers for this job
+      const hiredApplications = await storage.getJobApplications(jobId);
+      const hiredFreelancers = hiredApplications.filter(app => app.status === 'hired');
+      
+      // Send notifications to hired freelancers
+      for (const application of hiredFreelancers) {
+        try {
+          await storage.createNotification({
+            user_id: application.freelancer_id,
+            type: 'job_deleted',
+            title: 'Job Cancelled',
+            message: `The job "${job.title}" at ${job.company} has been cancelled by the recruiter. You will be contacted directly if there are any questions.`,
+            related_id: jobId,
+            is_read: false
+          });
+        } catch (notificationError) {
+          console.error(`Failed to send notification to freelancer ${application.freelancer_id}:`, notificationError);
+        }
+      }
+      
+      // Delete the job (cascade will handle applications)
       await storage.deleteJob(jobId);
       res.json({ success: true });
     } catch (error) {

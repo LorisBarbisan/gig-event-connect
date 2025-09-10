@@ -71,7 +71,7 @@ export interface JobApplication {
   id: number;
   job_id: number;
   freelancer_id: number;
-  status: 'pending' | 'reviewed' | 'rejected' | 'hired';
+  status: 'applied' | 'pending' | 'reviewed' | 'rejected' | 'hired';
   cover_letter?: string;
   rejection_message?: string;
   applied_at: string;

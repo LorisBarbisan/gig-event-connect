@@ -49,6 +49,13 @@ export default function SimplifiedRecruiterDashboard() {
     queryKey: ['/api/recruiter', user?.id, 'applications'],
     queryFn: () => apiRequest(`/api/recruiter/${user?.id}/applications`),
     enabled: !!user?.id,
+    select: (data) => {
+      // Filter out applications for jobs that might have been deleted
+      return data.filter((app: JobApplication) => {
+        // Only show applications that have valid job data
+        return app.job_title && app.job_company;
+      });
+    },
   });
 
   // Fetch unread message count with optimized polling
