@@ -34,6 +34,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   // Fetch full job details when dialog opens
   const { data: jobDetails, isLoading: jobDetailsLoading } = useQuery<Job>({
     queryKey: [`/api/jobs/${application.job_id}`],
+    queryFn: () => apiRequest(`/api/jobs/${application.job_id}`),
     enabled: showJobDetailsDialog && !!application.job_id,
   });
 
