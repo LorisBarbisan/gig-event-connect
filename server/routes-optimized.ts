@@ -66,6 +66,10 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Store user data in session for backend authentication
+      (req.session as any).userId = user.id;
+      (req.session as any).user = user;
+
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword });
     } catch (error) {

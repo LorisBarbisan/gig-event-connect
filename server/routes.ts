@@ -2225,17 +2225,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin authentication middleware
+  // Admin authentication middleware - supports both Passport and custom auth
   const requireAdminAuth = async (req: any, res: any, next: any) => {
     try {
-      if (!req.isAuthenticated || !req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Authentication required' });
+      let userData = null;
+
+      // Check Passport authentication first (OAuth users)
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        const user = req.user as any;
+        userData = await storage.getUserByEmail(user.email);
+      } 
+      // Check custom authentication via session (email/password users)
+      else if (req.session && req.session.userId) {
+        userData = await storage.getUser(req.session.userId);
+      }
+      // Also check if user data is directly in session (fallback)
+      else if (req.session && req.session.user) {
+        const sessionUser = req.session.user;
+        userData = await storage.getUserByEmail(sessionUser.email);
       }
 
-      const user = req.user as any;
-      const userData = await storage.getUserByEmail(user.email);
+      if (!userData) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
       
-      if (!userData || userData.role !== 'admin') {
+      if (userData.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
