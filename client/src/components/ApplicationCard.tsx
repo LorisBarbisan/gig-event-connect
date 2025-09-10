@@ -219,7 +219,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                   Message
                 </Button>
                 
-                {(application.status === 'pending' || application.status === 'reviewed') && (
+                {(application.status === 'applied' || application.status === 'pending' || application.status === 'reviewed') && (
                   <>
                     {/* Hire Confirmation Dialog */}
                     <AlertDialog open={showHireConfirm} onOpenChange={setShowHireConfirm}>

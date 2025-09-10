@@ -10,6 +10,7 @@ import type { Job, JobApplication } from '@shared/types';
 interface JobCardProps {
   job: Job;
   hiredApplicants: JobApplication[];
+  applicantCount?: number;
   onEdit?: (jobId: number) => void;
   onDelete?: (jobId: number) => void;
   onExpandToggle?: (jobId: number) => void;
@@ -21,6 +22,7 @@ interface JobCardProps {
 export function JobCard({ 
   job, 
   hiredApplicants, 
+  applicantCount = 0,
   onEdit, 
   onDelete, 
   onExpandToggle, 
@@ -85,7 +87,7 @@ export function JobCard({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-sm">
                 <Users className="w-4 h-4" />
-                <span>0 applicants</span>
+                <span>{applicantCount} {applicantCount === 1 ? 'applicant' : 'applicants'}</span>
               </div>
               {showHiredSection && hiredApplicants.length > 0 && onExpandToggle && (
                 <Button 

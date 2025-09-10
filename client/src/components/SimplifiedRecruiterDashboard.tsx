@@ -161,6 +161,10 @@ export default function SimplifiedRecruiterDashboard() {
     );
   };
 
+  const getApplicantCountForJob = (jobId: number): number => {
+    return applications.filter((app: JobApplication) => app.job_id === jobId).length;
+  };
+
   const handleJobSubmit = (jobData: JobFormData) => {
     if (editingJob) {
       updateJobMutation.mutate({ ...jobData, id: editingJob.id });
@@ -269,6 +273,7 @@ export default function SimplifiedRecruiterDashboard() {
                   key={job.id}
                   job={job}
                   hiredApplicants={getHiredApplicantsForJob(job.id)}
+                  applicantCount={getApplicantCountForJob(job.id)}
                   onEdit={handleJobEdit}
                   onDelete={handleJobDelete}
                   onExpandToggle={toggleJobExpansion}
