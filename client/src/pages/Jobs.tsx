@@ -521,9 +521,6 @@ export default function Jobs() {
                       {expandedJobId === job.id.toString() ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
                       {expandedJobId === job.id.toString() ? 'Less Details' : 'More Details'}
                     </Button>
-                    <Button variant="outline" data-testid={`button-save-${job.id}`}>
-                      Save Job
-                    </Button>
                   </div>
                 </div>
               </CardContent>

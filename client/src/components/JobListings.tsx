@@ -150,9 +150,6 @@ export const JobListings = () => {
                   <Button className="flex-1 bg-gradient-primary hover:bg-primary-hover">
                     Apply Now
                   </Button>
-                  <Button variant="outline" size="sm">
-                    Save
-                  </Button>
                 </div>
               </CardContent>
             </Card>
