@@ -46,6 +46,11 @@ Created comprehensive system optimization with significantly improved efficiency
 - ✅ Corrected all spelling to consistent "EventLink" branding throughout platform
 - ✅ **DEPLOYMENT FIXES**: Added health check endpoints and removed startup cleanup to prevent deployment failures
 
+## Recent Changes (September 13, 2025)
+- ✅ **ADMIN DASHBOARD MENU FIX**: Resolved admin dashboard menu not appearing in production by implementing server-side admin email allowlist
+- ✅ **SAVE JOB BUTTONS REMOVAL**: Successfully removed "Save Job" buttons from all job listings as requested
+- ✅ **PRODUCTION DEPLOYMENT PIPELINE**: Fixed critical issue where changes weren't reflecting in production due to development vs production environment confusion
+
 ## Authentication System
 - **Production**: Custom session management with aggressive cache clearing, email verification required
 - **Email Service**: SendGrid integration for verification emails
