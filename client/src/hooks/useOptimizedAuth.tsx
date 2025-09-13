@@ -55,6 +55,19 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
           localStorage.removeItem('user');
           setUser(null);
         }
+      } else {
+        // No cached user - try to hydrate from server session
+        try {
+          const sessionResponse = await apiRequest('/api/auth/session');
+          if (sessionResponse && sessionResponse.user && sessionResponse.user.id) {
+            console.log('Hydrated user from server session:', sessionResponse.user);
+            setUser(sessionResponse.user);
+            localStorage.setItem('user', JSON.stringify(sessionResponse.user));
+          }
+        } catch (error) {
+          console.log('No active server session found');
+          // This is expected when user is not signed in
+        }
       }
       setLoading(false);
     };

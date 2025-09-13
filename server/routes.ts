@@ -16,6 +16,24 @@ import { searchLocalLocations, validateUKPostcode, formatUKPostcode } from "./uk
 import { setCacheByEndpoint } from "./cacheHeaders";
 import { performanceMonitor } from "./performanceMonitor";
 
+// Admin email allowlist for server-side admin role detection
+const ADMIN_EMAILS = [
+  'lorisbarbisan@gmail.com'
+];
+
+// Helper function to compute admin role based on email
+const computeUserRole = (user: any) => {
+  if (!user) return user;
+  
+  // Check if email is in admin allowlist
+  const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase());
+  
+  return {
+    ...user,
+    role: isAdmin ? 'admin' : (user.role || 'freelancer')
+  };
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMonitor.middleware());
@@ -256,7 +274,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/session', (req, res) => {
     if (req.user) {
       const { password: _, ...userWithoutPassword } = req.user as any;
-      res.json({ user: userWithoutPassword });
+      const userWithComputedRole = computeUserRole(userWithoutPassword);
+      res.json({ user: userWithComputedRole });
     } else {
       res.status(401).json({ error: 'Not authenticated' });
     }
@@ -388,9 +407,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = user;
 
-      // Remove password from response
+      // Remove password from response and compute admin role
       const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword });
+      const userWithComputedRole = computeUserRole(userWithoutPassword);
+      res.json({ user: userWithComputedRole });
     } catch (error) {
       console.error("Signin error:", error);
       return res.status(500).json({ error: "Server error occurred. Please try again." });
@@ -833,7 +853,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      const userWithComputedRole = computeUserRole(userWithoutPassword);
+      res.json(userWithComputedRole);
     } catch (error) {
       console.error("Get user error:", error);
       return res.status(500).json({ error: "Server error occurred" });
