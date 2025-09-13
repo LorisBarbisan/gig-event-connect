@@ -233,7 +233,7 @@ export const Layout = ({ children }: LayoutProps) => {
                         Settings
                       </Link>
                     </DropdownMenuItem>
-                    {(user?.role === 'admin' || user?.role === 'recruiter') && (
+                    {user?.role === 'admin' && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>

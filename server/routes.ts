@@ -390,6 +390,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "User does not exist or invalid credentials" });
       }
 
+      // Store user in session for backend authentication
+      req.session.userId = user.id;
+      req.session.user = user;
+
       // Remove password from response
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword });
