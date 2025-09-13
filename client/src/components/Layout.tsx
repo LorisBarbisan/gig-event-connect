@@ -233,18 +233,25 @@ export const Layout = ({ children }: LayoutProps) => {
                         Settings
                       </Link>
                     </DropdownMenuItem>
-                    {(() => {
-                      console.log('Admin menu check - user:', user);
-                      console.log('Admin menu check - user.role:', user?.role);
-                      console.log('Admin menu check - condition result:', user?.role === 'admin');
-                      return user?.role === 'admin';
-                    })() && (
+                    {user?.role === 'admin' && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                           <Link to="/admin" className="flex items-center gap-2 w-full text-purple-600">
                             <Settings className="w-4 h-4" />
                             Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {/* Force admin menu for testing */}
+                    {user?.email === 'lorisbarbisan@gmail.com' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center gap-2 w-full text-red-600">
+                            <Settings className="w-4 h-4" />
+                            🔴 ADMIN DASHBOARD (FORCED)
                           </Link>
                         </DropdownMenuItem>
                       </>
