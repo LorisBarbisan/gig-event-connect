@@ -45,8 +45,8 @@ export const Layout = ({ children }: LayoutProps) => {
     
     // For admin users, always use first_name + last_name from user data
     if (user.role === 'admin') {
-      const firstName = user.first_name || '';
-      const lastName = user.last_name || '';
+      const firstName = user.first_name ?? '';
+      const lastName = user.last_name ?? '';
       console.log('Admin user - firstName:', firstName, 'lastName:', lastName);
       const fullName = `${firstName} ${lastName}`.trim();
       const result = fullName || user.email.split('@')[0];
@@ -56,8 +56,8 @@ export const Layout = ({ children }: LayoutProps) => {
     
     // Use user account data (what shows in Account Information)
     if (user.role === 'freelancer') {
-      const firstName = user.first_name || '';
-      const lastName = user.last_name || '';
+      const firstName = user.first_name ?? '';
+      const lastName = user.last_name ?? '';
       const fullName = `${firstName} ${lastName}`.trim();
       return fullName || user.email.split('@')[0];
     } else if (user.role === 'recruiter') {
@@ -79,8 +79,8 @@ export const Layout = ({ children }: LayoutProps) => {
     
     // Handle admin users first
     if (user.role === 'admin') {
-      const firstName = user.first_name || '';
-      const lastName = user.last_name || '';
+      const firstName = user.first_name ?? '';
+      const lastName = user.last_name ?? '';
       if (firstName && lastName) {
         return `${firstName[0]}${lastName[0]}`.toUpperCase();
       } else if (firstName) {
@@ -90,8 +90,8 @@ export const Layout = ({ children }: LayoutProps) => {
     
     // Use user account data for freelancers
     if (user.role === 'freelancer') {
-      const firstName = user.first_name || '';
-      const lastName = user.last_name || '';
+      const firstName = user.first_name ?? '';
+      const lastName = user.last_name ?? '';
       if (firstName && lastName) {
         return `${firstName[0]}${lastName[0]}`.toUpperCase();
       } else if (firstName) {
