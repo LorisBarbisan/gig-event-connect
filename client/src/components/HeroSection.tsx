@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
 import eventImage from "@assets/vecteezy_blurred-images-of-trade-fairs-in-the-big-hall-image-of_33496157_1753859139754.jpg";
-import eventlinkLogo from "@assets/E8 LOGO_1756038316799.png"; // TODO: Replace with Kite-branded logo asset
+import eventlinkLogo from "@assets/E8-Logo-Orange.png";
 
 
 export const HeroSection = () => {
@@ -21,7 +21,7 @@ export const HeroSection = () => {
                 <div className="relative">
                   <img 
                     src={eventlinkLogo} 
-                    alt="Kite EventLink Logo" 
+                    alt="EventLink Logo" 
                     className="w-16 h-16 drop-shadow-lg"
                     loading="lazy"
                     decoding="async"
