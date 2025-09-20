@@ -145,7 +145,7 @@ export function registerProfileRoutes(app: Express) {
   // Get all freelancers (for recruiter job search)
   app.get("/api/freelancers", async (req, res) => {
     try {
-      const freelancers = await storage.getAllFreelancers();
+      const freelancers = await storage.getAllFreelancerProfiles();
       res.json(freelancers);
     } catch (error) {
       console.error("Get freelancers error:", error);
