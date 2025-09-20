@@ -7,12 +7,12 @@ import { useTabNotifications } from '@/hooks/useTabNotifications';
  * It automatically detects new applications, messages, and other notifications for all user types.
  */
 export function TabNotificationManager() {
-  const { user } = useOptimizedAuth();
+  const { user, loading } = useOptimizedAuth();
   
   // Use the tab notifications hook with the current user's ID
   const { unreadCount, hasNotifications } = useTabNotifications({
     userId: user?.id,
-    enabled: !!user?.id, // Only enable when user is logged in
+    enabled: !!user?.id && !loading, // Only enable when user is logged in AND auth loading is complete
   });
 
   // This component doesn't render anything - it just manages the browser tab title
