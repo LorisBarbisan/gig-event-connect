@@ -112,7 +112,7 @@ export function RatingRequestDialog({
             onClick={handleSubmit}
             disabled={requestRatingMutation.isPending}
             data-testid="button-request-rating"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-gradient-primary hover:bg-primary-hover"
           >
             {requestRatingMutation.isPending ? (
               'Sending...'
