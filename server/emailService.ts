@@ -157,19 +157,19 @@ export async function sendVerificationEmail(
         }
         .button { 
           display: inline-block; 
-          background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+          background: linear-gradient(135deg, #D8690E 0%, #E97B24 100%);
           color: white !important; 
           padding: 16px 32px; 
           text-decoration: none; 
           border-radius: 12px; 
           font-weight: 600;
           font-size: 16px;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(216, 105, 14, 0.3);
           transition: all 0.2s ease;
         }
         .button:hover {
           transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+          box-shadow: 0 6px 16px rgba(216, 105, 14, 0.4);
         }
         .link-text {
           font-size: 14px;
