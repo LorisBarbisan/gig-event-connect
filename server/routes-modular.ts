@@ -26,17 +26,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMonitor.middleware());
 
-  // Security headers
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
+  // Security headers - disable CSP in development for Vite compatibility
+  if (process.env.NODE_ENV === 'production') {
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
       },
-    },
-  }));
+    }));
+  } else {
+    // Disable CSP entirely in development to allow Vite functionality
+    app.use(helmet({
+      contentSecurityPolicy: false,
+    }));
+  }
 
   // General rate limiting
   const generalRateLimit = rateLimit({
@@ -150,10 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const feedback = await storage.createFeedback({
         user_id: req.user?.id || null,
-        type,
+        feedback_type: type,
         message,
-        email: email || req.user?.email || null,
-        rating: rating || null,
+        user_email: email || req.user?.email || null,
         status: 'pending'
       });
 
@@ -161,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Feedback submitted successfully. Thank you for your input!",
         feedback: {
           id: feedback.id,
-          type: feedback.type,
+          feedback_type: feedback.feedback_type,
           status: feedback.status
         }
       });
@@ -184,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // This is a destructive operation that deletes ALL data
-        await storage.deleteAllData();
+        await nukeAllUserData();
         
         res.json({ 
           message: "All data has been permanently deleted. Database reset complete.",
@@ -199,13 +205,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket server for real-time messaging
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer });
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/ws' // Use specific path to avoid Vite HMR conflicts
+  });
 
   // Track active connections by user ID
   const activeConnections = new Map<number, WebSocket>();
 
   wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket connection established');
+    console.log('WebSocket connection established on /ws');
     
     let userId: number | null = null;
 
@@ -223,12 +232,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Handle real-time message sending
           const { recipientId, content } = data;
           
+          // Find or create conversation between users
+          const conversation = await storage.getOrCreateConversation(userId, recipientId);
+          
           // Save message to database
           const newMessage = await storage.sendMessage({
+            conversation_id: conversation.id,
             sender_id: userId,
-            recipient_id: recipientId,
             content,
-            read: false
+            is_read: false
           });
 
           // Send to recipient if they're connected

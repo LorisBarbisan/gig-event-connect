@@ -9,26 +9,34 @@ const app = express();
 // Configure trust proxy for Replit environment
 app.set('trust proxy', 1);
 
-// Security middleware - must come first
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://accounts.google.com", "https://connect.facebook.net", "https://platform.linkedin.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:", "https://media.licdn.com"],
-      connectSrc: ["'self'", "https://api.eventlink.com", "https://api.linkedin.com", "ws://localhost:*", "wss://localhost:*"],
-      frameSrc: ["https://accounts.google.com", "https://www.facebook.com", "https://www.linkedin.com"],
+// Security middleware - disable CSP in development
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://accounts.google.com", "https://connect.facebook.net", "https://platform.linkedin.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:", "https://media.licdn.com"],
+        connectSrc: ["'self'", "https://api.eventlink.com", "https://api.linkedin.com", "ws://localhost:*", "wss://localhost:*"],
+        frameSrc: ["https://accounts.google.com", "https://www.facebook.com", "https://www.linkedin.com"],
+      },
     },
-  },
-  crossOriginEmbedderPolicy: false, // Allow OAuth embeds
-  hsts: {
-    maxAge: 31536000, // 1 year
-    includeSubDomains: true,
-    preload: true
-  }
-}));
+    crossOriginEmbedderPolicy: false, // Allow OAuth embeds
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true
+    }
+  }));
+} else {
+  // Disable CSP completely in development for Vite compatibility
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }));
+}
 
 // HTTPS enforcement in production
 if (process.env.NODE_ENV === 'production') {
