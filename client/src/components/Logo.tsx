@@ -8,7 +8,7 @@ export const EventLinkLogo = ({ size = 48 }: LogoProps) => (
   <img 
     src={e8Logo} 
     alt="EventLink Logo" 
-    style={{ width: size, height: size }}
+    style={{ width: size, aspectRatio: '1/1', objectFit: 'contain' }}
     className="drop-shadow-sm"
     loading="lazy"
     decoding="async"

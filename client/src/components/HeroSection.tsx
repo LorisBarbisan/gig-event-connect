@@ -22,7 +22,8 @@ export const HeroSection = () => {
                   <img 
                     src={eventlinkLogo} 
                     alt="EventLink Logo" 
-                    className="w-16 h-16 drop-shadow-lg"
+                    className="w-16 drop-shadow-lg"
+                    style={{ aspectRatio: '1/1', objectFit: 'contain' }}
                     loading="lazy"
                     decoding="async"
                   />
