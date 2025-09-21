@@ -689,6 +689,7 @@ function RecruiterFormFields({
           label="Company Logo"
           value={formData.company_logo_url}
           onChange={(url: string) => onInputChange('company_logo_url', url)}
+          shape="circle"
         />
       </div>
     </>

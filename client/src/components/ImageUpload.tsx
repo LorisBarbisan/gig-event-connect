@@ -112,7 +112,7 @@ export function ImageUpload({
       {value && value.trim() !== '' && value !== 'null' ? (
         <div className="relative">
           <div className={`relative overflow-hidden ${
-            shape === 'circle' ? 'rounded-full w-32 h-32 bg-gradient-primary border-2 border-muted' : 
+            shape === 'circle' ? 'rounded-full w-16 h-16 bg-gradient-primary border-2 border-muted' : 
             'rounded-lg border-2 border-dashed border-muted'
           } ${
             shape === 'circle' ? '' :
@@ -146,7 +146,7 @@ export function ImageUpload({
       ) : (
         <div
           className={`border-2 border-dashed border-muted text-center transition-colors ${
-            shape === 'circle' ? 'rounded-full w-32 h-32 flex items-center justify-center' : 
+            shape === 'circle' ? 'rounded-full w-16 h-16 flex items-center justify-center' : 
             'rounded-lg p-12'
           } ${
             isDragging ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
