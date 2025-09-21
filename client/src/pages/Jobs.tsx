@@ -449,10 +449,12 @@ export default function Jobs() {
                       <Coins className="h-4 w-4 text-muted-foreground" />
                       <span>{job.rate}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{job.created_at ? new Date(job.created_at).toLocaleDateString() : job.posted}</span>
-                    </div>
+                    {job.event_date && (
+                      <div className="flex items-center gap-2 font-medium text-primary">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <span>Event: {new Date(job.event_date).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Expanded details - shown when expanded */}
