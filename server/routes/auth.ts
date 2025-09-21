@@ -418,6 +418,13 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
+      // Check if user has a password (not a social auth user)
+      if (!user.password) {
+        return res.status(400).json({ 
+          error: "This account uses social login. Please sign in with your social provider." 
+        });
+      }
+
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return res.status(401).json({ error: "Invalid email or password" });
@@ -444,12 +451,12 @@ export function registerAuthRoutes(app: Express) {
         res.json({ 
           message: "Sign in successful",
           user: {
-            id: userWithRole.id,
-            email: userWithRole.email,
-            first_name: userWithRole.first_name,
-            last_name: userWithRole.last_name,
-            role: userWithRole.role,
-            email_verified: userWithRole.email_verified
+            id: (userWithRole as any).id,
+            email: (userWithRole as any).email,
+            first_name: (userWithRole as any).first_name,
+            last_name: (userWithRole as any).last_name,
+            role: (userWithRole as any).role,
+            email_verified: (userWithRole as any).email_verified
           }
         });
       });
@@ -615,11 +622,14 @@ export function registerAuthRoutes(app: Express) {
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Update user with new token
-      await storage.updateUserVerificationToken(user.id, emailVerificationToken, emailVerificationExpires);
+      await storage.updateUserVerificationToken((user as any).id, emailVerificationToken, emailVerificationExpires);
 
       // Send verification email
       try {
-        await sendVerificationEmail(email, emailVerificationToken);
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? `https://${req.get('host')}` 
+          : `http://localhost:5000`;
+        await sendVerificationEmail(email, emailVerificationToken, baseUrl);
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
         return res.status(500).json({ error: "Failed to send verification email" });
