@@ -533,14 +533,17 @@ export function registerAuthRoutes(app: Express) {
       const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Save reset token to user
-      await storage.updateUser(user.id, {
-        password_reset_token: resetToken,
-        password_reset_expires: resetTokenExpires
-      });
+      const tokenSaved = await storage.setPasswordResetToken(email, resetToken, resetTokenExpires);
+      if (!tokenSaved) {
+        return res.status(500).json({ error: "Failed to generate reset token" });
+      }
 
       // Send password reset email
       try {
-        await sendPasswordResetEmail(email, resetToken);
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? `https://${req.get('host')}` 
+          : `http://localhost:5000`;
+        await sendPasswordResetEmail(email, resetToken, baseUrl, user.first_name);
       } catch (emailError) {
         console.error('Failed to send password reset email:', emailError);
         return res.status(500).json({ error: "Failed to send reset email" });
