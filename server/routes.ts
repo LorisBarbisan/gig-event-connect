@@ -2167,6 +2167,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG: Temporary query parameter test endpoint
+  app.get("/api/locations/debug", (req, res) => {
+    res.json({
+      query: req.query,
+      q: req.query.q,
+      qType: typeof req.query.q,
+      url: req.url,
+      originalUrl: req.originalUrl
+    });
+  });
+
   // Location search cache (in-memory cache with TTL)
   const locationCache = new Map<string, { data: any; timestamp: number }>();
   const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -2180,11 +2191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Query parameter is required' });
       }
 
-      if (q.length < 2) {
+      const query = q as string;
+
+      if (query.length < 2) {
         return res.json([]);
       }
-
-      const query = q as string;
       const normalizedQuery = query.toLowerCase().trim();
 
       // For postcodes, validate and format instantly  
