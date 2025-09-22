@@ -114,7 +114,7 @@ export function registerApplicationRoutes(app: Express) {
         return res.status(403).json({ error: "Not authorized to view applications for this job" });
       }
 
-      const applications = await storage.getJobByIdApplications(jobId);
+      const applications = await storage.getJobApplications(jobId);
       res.json(applications);
     } catch (error) {
       console.error("Get job applications error:", error);
@@ -133,11 +133,11 @@ export function registerApplicationRoutes(app: Express) {
       }
 
       // Get all jobs by this recruiter, then get applications for those jobs
-      const jobs = await storage.getJobByIdsByRecruiterId(recruiterId);
+      const jobs = await storage.getJobsByRecruiterId(recruiterId);
       const allApplications = [];
       
       for (const job of jobs) {
-        const jobApplications = await storage.getJobByIdApplications(job.id);
+        const jobApplications = await storage.getJobApplications(job.id);
         allApplications.push(...jobApplications);
       }
 

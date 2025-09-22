@@ -25,16 +25,13 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const otherUserId = parseInt(req.params.id);
-      
-      // Get or create conversation between users
-      const conversation = await storage.getOrCreateConversation(req.user.id, otherUserId);
+      const conversationId = parseInt(req.params.id);
       
       // Get messages for this conversation
-      const messages = await storage.getConversationMessages(conversation.id);
+      const messages = await storage.getConversationMessages(conversationId);
       
       // Mark messages as read
-      await storage.markMessagesAsRead(conversation.id, req.user.id);
+      await storage.markMessagesAsRead(conversationId, req.user.id);
       
       res.json(messages);
     } catch (error) {
@@ -100,23 +97,17 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { recipient_id, content } = req.body;
+      const { conversation_id, content } = req.body;
 
-      if (!recipient_id || !content) {
-        return res.status(400).json({ error: "Recipient ID and content are required" });
-      }
-
-      // Check if recipient exists
-      const recipient = await storage.getUser(recipient_id);
-      if (!recipient) {
-        return res.status(404).json({ error: "Recipient not found" });
+      if (!conversation_id || !content) {
+        return res.status(400).json({ error: "Conversation ID and content are required" });
       }
 
       const messageData = {
+        conversation_id: conversation_id,
         sender_id: req.user.id,
-        recipient_id: recipient_id,
         content: content,
-        read: false
+        is_read: false
       };
 
       const result = insertMessageSchema.safeParse(messageData);
@@ -126,14 +117,18 @@ export function registerMessagingRoutes(app: Express) {
 
       const message = await storage.sendMessage(result.data);
       
-      // Create notification for recipient
-      await storage.createNotification({
-        user_id: recipient_id,
-        type: 'new_message',
-        title: 'New Message',
-        message: `You have a new message from ${req.user.first_name || req.user.email}`,
-        data: { sender_id: req.user.id, message_id: message.id }
-      });
+      // Create notification for other participant in conversation
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      const conversation = conversations.find(c => c.id === conversation_id);
+      if (conversation && conversation.otherUser) {
+        await storage.createNotification({
+          user_id: conversation.otherUser.id,
+          type: 'new_message',
+          title: 'New Message',
+          message: `You have a new message from ${req.user.first_name || req.user.email}`,
+          data: { sender_id: req.user.id, message_id: message.id }
+        });
+      }
 
       res.status(201).json(message);
     } catch (error) {
