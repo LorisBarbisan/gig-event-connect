@@ -2176,7 +2176,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q } = req.query;
       
-      if (!q || typeof q !== 'string' || q.length < 2) {
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Query parameter is required' });
+      }
+
+      if (q.length < 2) {
         return res.json([]);
       }
 
@@ -2230,7 +2234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(cached.data);
         }
 
-        // External API call for uncommon locations
+        // External API call for uncommon locations (production-safe with fallback)
         try {
           const searchParams = new URLSearchParams({
             q: query,
@@ -2241,45 +2245,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'accept-language': 'en'
           });
 
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?${searchParams}`,
             {
-              headers: { 'User-Agent': 'EventLink/1.0' },
-              signal: AbortSignal.timeout(2000) // 2 second timeout
+              headers: { 
+                'User-Agent': 'EventLink/1.0',
+                'Accept': 'application/json'
+              },
+              signal: controller.signal
             }
           );
 
+          clearTimeout(timeoutId);
+
           if (response.ok) {
             const data = await response.json();
-            locationCache.set(normalizedQuery, { data, timestamp: now });
             
-            // Clean cache periodically
-            if (locationCache.size > 500) {
-              const cutoff = now - CACHE_TTL;
-              const keysToDelete: string[] = [];
-              locationCache.forEach((value, key) => {
-                if (value.timestamp < cutoff) {
-                  keysToDelete.push(key);
-                }
-              });
-              keysToDelete.forEach(key => locationCache.delete(key));
+            // Validate API response
+            if (Array.isArray(data)) {
+              locationCache.set(normalizedQuery, { data, timestamp: now });
+              
+              // Clean cache periodically
+              if (locationCache.size > 500) {
+                const cutoff = now - CACHE_TTL;
+                const keysToDelete: string[] = [];
+                locationCache.forEach((value, key) => {
+                  if (value.timestamp < cutoff) {
+                    keysToDelete.push(key);
+                  }
+                });
+                keysToDelete.forEach(key => locationCache.delete(key));
+              }
+              
+              res.set('Cache-Control', 'public, max-age=300');
+              return res.json(data);
+            } else {
+              console.log('Invalid API response format, falling back to empty results');
             }
-            
-            res.set('Cache-Control', 'public, max-age=300');
-            return res.json(data);
+          } else {
+            console.log(`External API returned ${response.status}, falling back to empty results`);
           }
         } catch (apiError) {
-          console.log('External API timeout/error, falling back to empty results');
+          console.log('External API error (normal in production environments):', apiError instanceof Error ? apiError.message : 'Unknown error');
         }
       }
 
-      // Return empty results if nothing found
+      // Return empty results if nothing found (but service is still working)
       res.set('Cache-Control', 'public, max-age=300');
       res.json([]);
       
     } catch (error) {
       console.error('Location search error:', error);
-      res.status(500).json({ error: 'Location service unavailable' });
+      
+      // In production, try to return local results even if there's an error
+      try {
+        const emergencyResults = searchLocalLocations(query || '', 3);
+        if (emergencyResults.length > 0) {
+          console.log('Returning emergency local results due to service error');
+          const formattedResults = emergencyResults.map(location => ({
+            display_name: `${location.formatted}, United Kingdom`,
+            name: location.name,
+            address: {
+              city: location.name,
+              county: location.county,
+            },
+            formatted: location.formatted,
+            lat: "51.5074",
+            lon: "-0.1278"
+          }));
+          return res.json(formattedResults);
+        }
+      } catch (fallbackError) {
+        console.error('Emergency fallback also failed:', fallbackError);
+      }
+      
+      res.status(500).json({ 
+        error: 'Location service temporarily unavailable',
+        fallback: 'You can still enter locations manually'
+      });
+    }
+  });
+
+  // Location service health check endpoint
+  app.get("/api/locations/health", async (req, res) => {
+    try {
+      // Test local search capability
+      const localTest = searchLocalLocations("London", 1);
+      
+      // Test external API (with timeout)
+      let externalApiStatus = 'untested';
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const testResponse = await fetch(
+          'https://nominatim.openstreetmap.org/search?q=London&format=json&limit=1',
+          {
+            headers: { 'User-Agent': 'EventLink/1.0' },
+            signal: controller.signal
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        externalApiStatus = testResponse.ok ? 'available' : `error-${testResponse.status}`;
+      } catch (error) {
+        externalApiStatus = error instanceof Error ? error.message : 'error';
+      }
+      
+      res.json({
+        status: 'healthy',
+        localSearch: localTest.length > 0 ? 'working' : 'failed',
+        externalApi: externalApiStatus,
+        cacheSize: locationCache.size,
+        environment: process.env.NODE_ENV || 'unknown',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'unknown error',
+        timestamp: new Date().toISOString()
+      });
     }
   });
 

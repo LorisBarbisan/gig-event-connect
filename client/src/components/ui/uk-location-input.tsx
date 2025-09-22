@@ -114,15 +114,37 @@ export function UKLocationInput({
     setError(null)
 
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
       const response = await fetch(
-        `/api/locations/search?q=${encodeURIComponent(query)}`
+        `/api/locations/search?q=${encodeURIComponent(query)}`,
+        {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
       )
 
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
-        throw new Error('Location service unavailable')
+        if (response.status >= 500) {
+          throw new Error('Server error - location service temporarily unavailable')
+        } else if (response.status === 400) {
+          throw new Error('Invalid search query')
+        } else {
+          throw new Error('Location service unavailable')
+        }
       }
 
       const data = await response.json()
+      
+      // Validate response format
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format')
+      }
       
       const locations: UKLocation[] = data.map((item: any) => ({
         display_name: item.display_name,
