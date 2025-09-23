@@ -67,7 +67,7 @@ export class PerformanceMonitor {
           responseTime,
           statusCode: res.statusCode,
           memoryUsed: Math.round(endMemory / 1024 / 1024),
-          cpuUsage: process.cpuUsage().user / 1000000 // Convert to seconds
+          cpuUsage: 0 // CPU percentage will be calculated separately by CPU monitoring
         };
 
         PerformanceMonitor.getInstance().recordMetric(metric);
@@ -150,12 +150,19 @@ export class PerformanceMonitor {
 
   private startCpuMonitoring() {
     let lastCpuUsage = process.cpuUsage();
+    let lastTime = Date.now();
     
     setInterval(() => {
+      const currentTime = Date.now();
       const currentCpuUsage = process.cpuUsage(lastCpuUsage);
-      const cpuPercent = (currentCpuUsage.user + currentCpuUsage.system) / 1000000 * 100; // Convert to percentage
+      const timeDiff = (currentTime - lastTime) / 1000; // Convert to seconds
       
-      if (cpuPercent > this.alertThresholds.cpuPercent) {
+      // Calculate CPU percentage properly over the time interval
+      const cpuTimeUsed = (currentCpuUsage.user + currentCpuUsage.system) / 1000000; // Convert to seconds
+      const cpuPercent = (cpuTimeUsed / timeDiff) * 100;
+      
+      // Only alert if CPU usage is genuinely high (above 80% and realistic)
+      if (cpuPercent > this.alertThresholds.cpuPercent && cpuPercent <= 100) {
         this.sendAlert('high_cpu', {
           message: `High CPU usage: ${Math.round(cpuPercent)}%`,
           severity: 'warning',
@@ -164,6 +171,7 @@ export class PerformanceMonitor {
       }
       
       lastCpuUsage = process.cpuUsage();
+      lastTime = currentTime;
     }, 60000); // Check every minute
   }
 
