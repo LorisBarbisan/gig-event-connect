@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star, Send } from 'lucide-react';
+import { Eye, MessageCircle, CheckCircle, X, AlertCircle, UserCheck, UserX, Star, Send, Trash2 } from 'lucide-react';
 import { RatingDialog } from './RatingDialog';
 import { RatingRequestDialog } from './RatingRequestDialog';
 import type { JobApplication } from '@shared/types';
@@ -30,6 +30,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [showRatingRequestDialog, setShowRatingRequestDialog] = useState(false);
   const [showJobDetailsDialog, setShowJobDetailsDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Fetch full job details when dialog opens
   const { data: jobDetails, isLoading: jobDetailsLoading } = useQuery<Job>({
@@ -89,6 +90,35 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/applications/${application.id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      if (userType === 'freelancer') {
+        queryClient.invalidateQueries({ queryKey: ['/api/freelancer', currentUserId, 'applications'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
+      }
+      setShowDeleteConfirm(false);
+      toast({
+        title: userType === 'freelancer' ? 'Application removed' : 'Application hidden',
+        description: userType === 'freelancer' 
+          ? 'The application has been removed from your list.'
+          : 'The application has been hidden from your view.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete application.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleRejectClick = () => {
     setRejectionMessage('');
     setShowRejectionDialog(true);
@@ -100,6 +130,10 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
 
   const handleConfirmHire = () => {
     hireMutation.mutate();
+  };
+
+  const handleConfirmDelete = () => {
+    deleteMutation.mutate();
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -350,6 +384,47 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                     Rate Freelancer
                   </Button>
                 )}
+
+                {/* Delete button for recruiters to hide applications */}
+                <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={deleteMutation.isPending}
+                      data-testid={`button-delete-${application.id}`}
+                      className="border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Hide
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hide Application</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to hide this application from{' '}
+                        <strong>
+                          {application.freelancer_profile ? 
+                            `${application.freelancer_profile.first_name} ${application.freelancer_profile.last_name}` : 
+                            'this freelancer'
+                          }
+                        </strong>? This will remove it from your applications list, but the freelancer will still see it.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleConfirmDelete}
+                        disabled={deleteMutation.isPending}
+                        data-testid={`button-confirm-delete-${application.id}`}
+                        className="bg-gray-600 hover:bg-gray-700 text-white"
+                      >
+                        {deleteMutation.isPending ? 'Hiding...' : 'Yes, Hide Application'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </>
             )}
 
@@ -363,6 +438,43 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                       View Details
                     </Button>
                   </DialogTrigger>
+
+                  {/* Delete button for freelancers - visible and accessible */}
+                  <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={deleteMutation.isPending}
+                        data-testid={`button-delete-freelancer-${application.id}`}
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Remove
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Application</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to remove your application for{' '}
+                          <strong>"{application.job_title}"</strong>? This action cannot be undone and the application will be permanently removed from your list.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleConfirmDelete}
+                          disabled={deleteMutation.isPending}
+                          data-testid={`button-confirm-delete-freelancer-${application.id}`}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          {deleteMutation.isPending ? 'Removing...' : 'Yes, Remove Application'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
                   <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Job Details</DialogTitle>
@@ -522,6 +634,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                     Request Rating
                   </Button>
                 )}
+
               </>
             )}
           </div>
