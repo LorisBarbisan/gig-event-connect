@@ -59,7 +59,7 @@ export function registerJobRoutes(app: Express) {
   // Create new job
   app.post("/api/jobs", async (req, res) => {
     try {
-      if (!req.user || req.user.role !== 'recruiter') {
+      if (!req.user || (req.user as any).role !== 'recruiter') {
         return res.status(403).json({ error: "Only recruiters can create jobs" });
       }
 
@@ -86,12 +86,12 @@ export function registerJobRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const job = await storage.getJob(jobId);
+      const job = await storage.getJobById(jobId);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      if (req.user.role !== 'admin' && job.recruiter_id !== req.user.id) {
+      if ((req.user as any).role !== 'admin' && job.recruiter_id !== (req.user as any).id) {
         return res.status(403).json({ error: "Not authorized to update this job" });
       }
 
@@ -122,12 +122,12 @@ export function registerJobRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const job = await storage.getJob(jobId);
+      const job = await storage.getJobById(jobId);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      if (req.user.role !== 'admin' && job.recruiter_id !== req.user.id) {
+      if ((req.user as any).role !== 'admin' && job.recruiter_id !== (req.user as any).id) {
         return res.status(403).json({ error: "Not authorized to delete this job" });
       }
 
