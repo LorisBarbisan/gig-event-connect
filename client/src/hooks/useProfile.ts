@@ -30,7 +30,7 @@ export function useProfile({ userId, userType }: UseProfileProps) {
       }
       return await apiRequest(`/api/${userType}/${userId}`, {
         method: 'PUT',
-        body: JSON.stringify(profileData),
+        body: JSON.stringify({ user_id: userId, ...profileData }),
         headers: { 'Content-Type': 'application/json' },
       });
     },

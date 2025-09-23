@@ -184,7 +184,7 @@ export interface IStorage {
   createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest>;
   getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined>;
   getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
-  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
+  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>>;
   updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest>;
 
   // Feedback management for admin dashboard
@@ -217,7 +217,7 @@ export class DatabaseStorage implements IStorage {
   // Optimized method to get user with profile data in single query
   async getUserWithProfile(id: number): Promise<(User & { profile?: FreelancerProfile | RecruiterProfile }) | undefined> {
     const cacheKey = `user_with_profile:${id}`;
-    const cached = cache.get(cacheKey);
+    const cached = cache.get<User & { profile?: FreelancerProfile | RecruiterProfile }>(cacheKey);
     if (cached) return cached;
 
     const user = await this.getUser(id);
@@ -832,7 +832,7 @@ export class DatabaseStorage implements IStorage {
       otherUser: {
         id: row.otherUserId,
         email: row.otherUserEmail || '',
-        role: (row.otherUserRole as 'freelancer' | 'recruiter') || 'freelancer',
+        role: (row.otherUserRole as 'freelancer' | 'recruiter' | 'admin') || 'freelancer',
         password: '',
         first_name: null,
         last_name: null,
@@ -841,6 +841,13 @@ export class DatabaseStorage implements IStorage {
         email_verification_expires: null,
         password_reset_token: null,
         password_reset_expires: null,
+        auth_provider: 'email' as const,
+        google_id: null,
+        facebook_id: null,
+        linkedin_id: null,
+        profile_photo_url: null,
+        last_login_method: null,
+        last_login_at: null,
         created_at: new Date(),
         updated_at: new Date()
       }
@@ -907,60 +914,6 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User }>> {
-    const result = await db.select({
-      id: messages.id,
-      conversation_id: messages.conversation_id,
-      sender_id: messages.sender_id,
-      content: messages.content,
-      is_read: messages.is_read,
-      created_at: messages.created_at,
-      senderEmail: users.email,
-      senderRole: users.role
-    })
-    .from(messages)
-    .leftJoin(users, eq(messages.sender_id, users.id))
-    .leftJoin(message_user_states, and(
-      eq(message_user_states.message_id, messages.id),
-      eq(message_user_states.user_id, userId)
-    ))
-    .where(and(
-      eq(messages.conversation_id, conversationId),
-      isNull(message_user_states.id) // Exclude messages deleted by this user
-    ))
-    .orderBy(messages.created_at);
-
-    return result.map(row => ({
-      id: row.id,
-      conversation_id: row.conversation_id,
-      sender_id: row.sender_id,
-      content: row.content,
-      is_read: row.is_read,
-      created_at: row.created_at,
-      sender: {
-        id: row.sender_id,
-        email: row.senderEmail || '',
-        role: row.senderRole || 'freelancer',
-        password: '',
-        first_name: null,
-        last_name: null,
-        email_verified: false,
-        email_verification_token: null,
-        email_verification_expires: null,
-        password_reset_token: null,
-        password_reset_expires: null,
-        auth_provider: 'email',
-        google_id: null,
-        facebook_id: null,
-        linkedin_id: null,
-        profile_photo_url: null,
-        last_login_method: null,
-        last_login_at: null,
-        created_at: new Date(),
-        updated_at: new Date()
-      }
-    }));
-  }
 
   async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User }>> {
     const result = await db.select({
