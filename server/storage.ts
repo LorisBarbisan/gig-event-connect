@@ -463,12 +463,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string }): Promise<void> {
-    await db.update(users)
+    console.log("STORAGE DEBUG: Updating user", userId, "with data:", accountData);
+    const result = await db.update(users)
       .set({ 
         ...accountData,
         updated_at: new Date()
       })
-      .where(eq(users.id, userId));
+      .where(eq(users.id, userId))
+      .returning();
+    console.log("STORAGE DEBUG: Update result:", result);
   }
 
   async getFreelancerProfile(userId: number): Promise<FreelancerProfile | undefined> {
