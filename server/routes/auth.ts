@@ -324,7 +324,7 @@ export function registerAuthRoutes(app: Express) {
       const userWithRole = computeUserRole(req.user);
       
       // Update the session if the role changed
-      if (userWithRole.role !== req.user.role) {
+      if (userWithRole.role !== (req.user as any).role) {
         req.user = userWithRole;
       }
 
@@ -424,7 +424,7 @@ export function registerAuthRoutes(app: Express) {
         });
       }
 
-      const validPassword = await bcrypt.compare(password, user.password);
+      const validPassword = await bcrypt.compare(password, user.password!);
       if (!validPassword) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
@@ -658,7 +658,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: "New password must be at least 8 characters long" });
       }
 
-      const user = await storage.getUser(req.user.id);
+      const user = await storage.getUser((req.user as any).id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -694,14 +694,15 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const { first_name, last_name } = req.body;
+      const user = req.user as any; // Fix TypeScript issue
 
-      await storage.updateUserAccount(req.user.id, {
+      await storage.updateUserAccount(user.id, {
         first_name,
         last_name
       });
 
       // Get updated user and apply role computation
-      const updatedUser = await storage.getUser(req.user.id);
+      const updatedUser = await storage.getUser(user.id);
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -738,7 +739,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: "Password is required to delete account" });
       }
 
-      const user = await storage.getUser(req.user.id);
+      const user = await storage.getUser((req.user as any).id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -750,7 +751,7 @@ export function registerAuthRoutes(app: Express) {
       }
 
       // Delete all user data
-      await nukeAllUserData(req.user.id);
+      await nukeAllUserData((req.user as any).id);
 
       // Destroy session
       req.logout((err) => {
