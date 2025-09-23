@@ -118,7 +118,7 @@ export function UKLocationInput({
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
       const response = await fetch(
-        `/api/locations/search?q=${encodeURIComponent(query)}`,
+        `/api/locations/search?query=${encodeURIComponent(query)}`,
         {
           signal: controller.signal,
           headers: {

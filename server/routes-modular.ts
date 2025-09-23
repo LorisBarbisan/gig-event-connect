@@ -131,7 +131,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const locations = searchLocalLocations(query);
-      res.json(locations);
+      
+      // Transform to expected UKLocation format
+      const formattedLocations = locations.map(location => ({
+        display_name: `${location.formatted}, United Kingdom`,
+        name: location.name,
+        county: location.county,
+        postcode: "",
+        city: location.name,
+        town: location.type === 'town' ? location.name : undefined,
+        village: location.type === 'village' ? location.name : undefined,
+        formatted: location.formatted,
+        lat: "51.5074", // Default coordinates - London area
+        lon: "-0.1278"
+      }));
+      
+      res.json(formattedLocations);
     } catch (error) {
       console.error('Location search error:', error);
       res.status(500).json({ error: 'Internal server error' });

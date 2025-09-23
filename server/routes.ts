@@ -2148,8 +2148,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const locationCache = new Map<string, { data: any; timestamp: number }>();
   const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-  // Fast UK Location search with local database + API fallback
-  app.get("/api/locations/search", async (req, res) => {
+  // Location search endpoint removed - handled by routes-modular.ts
+  // app.get("/api/locations/search", async (req, res) => {
     try {
       const { q } = req.query;
       
