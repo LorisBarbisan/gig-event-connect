@@ -117,6 +117,10 @@ export function registerJobRoutes(app: Express) {
     try {
       const jobId = parseInt(req.params.jobId);
       
+      if (Number.isNaN(jobId)) {
+        return res.status(400).json({ error: "Invalid job ID" });
+      }
+      
       // Check if user is authorized to delete this job
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -127,12 +131,18 @@ export function registerJobRoutes(app: Express) {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      if ((req.user as any).role !== 'admin' && job.recruiter_id !== (req.user as any).id) {
+      if (req.user.role !== 'admin' && job.recruiter_id !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to delete this job" });
       }
 
       await storage.deleteJob(jobId);
-      res.json({ message: "Job deleted successfully" });
+      
+      res.set('Cache-Control', 'no-store');
+      res.json({ 
+        success: true, 
+        jobId: jobId,
+        message: "Job deleted successfully"
+      });
     } catch (error) {
       console.error("Delete job error:", error);
       res.status(500).json({ error: "Internal server error" });
