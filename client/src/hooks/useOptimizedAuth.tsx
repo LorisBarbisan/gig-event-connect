@@ -38,7 +38,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
           const parsedUser = JSON.parse(storedUser);
           // Validate user session on server
           try {
-            const response = await apiRequest(`/api/auth/session`);
+            const response = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
             if (response && response.user && response.user.id && response.user.email) {
               // Update cached user with server's current session data (fixes admin role not showing)
               setUser(response.user);
@@ -57,8 +57,21 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
           setUser(null);
         }
       } else {
-        // No cached user - user is not authenticated
-        console.log('No cached user found - user not authenticated');
+        // No cached user - check if there's a valid server session
+        try {
+          const response = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
+          if (response && response.user && response.user.id && response.user.email) {
+            // Found valid server session, restore user
+            setUser(response.user);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            console.log('Restored user from server session');
+          } else {
+            setUser(null);
+          }
+        } catch (error) {
+          // No server session available
+          setUser(null);
+        }
       }
       setLoading(false);
     };

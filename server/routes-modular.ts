@@ -56,6 +56,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.use('/api/', generalRateLimit);
 
+  // CRITICAL: Trust proxy for Replit environment to enable secure cookies
+  app.set('trust proxy', 1);
+
   // Enhanced session configuration for OAuth with security
   app.use(session({
     secret: process.env.SESSION_SECRET || 'eventlink-dev-secret-key-change-in-production',

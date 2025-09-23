@@ -21,7 +21,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-export async function apiRequest(url: string, options?: RequestInit) {
+export async function apiRequest(url: string, options?: RequestInit & { skipAuthRedirect?: boolean }) {
   const response = await fetch(url, {
     ...options,
     credentials: 'include', // Critical: Include session cookies in all API requests
@@ -32,8 +32,8 @@ export async function apiRequest(url: string, options?: RequestInit) {
   });
 
   if (!response.ok) {
-    // Handle 401 Unauthorized errors globally
-    if (response.status === 401) {
+    // Handle 401 Unauthorized errors globally unless skipAuthRedirect is true
+    if (response.status === 401 && !options?.skipAuthRedirect) {
       // Clear user state and redirect to auth
       localStorage.removeItem('user');
       sessionStorage.clear();
