@@ -10,6 +10,7 @@ interface OptimizedAuthContextType {
   signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
 const OptimizedAuthContext = createContext<OptimizedAuthContextType | undefined>(undefined);
@@ -113,13 +114,19 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
     sessionStorage.clear();
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   return (
     <OptimizedAuthContext.Provider value={{
       user,
       loading,
       signUp,
       signIn,
-      signOut
+      signOut,
+      updateUser
     }}>
       {children}
     </OptimizedAuthContext.Provider>

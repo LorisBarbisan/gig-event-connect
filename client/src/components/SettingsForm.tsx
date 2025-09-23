@@ -19,7 +19,7 @@ interface SettingsFormProps {
 
 export function SettingsForm({ user }: SettingsFormProps) {
   const { toast } = useToast();
-  const { signOut } = useOptimizedAuth();
+  const { signOut, updateUser } = useOptimizedAuth();
   // const { profile } = useProfile(); // Temporarily disabled to prevent errors
   const [showEmail, setShowEmail] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -147,7 +147,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
     setIsSavingAccount(true);
     try {
       // Update user account info (first_name, last_name)
-      await apiRequest('/api/auth/update-account', {
+      const updateResponse = await apiRequest('/api/auth/update-account', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -190,8 +190,16 @@ export function SettingsForm({ user }: SettingsFormProps) {
         }
       }
 
-      // Refresh user data to update the display
-      // Note: refreshUser not available in optimized auth - page will auto-refresh on changes
+      // Update the user context with the new data
+      if (updateResponse && updateResponse.user) {
+        updateUser(updateResponse.user);
+        // Also update the form state to reflect the saved values
+        setAccountForm(prev => ({
+          ...prev,
+          first_name: updateResponse.user.first_name || '',
+          last_name: updateResponse.user.last_name || '',
+        }));
+      }
 
       toast({
         title: 'Account updated',
