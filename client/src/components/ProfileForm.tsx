@@ -626,12 +626,12 @@ function RecruiterFormFields({
               <SelectValue placeholder="Select company type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="event_production">Event Production</SelectItem>
-              <SelectItem value="av_company">AV Company</SelectItem>
-              <SelectItem value="corporate">Corporate</SelectItem>
+              <SelectItem value="production_company">Production Company</SelectItem>
               <SelectItem value="agency">Agency</SelectItem>
+              <SelectItem value="av_supplier">AV Supplier</SelectItem>
               <SelectItem value="venue">Venue</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="exhibition_trade_show_organiser">Exhibition & Trade Show Organiser</SelectItem>
+              <SelectItem value="entertainment_agency">Entertainment Agency</SelectItem>
             </SelectContent>
           </Select>
         </div>
