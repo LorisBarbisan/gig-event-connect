@@ -79,8 +79,10 @@ export function registerMessagingRoutes(app: Express) {
         user_id: recipient_id,
         type: 'new_message',
         title: 'New Message',
-        message: `You have a new message from ${req.user.first_name || req.user.email}`,
-        data: { sender_id: req.user.id, message_id: newMessage.id }
+        message: `You have a new message from ${req.user.email}`,
+        related_entity_type: 'message',
+        related_entity_id: newMessage.id,
+        metadata: JSON.stringify({ sender_id: req.user.id })
       });
 
       res.status(201).json(newMessage);
@@ -125,8 +127,10 @@ export function registerMessagingRoutes(app: Express) {
           user_id: conversation.otherUser.id,
           type: 'new_message',
           title: 'New Message',
-          message: `You have a new message from ${req.user.first_name || req.user.email}`,
-          data: { sender_id: req.user.id, message_id: message.id }
+          message: `You have a new message from ${req.user.email}`,
+          related_entity_type: 'message',
+          related_entity_id: message.id,
+          metadata: JSON.stringify({ sender_id: req.user.id })
         });
       }
 
@@ -148,6 +152,52 @@ export function registerMessagingRoutes(app: Express) {
       res.json({ count: unreadCount });
     } catch (error) {
       console.error("Get unread message count error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete message (soft delete from user's view only)
+  app.delete("/api/messages/:messageId", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      
+      if (Number.isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+      
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user's conversations to verify access
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      
+      // Check if user has access to delete this message by checking their conversations
+      let hasAccess = false;
+      for (const conversation of conversations) {
+        const messages = await storage.getConversationMessages(conversation.id);
+        const targetMessage = messages.find(m => m.id === messageId);
+        if (targetMessage) {
+          hasAccess = true;
+          break;
+        }
+      }
+      
+      if (!hasAccess) {
+        return res.status(404).json({ error: "Message not found or access denied" });
+      }
+
+      // Mark message as deleted for this user only
+      await storage.markMessageDeletedForUser(messageId, req.user.id);
+      
+      res.set('Cache-Control', 'no-store');
+      res.json({ 
+        success: true, 
+        messageId: messageId,
+        message: "Message deleted from your view successfully"
+      });
+    } catch (error) {
+      console.error("Delete message error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
