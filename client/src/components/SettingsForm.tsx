@@ -153,7 +153,6 @@ export function SettingsForm({ user }: SettingsFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
           first_name: accountForm.first_name,
           last_name: accountForm.last_name,
         }),
