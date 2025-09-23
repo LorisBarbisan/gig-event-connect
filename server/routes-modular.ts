@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import session from "express-session";
 import passport from "passport";
+import cors from "cors";
 import { initializePassport } from "./passport";
 import { setCacheByEndpoint } from "./cacheHeaders";
 import { performanceMonitor } from "./performanceMonitor";
@@ -25,6 +26,36 @@ import { registerFileRoutes } from "./routes/files";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMonitor.middleware());
+
+  // CORS configuration for cross-domain cookie handling
+  app.use(cors({
+    origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      // Allow requests from Replit frontend and development
+      const allowedOrigins = [
+        /\.replit\.dev$/,
+        /\.replit\.app$/,
+        'http://localhost:5173',
+        'http://127.0.0.1:5173'
+      ];
+      
+      // Allow no origin (for mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin matches allowed patterns
+      const isAllowed = allowedOrigins.some(pattern => {
+        if (typeof pattern === 'string') {
+          return origin === pattern;
+        }
+        return pattern.test(origin);
+      });
+      
+      callback(null, isAllowed);
+    },
+    credentials: true, // CRITICAL: Allow cookies to be sent cross-domain
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Set-Cookie']
+  }));
 
   // Security headers - disable CSP in development for Vite compatibility
   if (process.env.NODE_ENV === 'production') {

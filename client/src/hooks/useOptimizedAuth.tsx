@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { apiRequest } from '@/lib/queryClient';
-import { User } from '@shared/types';
+import type { User } from '@shared/types';
 
 // OPTIMIZED AUTH HOOK: Simplified authentication with essential features only
 
