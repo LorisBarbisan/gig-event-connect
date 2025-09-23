@@ -285,7 +285,7 @@ The EventLink Team
   // Use verified SendGrid sender address
   return await sendEmail({
     to: email,
-    from: 'verification@eventlink.one', // Verified sender identity
+    from: 'EventLink@eventlink.one', // Verified sender identity
     subject: 'Verify Your EventLink Account',
     html: htmlContent,
     text: textContent,
@@ -483,7 +483,7 @@ The EventLink Team
   // Use verified SendGrid sender address
   return await sendEmail({
     to: email,
-    from: 'verification@eventlink.one', // Verified sender identity
+    from: 'EventLink@eventlink.one', // Verified sender identity
     subject: 'Password Reset Request – EventLink',
     html: htmlContent,
     text: textContent,
