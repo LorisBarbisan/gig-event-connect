@@ -368,7 +368,14 @@ export function registerAuthRoutes(app: Express) {
       const userWithRole = computeUserRole(user);
 
       res.json({ 
-        user: userWithRole
+        user: {
+          id: userWithRole.id,
+          email: userWithRole.email,
+          first_name: userWithRole.first_name,
+          last_name: userWithRole.last_name,
+          role: userWithRole.role,
+          email_verified: userWithRole.email_verified
+        }
       });
     } catch (error) {
       console.error("Session check error:", error);

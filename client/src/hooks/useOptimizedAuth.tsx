@@ -20,7 +20,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const validateStoredUser = async () => {
+    const restoreStoredUser = () => {
       // Check if we already have a valid user to prevent infinite loops
       if (user) {
         setLoading(false);
@@ -28,7 +28,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       }
 
       // Version-based cache clearing - COMPLETELY DISABLED for session persistence
-      const APP_VERSION = "2025-09-24-jwt-auth"; 
+      const APP_VERSION = "2025-09-24-jwt-fixed"; 
       const storedVersion = localStorage.getItem('app_version');
       
       // Only update version, never clear cache to preserve sessions
@@ -43,26 +43,11 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       if (storedUser && storedToken) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          // Validate user session on server with JWT token
-          try {
-            const response = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
-            if (response && response.user && response.user.id && response.user.email) {
-              // Update cached user with server's current session data
-              setUser(response.user);
-              localStorage.setItem('user', JSON.stringify(response.user));
-              console.log('✅ Restored user from server session:', response.user.email);
-            } else {
-              localStorage.removeItem('user');
-              localStorage.removeItem('auth_token');
-              setUser(null);
-            }
-          } catch (error) {
-            console.log('❌ JWT session validation failed, clearing cache');
-            localStorage.removeItem('user');
-            localStorage.removeItem('auth_token');
-            setUser(null);
-          }
+          // Trust stored JWT token and user data - no server validation on load
+          setUser(parsedUser);
+          console.log('✅ Restored user from local storage:', parsedUser.email);
         } catch (error) {
+          console.log('❌ Failed to parse stored user, clearing cache');
           localStorage.removeItem('user');
           localStorage.removeItem('auth_token');
           setUser(null);
@@ -74,7 +59,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       setLoading(false);
     };
     
-    validateStoredUser();
+    restoreStoredUser();
   }, []); // Remove user dependency to prevent infinite loops
 
   const signUp = async (email: string, password: string, role: 'freelancer' | 'recruiter') => {
