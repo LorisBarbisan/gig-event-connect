@@ -131,14 +131,7 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
   };
 
   const handleSave = () => {
-    console.log('🚀 ProfileForm handleSave - SAVE BUTTON CLICKED!');
-    console.log('📝 ProfileForm handleSave - formData being saved:', formData);
-    if (userType === 'recruiter') {
-      console.log('Recruiter form data company_logo_url:', (formData as RecruiterFormData).company_logo_url?.length);
-    }
-    console.log('📤 ProfileForm handleSave - calling onSave callback with data');
     onSave(formData);
-    console.log('✅ ProfileForm handleSave - onSave callback completed');
     setIsEditing(false);
   };
 

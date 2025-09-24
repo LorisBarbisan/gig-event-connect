@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     saveUninitialized: false,
     name: 'eventlink.sid', // Custom session name for security
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Only require HTTPS in production
+      secure: false, // FIXED: Don't require HTTPS for Replit environment
       httpOnly: true, // Prevent XSS attacks
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax' // CSRF protection while allowing OAuth redirects
