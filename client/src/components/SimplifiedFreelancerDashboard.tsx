@@ -101,7 +101,7 @@ export default function SimplifiedFreelancerDashboard() {
             userType="freelancer"
             onSave={async (formData) => {
               try {
-                console.log('Saving freelancer profile data:', formData);
+                console.log('🚀 SAVE CLICKED! Saving freelancer profile data:', formData);
                 
                 // Use the correct API endpoint for freelancer profiles
                 // Convert string values to numbers for numeric fields (ensure we're working with freelancer data)
@@ -112,15 +112,19 @@ export default function SimplifiedFreelancerDashboard() {
                   hourly_rate: freelancerData.hourly_rate ? parseFloat(freelancerData.hourly_rate.toString()) : undefined,
                   experience_years: freelancerData.experience_years ? parseInt(freelancerData.experience_years.toString()) : undefined,
                 };
+                console.log('📤 Sending processed data:', processedData);
 
                 const savedProfile = await apiRequest(`/api/freelancer/${user.id}`, {
                   method: 'PUT',
                   body: JSON.stringify(processedData)
                 });
-                console.log('Profile saved successfully:', savedProfile);
+                console.log('✅ Profile saved successfully:', savedProfile);
                 
-                // Invalidate and refetch the profile data to ensure UI stays in sync
-                queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile', user?.id] });
+                // ✅ CRITICAL FIX: Invalidate ALL profile queries 
+                console.log('🔄 Invalidating cache for user:', user?.id);
+                await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile'] });
+                await queryClient.invalidateQueries({ queryKey: ['/api/freelancer', user?.id] });
+                console.log('🔄 Cache invalidated completely!');
                 
                 // Show success message with toast
                 toast({
