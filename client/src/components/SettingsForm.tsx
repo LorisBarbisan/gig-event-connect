@@ -146,6 +146,11 @@ export function SettingsForm({ user }: SettingsFormProps) {
   const handleAccountSave = async () => {
     setIsSavingAccount(true);
     try {
+      // Check if user is authenticated before attempting save
+      if (!user?.id) {
+        throw new Error('You must be logged in to save account information');
+      }
+
       // Update user account info (first_name, last_name)
       const updateResponse = await apiRequest('/api/auth/update-account', {
         method: 'PUT',
@@ -205,9 +210,24 @@ export function SettingsForm({ user }: SettingsFormProps) {
         description: 'Your account information has been saved successfully.',
       });
     } catch (error: any) {
+      console.error('Account save error:', error);
+      
+      let errorMessage = 'Failed to update account information. Please try again.';
+      
+      // Provide specific error messages based on the error type
+      if (error.message?.includes('401') || error.message?.includes('Not authenticated')) {
+        errorMessage = 'Your session has expired. Please log in again and try saving.';
+      } else if (error.message?.includes('403')) {
+        errorMessage = 'You do not have permission to update this information.';
+      } else if (error.message?.includes('400')) {
+        errorMessage = 'Invalid information provided. Please check your entries.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Update failed',
-        description: error.message || 'Failed to update account information. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
