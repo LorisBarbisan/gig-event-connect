@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, X, CheckCircle, Loader2 } from "lucide-react";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CVUploaderProps {
   userId: number;
@@ -70,17 +71,9 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
     try {
       // Step 1: Get upload URL from backend
-      const uploadUrlResponse = await fetch('/api/cv/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      const { uploadURL } = await apiRequest('/api/cv/upload-url', {
+        method: 'POST'
       });
-
-      if (!uploadUrlResponse.ok) {
-        const errorData = await uploadUrlResponse.json();
-        throw new Error(errorData.error || 'Failed to get upload URL');
-      }
-
-      const { uploadURL } = await uploadUrlResponse.json();
       setUploadProgress(25);
 
       // Step 2: Upload file directly to object storage
@@ -99,9 +92,8 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
       setUploadProgress(75);
 
       // Step 3: Save CV metadata to database
-      const saveResponse = await fetch('/api/cv', {
+      await apiRequest('/api/cv', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userId,
           fileName: file.name,
@@ -110,11 +102,6 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
           fileUrl: uploadURL.split('?')[0], // Remove query params from URL
         }),
       });
-
-      if (!saveResponse.ok) {
-        const errorData = await saveResponse.json();
-        throw new Error(errorData.error || 'Failed to save CV information');
-      }
 
       setUploadProgress(100);
 

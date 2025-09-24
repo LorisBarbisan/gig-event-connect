@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Check, Eye, EyeOff, Shield } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -84,40 +85,24 @@ export default function ResetPassword() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const data = await apiRequest('/api/auth/reset-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ 
           token, 
           password: password.trim(), 
           confirmPassword: confirmPassword.trim() 
         })
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: data.message
-        });
-        
-        // Redirect to login with success message
-        setTimeout(() => {
-          setLocation('/auth');
-        }, 1500);
-      } else {
-        if (data.error.includes('invalid or expired')) {
-          setTokenValid(false);
-        }
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive"
-        });
-      }
+      
+      toast({
+        title: "Success",
+        description: data.message
+      });
+      
+      // Redirect to login with success message
+      setTimeout(() => {
+        setLocation('/auth');
+      }, 1500);
     } catch (error) {
       console.error('Password reset error:', error);
       toast({

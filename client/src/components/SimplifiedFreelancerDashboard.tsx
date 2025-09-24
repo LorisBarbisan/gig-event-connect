@@ -31,12 +31,7 @@ export default function SimplifiedFreelancerDashboard() {
     queryFn: async () => {
       console.log('Fetching own profile for user:', user);
       if (!user?.id) return null;
-      const response = await fetch(`/api/freelancer/${user.id}`);
-      if (!response.ok) {
-        if (response.status === 404) return null;
-        throw new Error('Failed to fetch profile');
-      }
-      const data = await response.json();
+      const data = await apiRequest(`/api/freelancer/${user.id}`);
       console.log('Profile data received:', data);
       return data;
     },
@@ -48,12 +43,7 @@ export default function SimplifiedFreelancerDashboard() {
   const { data: jobApplications = [], isLoading: applicationsLoading } = useQuery({
     queryKey: ['/api/freelancer/applications', user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/freelancer/${user?.id}/applications`);
-      if (!response.ok) {
-        if (response.status === 404) return [];
-        throw new Error('Failed to fetch applications');
-      }
-      return response.json();
+      return await apiRequest(`/api/freelancer/${user?.id}/applications`);
     },
     retry: false,
     enabled: !!user?.id,
@@ -123,18 +113,10 @@ export default function SimplifiedFreelancerDashboard() {
                   experience_years: freelancerData.experience_years ? parseInt(freelancerData.experience_years.toString()) : undefined,
                 };
 
-                const response = await fetch(`/api/freelancer/${user.id}`, {
+                const savedProfile = await apiRequest(`/api/freelancer/${user.id}`, {
                   method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(processedData)
                 });
-                
-                if (!response.ok) {
-                  const errorData = await response.json().catch(() => ({}));
-                  throw new Error(errorData.error || 'Failed to save profile');
-                }
-                
-                const savedProfile = await response.json();
                 console.log('Profile saved successfully:', savedProfile);
                 
                 // Invalidate and refetch the profile data to ensure UI stays in sync
