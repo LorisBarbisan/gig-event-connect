@@ -11,6 +11,7 @@ export const requireAdminAuth = (req: any, res: any, next: any) => {
 
 // Admin email allowlist for server-side admin role detection
 const ADMIN_EMAILS = [
+  'lorisbarbisan@gmail.com',
   'loris.barbisan@huzahr.com',
   'testadmin@example.com'
 ];

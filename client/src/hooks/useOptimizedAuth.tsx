@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 import type { User } from '@shared/types';
 
