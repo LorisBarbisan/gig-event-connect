@@ -146,6 +146,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAdminRoutes(app);
   registerFileRoutes(app);
 
+  // Main jobs endpoint - combines regular and external jobs
+  app.get("/api/jobs", async (req, res) => {
+    try {
+      console.log('📋 Main jobs endpoint called - fetching all jobs...');
+      
+      // Get both regular and external jobs
+      const [regularJobs, externalJobs] = await Promise.all([
+        storage.getAllJobs(),
+        storage.getExternalJobs()
+      ]);
+      
+      console.log(`📊 Found ${regularJobs.length} regular jobs and ${externalJobs.length} external jobs`);
+      
+      // Combine and return all jobs
+      const allJobs = [...regularJobs, ...externalJobs];
+      res.json(allJobs);
+    } catch (error) {
+      console.error("Get all jobs error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Additional utility endpoints that don't fit into specific domains
 
   // External job sync endpoints
