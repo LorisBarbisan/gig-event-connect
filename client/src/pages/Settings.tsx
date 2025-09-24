@@ -3,10 +3,18 @@ import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Layout } from '@/components/Layout';
 import { SettingsForm } from '@/components/SettingsForm';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 export default function Settings() {
   const [, setLocation] = useLocation();
   const { user, loading } = useOptimizedAuth();
+
+  // Fix React state update error: move redirect to useEffect
+  useEffect(() => {
+    if (!loading && !user) {
+      setLocation('/auth');
+    }
+  }, [loading, user, setLocation]);
 
   if (loading) {
     return (
@@ -23,8 +31,7 @@ export default function Settings() {
   }
 
   if (!user) {
-    setLocation('/auth');
-    return null;
+    return null; // Will redirect via useEffect
   }
 
   return (
