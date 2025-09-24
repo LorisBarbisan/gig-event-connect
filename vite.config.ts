@@ -31,7 +31,7 @@ export default defineConfig({
   server: {
       host: "0.0.0.0",
       port: 5173,
-      hmr:       hmr: process.env.REPL_ID ? false : true,
+      hmr: process.env.REPL_ID ? false : true,
       },
   },
 });
