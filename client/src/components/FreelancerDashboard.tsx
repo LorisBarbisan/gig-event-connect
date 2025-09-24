@@ -99,23 +99,31 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
   };
 
   const saveProfile = async () => {
+    console.log('🚀 SAVE PROFILE CLICKED! Starting save process...');
+    console.log('👤 Current user profile:', profile);
+    console.log('📝 Current freelancer profile:', freelancerProfile);
     setSaving(true);
     try {
       const profileData = {
         ...freelancerProfile,
         user_id: parseInt(profile.id)
       };
+      console.log('📤 About to send profile data:', profileData);
 
       if (hasProfile) {
-        await apiRequest(`/api/freelancer/${profile.id}`, {
+        console.log('🔄 Updating existing profile via PUT request...');
+        const response = await apiRequest(`/api/freelancer/${profile.id}`, {
           method: 'PUT',
           body: JSON.stringify(profileData),
         });
+        console.log('✅ PUT Response:', response);
       } else {
-        await apiRequest('/api/freelancer', {
+        console.log('🆕 Creating new profile via POST request...');
+        const response = await apiRequest('/api/freelancer', {
           method: 'POST',
           body: JSON.stringify(profileData),
         });
+        console.log('✅ POST Response:', response);
         setHasProfile(true);
       }
 
@@ -124,13 +132,16 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
         description: "Your profile has been saved"
       });
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('❌ SAVE PROFILE ERROR:', error);
+      console.error('❌ Error type:', typeof error);
+      console.error('❌ Error message:', error instanceof Error ? error.message : String(error));
       toast({
         title: "Error",
         description: "Failed to save your profile",
         variant: "destructive"
       });
     } finally {
+      console.log('🏁 Save process completed, setting saving to false');
       setSaving(false);
     }
   };

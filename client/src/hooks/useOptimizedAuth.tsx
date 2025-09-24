@@ -70,6 +70,8 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
           }
         } catch (error) {
           console.log('❌ Server session validation failed:', error);
+          console.log('🔄 FORCING LOGOUT - clearing frontend state to match backend reality');
+          localStorage.removeItem('user');
           setUser(null);
         }
       }
