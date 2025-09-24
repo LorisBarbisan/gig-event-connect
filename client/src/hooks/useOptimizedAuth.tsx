@@ -21,14 +21,25 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const validateStoredUser = async () => {
-      // Version-based cache clearing
-      const APP_VERSION = "2025-09-13-admin-cache-fix"; 
+      // Version-based cache clearing - FIXED: Don't clear if user is already authenticated
+      const APP_VERSION = "2025-09-24-save-fix"; 
       const storedVersion = localStorage.getItem('app_version');
       
       if (storedVersion !== APP_VERSION) {
         console.log('App version updated, clearing cache');
-        localStorage.clear();
-        sessionStorage.clear();
+        // Only clear if there's no valid session
+        try {
+          const sessionResponse = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
+          if (!sessionResponse?.user) {
+            // No valid session, safe to clear
+            localStorage.clear();
+            sessionStorage.clear();
+          }
+        } catch {
+          // No session, clear cache
+          localStorage.clear();
+          sessionStorage.clear();
+        }
         localStorage.setItem('app_version', APP_VERSION);
       }
       
@@ -64,12 +75,13 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
             // Found valid server session, restore user
             setUser(response.user);
             localStorage.setItem('user', JSON.stringify(response.user));
-            console.log('Restored user from server session');
+            console.log('✅ Restored user from server session:', response.user.email);
           } else {
+            console.log('❌ No valid server session found');
             setUser(null);
           }
         } catch (error) {
-          // No server session available
+          console.log('❌ Server session validation failed:', error);
           setUser(null);
         }
       }
