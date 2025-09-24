@@ -46,6 +46,11 @@ export function SettingsForm({ user }: SettingsFormProps) {
     emailNotifications: true,
   });
 
+  // Debug: Monitor form state changes
+  useEffect(() => {
+    console.log('📋 Form state changed:', accountForm);
+  }, [accountForm]);
+
   const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
@@ -146,12 +151,24 @@ export function SettingsForm({ user }: SettingsFormProps) {
   };
 
   const handleAccountSave = async () => {
+    console.log('🔄 Save account clicked:', {
+      formData: accountForm,
+      userRole: user.role,
+      userId: user.id
+    });
+    
     setIsSavingAccount(true);
     try {
       // Check if user is authenticated before attempting save
       if (!user?.id) {
         throw new Error('You must be logged in to save account information');
       }
+
+      console.log('📤 Sending update request with data:', {
+        first_name: accountForm.first_name,
+        last_name: accountForm.last_name,
+        role: accountForm.role,
+      });
 
       // Update user account info (first_name, last_name, role)
       const updateResponse = await apiRequest('/api/auth/update-account', {
@@ -165,6 +182,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
           role: accountForm.role,
         }),
       });
+
+      console.log('✅ Server response:', updateResponse);
 
       // Update profile info for recruiters (company_name)
       if (accountForm.role === 'recruiter') {
@@ -209,12 +228,14 @@ export function SettingsForm({ user }: SettingsFormProps) {
         }));
       }
 
+      console.log('🔄 Updating user context with:', updateResponse.user);
+      
       toast({
         title: 'Account updated',
         description: 'Your account information has been saved successfully.',
       });
     } catch (error: any) {
-      console.error('Account save error:', error);
+      console.error('❌ Account save error:', error);
       
       let errorMessage = 'Failed to update account information. Please try again.';
       
@@ -350,7 +371,10 @@ export function SettingsForm({ user }: SettingsFormProps) {
               <Label htmlFor="role">Account Type</Label>
               <Select 
                 value={accountForm.role} 
-                onValueChange={(value) => setAccountForm(prev => ({ ...prev, role: value as 'freelancer' | 'recruiter' }))}
+                onValueChange={(value) => {
+                  console.log('🔄 Role dropdown changed from', accountForm.role, 'to', value);
+                  setAccountForm(prev => ({ ...prev, role: value as 'freelancer' | 'recruiter' }));
+                }}
               >
                 <SelectTrigger data-testid="select-account-type">
                   <SelectValue placeholder="Select account type" />
