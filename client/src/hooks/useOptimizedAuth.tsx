@@ -21,8 +21,14 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const validateStoredUser = async () => {
+      // Check if we already have a valid user to prevent infinite loops
+      if (user) {
+        setLoading(false);
+        return;
+      }
+
       // Version-based cache clearing - COMPLETELY DISABLED for session persistence
-      const APP_VERSION = "2025-09-24-session-persist"; 
+      const APP_VERSION = "2025-09-24-jwt-auth"; 
       const storedVersion = localStorage.getItem('app_version');
       
       // Only update version, never clear cache to preserve sessions
@@ -32,54 +38,44 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       }
       
       const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      const storedToken = localStorage.getItem('auth_token');
+      
+      if (storedUser && storedToken) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          // Validate user session on server
+          // Validate user session on server with JWT token
           try {
             const response = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
             if (response && response.user && response.user.id && response.user.email) {
-              // Update cached user with server's current session data (fixes admin role not showing)
+              // Update cached user with server's current session data
               setUser(response.user);
               localStorage.setItem('user', JSON.stringify(response.user));
+              console.log('✅ Restored user from server session:', response.user.email);
             } else {
               localStorage.removeItem('user');
+              localStorage.removeItem('auth_token');
               setUser(null);
             }
           } catch (error) {
-            console.log('Session validation failed, clearing cache');
+            console.log('❌ JWT session validation failed, clearing cache');
             localStorage.removeItem('user');
+            localStorage.removeItem('auth_token');
             setUser(null);
           }
         } catch (error) {
           localStorage.removeItem('user');
+          localStorage.removeItem('auth_token');
           setUser(null);
         }
       } else {
-        // No cached user - check if there's a valid server session
-        try {
-          const response = await apiRequest(`/api/auth/session`, { skipAuthRedirect: true });
-          if (response && response.user && response.user.id && response.user.email) {
-            // Found valid server session, restore user
-            setUser(response.user);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            console.log('✅ Restored user from server session:', response.user.email);
-          } else {
-            console.log('❌ No valid server session found');
-            setUser(null);
-          }
-        } catch (error) {
-          console.log('❌ Server session validation failed:', error);
-          console.log('🔄 FORCING LOGOUT - clearing frontend state to match backend reality');
-          localStorage.removeItem('user');
-          setUser(null);
-        }
+        // No cached user or token - ensure clean state
+        setUser(null);
       }
       setLoading(false);
     };
     
     validateStoredUser();
-  }, []);
+  }, []); // Remove user dependency to prevent infinite loops
 
   const signUp = async (email: string, password: string, role: 'freelancer' | 'recruiter') => {
     try {
