@@ -22,31 +22,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
     
-    // Give a bit more time for auth state to settle after redirect
-    const checkAuth = setTimeout(() => {
-      if (!user) {
-        // Double-check localStorage before redirecting
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-          console.log('Dashboard: No user found, redirecting to auth');
-          setLocation('/auth');
-          return;
-        }
-        console.log('Dashboard: User in localStorage but not in state, waiting...');
-        return;
-      }
-      
-      // Additional validation: check if user object has required fields
-      if (!user.id || !user.email || !user.role) {
-        console.log('Dashboard: Invalid user object, redirecting to auth');
+    if (!user) {
+      // Only redirect if auth is fully loaded and still no user
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        console.log('Dashboard: No user found, redirecting to auth');
         setLocation('/auth');
-        return;
       }
-      
-      fetchProfile();
-    }, 200); // Small delay to let auth state settle
+      return;
+    }
     
-    return () => clearTimeout(checkAuth);
+    // User exists, fetch profile
+    fetchProfile();
   }, [user, authLoading, setLocation]);
 
   const fetchProfile = async () => {
