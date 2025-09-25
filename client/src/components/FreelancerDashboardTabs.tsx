@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { User, MapPin, Coins, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, Send, Mail, Phone, Search } from 'lucide-react';
 import { CVUploader } from './CVUploader';
 import { MessagingInterface } from './MessagingInterface';
-import { NewConversationModal } from './NewConversationModal';
 import { JobApplication } from '../../../shared/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -663,9 +662,6 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 <h2 className="text-2xl font-bold">Messages</h2>
                 <p className="text-muted-foreground">Communicate with recruiters and potential employers</p>
               </div>
-              <NewConversationModal 
-                currentUser={{ id: parseInt(profile.id), email: profile.email, role: 'freelancer' }}
-              />
             </div>
             <MessagingInterface 
               currentUser={{ id: parseInt(profile.id), email: profile.email, role: 'freelancer' }}

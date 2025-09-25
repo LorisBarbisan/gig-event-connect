@@ -14,7 +14,6 @@ import { JobForm } from './JobForm';
 import { JobCard } from './JobCard';
 import { ApplicationCard } from './ApplicationCard';
 import { MessagingInterface } from './MessagingInterface';
-import { NewConversationModal } from './NewConversationModal';
 import { useLocation } from 'wouter';
 import type { Job, JobApplication, JobFormData } from '@shared/types';
 
@@ -359,11 +358,6 @@ export default function SimplifiedRecruiterDashboard() {
               <h2 className="text-2xl font-bold">Messages</h2>
               <p className="text-muted-foreground">Communicate with freelancers and applicants</p>
             </div>
-            {user && (
-              <NewConversationModal 
-                currentUser={{ id: user.id, email: user.email, role: 'recruiter' }}
-              />
-            )}
           </div>
           {user && (
             <MessagingInterface 

@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ProfileForm } from './ProfileForm';
 import { ApplicationCard } from './ApplicationCard';
 import { MessagingInterface } from './MessagingInterface';
-import { NewConversationModal } from './NewConversationModal';
 import type { JobApplication, FreelancerFormData } from '@shared/types';
 
 export default function SimplifiedFreelancerDashboard() {
@@ -243,11 +242,6 @@ export default function SimplifiedFreelancerDashboard() {
               <h2 className="text-2xl font-bold">Messages</h2>
               <p className="text-muted-foreground">Communicate with recruiters and potential employers</p>
             </div>
-            {user && (
-              <NewConversationModal 
-                currentUser={{ id: user.id, email: user.email, role: 'freelancer' }}
-              />
-            )}
           </div>
           {user && (
             <MessagingInterface 
