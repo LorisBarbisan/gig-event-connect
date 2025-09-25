@@ -1197,7 +1197,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, userId));
 
         // 9. Create system messages in all conversations where this user was a participant
-        const userConversations = await tx.select()
+        const allUserConversations = await tx.select()
           .from(conversations)
           .where(
             or(
@@ -1206,7 +1206,7 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
-        for (const conversation of userConversations) {
+        for (const conversation of allUserConversations) {
           await tx.insert(messages).values({
             conversation_id: conversation.id,
             sender_id: null, // System message
