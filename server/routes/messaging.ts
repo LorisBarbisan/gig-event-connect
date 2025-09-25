@@ -28,6 +28,14 @@ export function registerMessagingRoutes(app: Express) {
 
       const conversationId = parseInt(req.params.id);
       
+      // First verify that the user is a participant in this conversation
+      const userConversations = await storage.getConversationsByUserId(req.user.id);
+      const isParticipant = userConversations.some(conv => conv.id === conversationId);
+      
+      if (!isParticipant) {
+        return res.status(403).json({ error: "You are not a participant in this conversation" });
+      }
+      
       // Get messages for this conversation
       const messages = await storage.getConversationMessages(conversationId);
       
@@ -48,24 +56,34 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { recipient_id, message } = req.body;
+      const { userTwoId, initialMessage } = req.body;
 
-      if (!recipient_id || !message) {
-        return res.status(400).json({ error: "Recipient ID and message are required" });
+      if (!userTwoId || !initialMessage) {
+        return res.status(400).json({ error: "User ID and initial message are required" });
       }
 
       // Check if recipient exists
-      const recipient = await storage.getUser(recipient_id);
+      const recipient = await storage.getUser(userTwoId);
       if (!recipient) {
         return res.status(404).json({ error: "Recipient not found" });
       }
 
+      // Check if messaging to deleted user is allowed
+      const validation = await storage.canSendMessageToUser(req.user.id, userTwoId);
+      if (!validation.canSend) {
+        return res.status(403).json({ error: validation.error });
+      }
+
+      // Get or create conversation
+      const conversation = await storage.getOrCreateConversation(req.user.id, userTwoId);
+
       // Create the initial message
       const messageData = {
+        conversation_id: conversation.id,
         sender_id: req.user.id,
-        recipient_id: recipient_id,
-        content: message,
-        read: false
+        content: initialMessage,
+        is_read: false,
+        is_system_message: false
       };
 
       const result = insertMessageSchema.safeParse(messageData);
@@ -75,18 +93,20 @@ export function registerMessagingRoutes(app: Express) {
 
       const newMessage = await storage.sendMessage(result.data);
       
-      // Create notification for recipient
-      await storage.createNotification({
-        user_id: recipient_id,
-        type: 'new_message',
-        title: 'New Message',
-        message: `You have a new message from ${req.user.email}`,
-        related_entity_type: 'message',
-        related_entity_id: newMessage.id,
-        metadata: JSON.stringify({ sender_id: req.user.id })
-      });
+      // Create notification for recipient (only if not deleted)
+      if (!await storage.isUserDeleted(userTwoId)) {
+        await storage.createNotification({
+          user_id: userTwoId,
+          type: 'new_message',
+          title: 'New Message',
+          message: `You have a new message from ${req.user.email}`,
+          related_entity_type: 'message',
+          related_entity_id: newMessage.id,
+          metadata: JSON.stringify({ sender_id: req.user.id })
+        });
+      }
 
-      res.status(201).json(newMessage);
+      res.status(201).json({ id: conversation.id, message: newMessage });
     } catch (error) {
       console.error("Create conversation error:", error);
       res.status(500).json({ error: "Internal server error" });

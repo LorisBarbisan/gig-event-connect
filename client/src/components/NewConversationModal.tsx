@@ -14,6 +14,7 @@ interface User {
   id: number;
   email: string;
   role: 'freelancer' | 'recruiter';
+  deleted_at?: string | null;
 }
 
 interface UserProfile {
@@ -47,12 +48,12 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
 
   // Create conversation mutation
   const createConversationMutation = useMutation({
-    mutationFn: async (otherUserId: number) => {
+    mutationFn: async ({ otherUserId, initialMessage }: { otherUserId: number; initialMessage: string }) => {
       return apiRequest('/api/conversations', {
         method: 'POST',
         body: JSON.stringify({
-          userOneId: currentUser.id,
-          userTwoId: otherUserId
+          userTwoId: otherUserId,
+          initialMessage: initialMessage
         }),
       });
     },
@@ -171,7 +172,10 @@ export function NewConversationModal({ currentUser, onConversationCreated }: New
               filteredProfiles.map((profile: UserProfile) => (
                 <div
                   key={profile.id}
-                  onClick={() => createConversationMutation.mutate(profile.user_id)}
+                  onClick={() => createConversationMutation.mutate({ 
+                    otherUserId: profile.user_id, 
+                    initialMessage: "Hello! I'd like to connect with you regarding potential opportunities."
+                  })}
                   className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
                   data-testid={`user-${profile.user_id}`}
                 >

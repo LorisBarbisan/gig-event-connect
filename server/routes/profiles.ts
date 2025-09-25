@@ -153,4 +153,15 @@ export function registerProfileRoutes(app: Express) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Get all recruiter profiles (for freelancer contact search)
+  app.get("/api/recruiter-profiles", async (req, res) => {
+    try {
+      const recruiters = await storage.getAllRecruiterProfiles();
+      res.json(recruiters);
+    } catch (error) {
+      console.error("Get recruiter profiles error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }

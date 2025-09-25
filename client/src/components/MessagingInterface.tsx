@@ -15,14 +15,16 @@ interface User {
   id: number;
   email: string;
   role: 'freelancer' | 'recruiter';
+  deleted_at?: string | null;
 }
 
 interface Message {
   id: number;
   conversation_id: number;
-  sender_id: number;
+  sender_id: number | null;
   content: string;
   is_read: boolean;
+  is_system_message: boolean;
   created_at: string;
   sender: User;
 }
@@ -35,6 +37,11 @@ interface Conversation {
   created_at: string;
   otherUser: User;
 }
+
+// Helper function to check if a user is deleted
+const isUserDeleted = (user: User | undefined): boolean => {
+  return user?.deleted_at !== null && user?.deleted_at !== undefined;
+};
 
 interface MessagingInterfaceProps {
   currentUser: User;
@@ -262,9 +269,16 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {conversation.otherUser.email}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium truncate">
+                            {conversation.otherUser.email}
+                          </p>
+                          {isUserDeleted(conversation.otherUser) && (
+                            <Badge variant="secondary" className="text-xs px-2 py-0 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              Account Deleted
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground capitalize">
                           {conversation.otherUser.role}
                         </p>
@@ -288,7 +302,12 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
             {selectedConversation ? (
               <>
                 <User className="h-5 w-5" />
-                {conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser.email || 'Chat'}
+                <span>{conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser.email || 'Chat'}</span>
+                {isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser) && (
+                  <Badge variant="secondary" className="ml-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    Account Deleted
+                  </Badge>
+                )}
               </>
             ) : (
               <>
@@ -319,23 +338,33 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
                       <div
                         key={message.id}
                         className={`flex group ${
-                          message.sender_id === currentUser.id ? 'justify-end' : 'justify-start'
+                          message.is_system_message 
+                            ? 'justify-center' 
+                            : message.sender_id === currentUser.id 
+                              ? 'justify-end' 
+                              : 'justify-start'
                         }`}
                       >
                         <div
-                          className={`max-w-[70%] p-3 rounded-lg relative ${
-                            message.sender_id === currentUser.id
-                              ? 'bg-primary text-primary-foreground ml-auto'
-                              : 'bg-muted'
+                          className={`${
+                            message.is_system_message
+                              ? 'max-w-[80%] p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-center'
+                              : `max-w-[70%] p-3 rounded-lg relative ${
+                                  message.sender_id === currentUser.id
+                                    ? 'bg-primary text-primary-foreground ml-auto'
+                                    : 'bg-muted'
+                                }`
                           }`}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          <p className={`text-sm ${message.is_system_message ? 'text-yellow-800 dark:text-yellow-200 italic' : ''}`}>
+                            {message.content}
+                          </p>
                           <div className="flex items-center justify-between mt-1">
                             <p className="text-xs opacity-70">
                               {formatTime(message.created_at)}
                             </p>
-                            {/* Delete button for user's own messages */}
-                            {message.sender_id === currentUser.id && (
+                            {/* Delete button for user's own messages (not system messages) */}
+                            {!message.is_system_message && message.sender_id === currentUser.id && (
                               <AlertDialog 
                                 open={deleteMessageId === message.id} 
                                 onOpenChange={(open) => !open && setDeleteMessageId(null)}
@@ -389,22 +418,39 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
               </ScrollArea>
 
               {/* Message Input */}
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  disabled={sendMessageMutation.isPending}
-                  data-testid="input-message"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                  data-testid="button-send-message"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              {(() => {
+                const currentConversation = conversations.find((c: Conversation) => c.id === selectedConversation);
+                const otherUserDeleted = isUserDeleted(currentConversation?.otherUser);
+                
+                if (otherUserDeleted) {
+                  return (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                      <p className="text-sm text-red-800 dark:text-red-200">
+                        This account has been deleted. You can no longer send messages to this user.
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your message..."
+                      disabled={sendMessageMutation.isPending}
+                      data-testid="input-message"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                      data-testid="button-send-message"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                );
+              })()}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">

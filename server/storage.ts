@@ -144,6 +144,7 @@ export interface IStorage {
   
   // Get all freelancer profiles for listings
   getAllFreelancerProfiles(): Promise<FreelancerProfile[]>;
+  getAllRecruiterProfiles(): Promise<RecruiterProfile[]>;
   
   // Job application management
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
@@ -611,7 +612,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllFreelancerProfiles(): Promise<FreelancerProfile[]> {
-    return await db.select().from(freelancer_profiles);
+    // Join with users table to filter out deleted users
+    const result = await db.select({
+      id: freelancer_profiles.id,
+      user_id: freelancer_profiles.user_id,
+      first_name: freelancer_profiles.first_name,
+      last_name: freelancer_profiles.last_name,
+      title: freelancer_profiles.title,
+      bio: freelancer_profiles.bio,
+      location: freelancer_profiles.location,
+      experience_years: freelancer_profiles.experience_years,
+      skills: freelancer_profiles.skills,
+      portfolio_url: freelancer_profiles.portfolio_url,
+      profile_photo_url: freelancer_profiles.profile_photo_url,
+      created_at: freelancer_profiles.created_at,
+      updated_at: freelancer_profiles.updated_at
+    })
+    .from(freelancer_profiles)
+    .innerJoin(users, eq(freelancer_profiles.user_id, users.id))
+    .where(isNull(users.deleted_at)); // Only non-deleted users
+
+    return result;
+  }
+
+  async getAllRecruiterProfiles(): Promise<RecruiterProfile[]> {
+    // Join with users table to filter out deleted users
+    const result = await db.select({
+      id: recruiter_profiles.id,
+      user_id: recruiter_profiles.user_id,
+      company_name: recruiter_profiles.company_name,
+      contact_name: recruiter_profiles.contact_name,
+      company_description: recruiter_profiles.company_description,
+      website_url: recruiter_profiles.website_url,
+      industry: recruiter_profiles.industry,
+      company_size: recruiter_profiles.company_size,
+      location: recruiter_profiles.location,
+      profile_photo_url: recruiter_profiles.profile_photo_url,
+      created_at: recruiter_profiles.created_at,
+      updated_at: recruiter_profiles.updated_at
+    })
+    .from(recruiter_profiles)
+    .innerJoin(users, eq(recruiter_profiles.user_id, users.id))
+    .where(isNull(users.deleted_at)); // Only non-deleted users
+
+    return result;
   }
 
   // Job management methods
@@ -1151,6 +1195,26 @@ export class DatabaseStorage implements IStorage {
             email: `deleted_${userId}_${user[0].email}` // Prevent email conflicts for new registrations
           })
           .where(eq(users.id, userId));
+
+        // 9. Create system messages in all conversations where this user was a participant
+        const userConversations = await tx.select()
+          .from(conversations)
+          .where(
+            or(
+              eq(conversations.participant_one_id, userId),
+              eq(conversations.participant_two_id, userId)
+            )
+          );
+
+        for (const conversation of userConversations) {
+          await tx.insert(messages).values({
+            conversation_id: conversation.id,
+            sender_id: null, // System message
+            content: "This user has deleted their account and can no longer receive messages.",
+            is_read: false,
+            is_system_message: true
+          });
+        }
       });
 
       console.log(`Successfully soft-deleted user account for user ID: ${userId}`);
