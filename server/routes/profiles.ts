@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { insertFreelancerProfileSchema, insertRecruiterProfileSchema } from "@shared/schema";
+import { authenticateJWT } from "./auth";
 
 export function registerProfileRoutes(app: Express) {
   // Get user by ID
@@ -55,8 +56,8 @@ export function registerProfileRoutes(app: Express) {
     }
   });
 
-  // Update freelancer profile
-  app.put("/api/freelancer/:userId", async (req, res) => {
+  // Update freelancer profile - FIXED: Added missing authentication middleware
+  app.put("/api/freelancer/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -115,8 +116,8 @@ export function registerProfileRoutes(app: Express) {
     }
   });
 
-  // Update recruiter profile
-  app.put("/api/recruiter/:userId", async (req, res) => {
+  // Update recruiter profile - FIXED: Added missing authentication middleware
+  app.put("/api/recruiter/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
