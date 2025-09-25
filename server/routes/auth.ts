@@ -947,4 +947,42 @@ export function registerAuthRoutes(app: Express) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Admin diagnostics endpoint
+  app.get("/api/admin/diagnostics", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Check if user is admin
+      const userWithRole = computeUserRole(req.user);
+      if (userWithRole.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const adminEmails = process.env.ADMIN_EMAILS 
+        ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+        : [];
+
+      const diagnostics = {
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'unknown',
+        adminEmails: adminEmails,
+        currentUser: {
+          id: userWithRole.id,
+          email: userWithRole.email,
+          role: userWithRole.role,
+          is_admin: userWithRole.is_admin
+        },
+        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'missing',
+        nuclearCleanupAllowed: process.env.ALLOW_NUCLEAR_CLEANUP === 'true'
+      };
+
+      res.json(diagnostics);
+    } catch (error) {
+      console.error("Diagnostics error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }
