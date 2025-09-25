@@ -106,11 +106,26 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(400).json({ error: "Conversation ID and content are required" });
       }
 
+      // Get conversation to find the recipient
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      const conversation = conversations.find(c => c.id === conversation_id);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Check if messaging to deleted user is allowed
+      const validation = await storage.canSendMessageToUser(req.user.id, conversation.otherUser.id);
+      if (!validation.canSend) {
+        return res.status(403).json({ error: validation.error });
+      }
+
       const messageData = {
         conversation_id: conversation_id,
         sender_id: req.user.id,
         content: content,
-        is_read: false
+        is_read: false,
+        is_system_message: false
       };
 
       const result = insertMessageSchema.safeParse(messageData);
@@ -120,10 +135,8 @@ export function registerMessagingRoutes(app: Express) {
 
       const message = await storage.sendMessage(result.data);
       
-      // Create notification for other participant in conversation
-      const conversations = await storage.getConversationsByUserId(req.user.id);
-      const conversation = conversations.find(c => c.id === conversation_id);
-      if (conversation && conversation.otherUser) {
+      // Create notification for other participant in conversation (only if recipient is not deleted)
+      if (conversation.otherUser && !await storage.isUserDeleted(conversation.otherUser.id)) {
         await storage.createNotification({
           user_id: conversation.otherUser.id,
           type: 'new_message',

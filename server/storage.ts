@@ -893,7 +893,7 @@ export class DatabaseStorage implements IStorage {
       is_system_message: row.is_system_message,
       created_at: row.created_at,
       sender: {
-        id: row.sender_id,
+        id: row.sender_id || 0, // Use 0 for system messages with null sender_id
         email: row.senderEmail || '',
         role: row.senderRole || 'freelancer',
         password: '',
@@ -952,7 +952,7 @@ export class DatabaseStorage implements IStorage {
       is_system_message: row.is_system_message,
       created_at: row.created_at,
       sender: {
-        id: row.sender_id,
+        id: row.sender_id || 0, // Use 0 for system messages with null sender_id
         email: row.senderEmail || '',
         role: (row.senderRole as 'freelancer' | 'recruiter' | 'admin') || 'freelancer',
         password: '',
