@@ -3,6 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes-modular";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 // PII-safe logging utility
 function sanitizeLogData(data: any): any {
@@ -32,6 +33,44 @@ function sanitizeLogData(data: any): any {
   }
   
   return result;
+}
+
+// Admin reconciliation function - ensures admin users have correct roles
+async function reconcileAdminUsers(): Promise<void> {
+  try {
+    const adminEmails = process.env.ADMIN_EMAILS 
+      ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+      : [];
+      
+    if (adminEmails.length === 0) {
+      console.log('⚠️ No admin emails configured in ADMIN_EMAILS');
+      return;
+    }
+    
+    console.log(`🔧 Reconciling admin users: ${adminEmails.join(', ')}`);
+    
+    for (const email of adminEmails) {
+      // Check if user exists
+      const users = await storage.getAllUsers();
+      const user = users.find(u => u.email?.toLowerCase() === email);
+      
+      if (user) {
+        // Update user to have admin role if they don't already
+        if (user.role !== 'admin') {
+          console.log(`✅ Setting ${email} as admin (was: ${user.role})`);
+          await storage.updateUser(user.id, { role: 'admin' });
+        } else {
+          console.log(`✅ ${email} already has admin role`);
+        }
+      } else {
+        console.log(`⚠️ Admin email ${email} not found in database - will be set when they login`);
+      }
+    }
+    
+    console.log('✅ Admin reconciliation complete');
+  } catch (error) {
+    console.error('❌ Admin reconciliation failed:', error);
+  }
 }
 
 const app = express();
@@ -175,6 +214,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Reconcile admin users on startup
+  await reconcileAdminUsers();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

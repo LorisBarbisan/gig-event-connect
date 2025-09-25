@@ -923,8 +923,8 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: "Incorrect password" });
       }
 
-      // Delete all user data (using nuclear cleanup - removes all users)
-      await nukeAllUserData();
+      // Delete only the current user's data
+      await storage.deleteUserAccount(user.id);
 
       // Destroy session
       req.logout((err) => {

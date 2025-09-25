@@ -7,6 +7,16 @@ const client = postgres(connectionString);
 const db = drizzle(client);
 
 export async function nukeAllUserData(): Promise<void> {
+  // PRODUCTION SAFETY: Prevent accidental data wipes
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Nuclear cleanup is disabled in production for safety');
+  }
+  
+  // Additional confirmation required
+  if (process.env.ALLOW_NUCLEAR_CLEANUP !== 'true') {
+    throw new Error('Nuclear cleanup requires ALLOW_NUCLEAR_CLEANUP=true environment variable');
+  }
+  
   console.log('🚨 NUCLEAR CLEANUP: Removing all user data traces...');
   
   try {
