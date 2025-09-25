@@ -5,7 +5,7 @@ import { authenticateJWT } from "./auth";
 
 export function registerMessagingRoutes(app: Express) {
   // Get all conversations for the current user
-  app.get("/api/conversations", async (req, res) => {
+  app.get("/api/conversations", authenticateJWT, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -20,7 +20,7 @@ export function registerMessagingRoutes(app: Express) {
   });
 
   // Get messages in a conversation
-  app.get("/api/conversations/:id/messages", async (req, res) => {
+  app.get("/api/conversations/:id/messages", authenticateJWT, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -42,7 +42,7 @@ export function registerMessagingRoutes(app: Express) {
   });
 
   // Start a new conversation
-  app.post("/api/conversations", async (req, res) => {
+  app.post("/api/conversations", authenticateJWT, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -94,7 +94,7 @@ export function registerMessagingRoutes(app: Express) {
   });
 
   // Send a message
-  app.post("/api/messages", async (req, res) => {
+  app.post("/api/messages", authenticateJWT, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -154,7 +154,7 @@ export function registerMessagingRoutes(app: Express) {
   });
 
   // Delete message (soft delete from user's view only)
-  app.delete("/api/messages/:messageId", async (req, res) => {
+  app.delete("/api/messages/:messageId", authenticateJWT, async (req, res) => {
     try {
       const messageId = parseInt(req.params.messageId);
       

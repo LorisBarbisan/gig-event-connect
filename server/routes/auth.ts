@@ -16,7 +16,7 @@ const ADMIN_EMAILS = process.env.ADMIN_EMAILS
   : [];
 
 // Helper function to compute admin role based on email
-const computeUserRole = (user: any) => {
+export const computeUserRole = (user: any) => {
   if (!user) return user;
   
   // Check if email is in admin allowlist
@@ -24,8 +24,8 @@ const computeUserRole = (user: any) => {
   
   return {
     ...user,
-    role: user.role || 'freelancer', // NEVER override database role
-    is_admin: isAdmin // Add admin flag instead
+    role: isAdmin ? 'admin' : (user.role || 'freelancer'), // Set role to admin if in allowlist
+    is_admin: isAdmin // Add admin flag as well
   };
 };
 
