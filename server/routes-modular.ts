@@ -234,28 +234,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Feedback submission endpoint (public)
   app.post("/api/feedback", async (req, res) => {
     try {
-      const { type, message, email, rating } = req.body;
+      const { feedbackType, message, pageUrl, timestamp, source } = req.body;
 
-      if (!type || !message) {
-        return res.status(400).json({ error: "Type and message are required" });
+      if (!feedbackType || !message) {
+        return res.status(400).json({ error: "Feedback type and message are required" });
       }
 
-      // Validate type
-      const validTypes = ['bug', 'feature', 'improvement', 'other'];
-      if (!validTypes.includes(type)) {
+      // Validate feedback type - match frontend values
+      const validTypes = ['malfunction', 'feature-missing', 'suggestion', 'other'];
+      if (!validTypes.includes(feedbackType)) {
         return res.status(400).json({ error: "Invalid feedback type" });
       }
 
-      // Validate rating if provided
-      if (rating !== undefined && (rating < 1 || rating > 5)) {
-        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      // Get user info if available (optional authentication)
+      let userId = null;
+      let userEmail = null;
+      
+      // Try to get user from JWT if available (non-blocking)
+      try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.startsWith('Bearer ') 
+          ? authHeader.substring(7) 
+          : null;
+          
+        if (token) {
+          const jwt = require('jsonwebtoken');
+          const JWT_SECRET = process.env.JWT_SECRET || 'eventlink-jwt-secret-change-in-production';
+          const decoded = jwt.verify(token, JWT_SECRET);
+          if (decoded && typeof decoded === 'object') {
+            const user = await storage.getUser((decoded as any).id);
+            if (user) {
+              userId = user.id;
+              userEmail = user.email;
+            }
+          }
+        }
+      } catch (error) {
+        // Non-blocking - feedback can be submitted anonymously
+        console.log('Optional user lookup failed for feedback submission');
       }
 
       const feedback = await storage.createFeedback({
-        user_id: req.user?.id || null,
-        feedback_type: type,
+        user_id: userId,
+        feedback_type: feedbackType,
         message,
-        user_email: email || req.user?.email || null,
+        page_url: pageUrl,
+        source: source || 'header',
+        user_email: userEmail,
         status: 'pending'
       });
 

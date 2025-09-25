@@ -292,6 +292,13 @@ export const insertRatingRequestSchema = createInsertSchema(rating_requests).omi
   recruiter_id: z.number(),
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+  resolved_at: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSocialUser = z.infer<typeof insertSocialUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -302,6 +309,8 @@ export type InsertFreelancerProfile = z.infer<typeof insertFreelancerProfileSche
 export type InsertRecruiterProfile = z.infer<typeof insertRecruiterProfileSchema>;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type JobApplication = typeof job_applications.$inferSelect;
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
@@ -315,14 +324,3 @@ export type Rating = typeof ratings.$inferSelect;
 export type InsertRating = z.infer<typeof insertRatingSchema>;
 export type RatingRequest = typeof rating_requests.$inferSelect;
 export type InsertRatingRequest = z.infer<typeof insertRatingRequestSchema>;
-
-// Feedback schemas and types
-export const insertFeedbackSchema = createInsertSchema(feedback).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-  resolved_at: true,
-});
-
-export type Feedback = typeof feedback.$inferSelect;
-export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
