@@ -116,14 +116,18 @@ export function registerJobRoutes(app: Express) {
   // Delete job
   app.delete("/api/jobs/:jobId", authenticateJWT, async (req, res) => {
     try {
+      console.log(`🗑️ DELETE job attempt: jobId=${req.params.jobId}, user=${req.user?.email}, role=${req.user?.role}`);
+      
       const jobId = parseInt(req.params.jobId);
       
       if (Number.isNaN(jobId)) {
+        console.log(`❌ Invalid job ID: ${req.params.jobId}`);
         return res.status(400).json({ error: "Invalid job ID" });
       }
       
       // Check if user is authorized to delete this job
       if (!req.user) {
+        console.log(`❌ No user in request`);
         return res.status(401).json({ error: "Not authenticated" });
       }
 
