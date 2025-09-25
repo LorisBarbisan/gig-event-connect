@@ -478,6 +478,10 @@ export class DatabaseStorage implements IStorage {
         updated_at: new Date()
       })
       .where(eq(users.id, userId));
+    
+    // Clear the user cache so getUser() returns fresh data
+    const cacheKey = `user:${userId}`;
+    cache.delete(cacheKey);
   }
 
   async getFreelancerProfile(userId: number): Promise<FreelancerProfile | undefined> {
