@@ -862,31 +862,15 @@ export function registerAuthRoutes(app: Express) {
 
   // Update account information endpoint (authenticated)
   app.put("/api/auth/update-account", authenticateJWT, async (req, res) => {
-    console.log('🔄 Backend: Update account request received');
-    console.log('📤 Request body:', req.body);
-    console.log('👤 Current user:', req.user ? { id: (req.user as any).id, email: (req.user as any).email, role: (req.user as any).role } : 'NOT AUTHENTICATED');
-    
     try {
-      if (!req.user) {
-        console.log('❌ Backend: User not authenticated');
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const { first_name, last_name, role } = req.body;
-      const user = req.user as any; // Fix TypeScript issue
-
-      console.log('📊 Backend: Updating user account:', {
-        userId: user.id,
-        updateData: { first_name, last_name, role }
-      });
+      const user = req.user as any;
 
       await storage.updateUserAccount(user.id, {
         first_name,
         last_name,
         role
       });
-
-      console.log('✅ Backend: Database update completed');
 
       // Get updated user and apply role computation
       const updatedUser = await storage.getUser(user.id);
@@ -895,16 +879,6 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const userWithRole = computeUserRole(updatedUser);
-      req.user = userWithRole;
-
-      console.log('📤 Backend: Sending response:', {
-        id: userWithRole.id,
-        email: userWithRole.email,
-        first_name: userWithRole.first_name,
-        last_name: userWithRole.last_name,
-        role: userWithRole.role,
-        email_verified: userWithRole.email_verified
-      });
 
       res.json({ 
         user: {
