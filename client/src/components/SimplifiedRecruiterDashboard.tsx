@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +25,20 @@ export default function SimplifiedRecruiterDashboard() {
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
+
+  // Handle URL parameters for direct navigation to job posting
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const actionParam = urlParams.get('action');
+    
+    if (tabParam === 'jobs') {
+      setActiveTab('jobs');
+      if (actionParam === 'post') {
+        setShowJobForm(true);
+      }
+    }
+  }, []);
 
   // Use custom hooks - only call when user ID is available
   const { profile, isLoading: profileLoading, saveProfile, isSaving } = useProfile({
