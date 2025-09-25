@@ -25,8 +25,6 @@ interface FreelancerProfile {
   title: string;
   bio: string;
   location: string;
-  hourly_rate: number | null;
-  rate_type: 'hourly' | 'daily';
   experience_years: number | null;
   skills: string[];
   portfolio_url: string;
@@ -49,8 +47,6 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
     title: '',
     bio: '',
     location: '',
-    hourly_rate: null,
-    rate_type: 'hourly',
     experience_years: null,
     skills: [],
     portfolio_url: '',
@@ -374,30 +370,6 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
                 value={freelancerProfile.location}
                 onChange={(e) => setFreelancerProfile(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="City, Country"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="rate">Rate (£) (Optional)</Label>
-                <Select 
-                  value={freelancerProfile.rate_type} 
-                  onValueChange={(value: 'hourly' | 'daily') => setFreelancerProfile(prev => ({ ...prev, rate_type: value }))}
-                >
-                  <SelectTrigger className="w-20 h-6 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hourly">Hourly</SelectItem>
-                    <SelectItem value="daily">Daily</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Input
-                id="rate"
-                type="number"
-                value={freelancerProfile.hourly_rate || ''}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, hourly_rate: e.target.value ? parseFloat(e.target.value) : null }))}
-                placeholder={freelancerProfile.rate_type === 'hourly' ? '50' : '400'}
               />
             </div>
             <div className="space-y-2">

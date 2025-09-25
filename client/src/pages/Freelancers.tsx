@@ -53,7 +53,6 @@ export default function Freelancers() {
       title: profile.title || 'Event Professional',
       location: profile.location || 'Location not specified',
       experience: profile.experience_years ? `${profile.experience_years} years` : 'Experience not specified',
-      rate: profile.hourly_rate ? `£${profile.hourly_rate}/${profile.rate_type || 'hour'}` : 'Rate on request',
       rating: 5.0, // Default rating for real profiles
       availability: profile.availability_status === 'available' ? 'Available' : 
                    profile.availability_status === 'busy' ? 'Busy' : 'Unavailable',
@@ -73,7 +72,6 @@ export default function Freelancers() {
       title: 'Senior Audio Engineer',
       location: 'London, UK',
       experience: '8 years',
-      rate: '£350/day',
       rating: 4.9,
       availability: 'Available',
       skills: ['Sound Engineering', 'Live Events', 'Mixing Consoles', 'Wireless Systems'],
@@ -87,7 +85,6 @@ export default function Freelancers() {
       title: 'Lighting Designer & Technician',
       location: 'Manchester, UK',
       experience: '6 years',
-      rate: '£280/day',
       rating: 4.8,
       availability: 'Available',
       skills: ['Lighting Design', 'LED Systems', 'Moving Lights', 'Event Production'],
@@ -101,7 +98,6 @@ export default function Freelancers() {
       title: 'AV Systems Specialist',
       location: 'Birmingham, UK',
       experience: '10 years',
-      rate: '£400/day',
       rating: 5.0,
       availability: 'Busy',
       skills: ['AV Systems', 'Project Management', 'Technical Support', 'Video Production'],
@@ -115,7 +111,6 @@ export default function Freelancers() {
       title: 'Video Production Specialist',
       location: 'Edinburgh, UK',
       experience: '5 years',
-      rate: '£320/day',
       rating: 4.7,
       availability: 'Available',
       skills: ['Video Production', 'Live Streaming', 'Camera Operation', 'Post Production'],
@@ -285,10 +280,6 @@ export default function Freelancers() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span>{freelancer.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Coins className="h-4 w-4 text-muted-foreground" />
-                        <span>{freelancer.rate}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
