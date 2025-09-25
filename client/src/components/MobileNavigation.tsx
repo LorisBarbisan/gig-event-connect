@@ -1,4 +1,4 @@
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { EventLinkLogo } from "@/components/Logo";
@@ -56,6 +56,18 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
           <MessageSquare className="w-4 h-4" />
           Feedback
         </button>
+        
+        {/* Post New Job button - only for recruiters */}
+        {user?.role === 'recruiter' && (
+          <button 
+            onClick={() => setLocation('/dashboard?tab=jobs&action=post')}
+            className="text-left bg-gradient-primary text-white py-3 px-4 rounded-md hover:bg-gradient-primary/90 transition-colors flex items-center gap-2 font-medium"
+            data-testid="mobile-button-post-job"
+          >
+            <Plus className="w-4 h-4" />
+            Post New Job
+          </button>
+        )}
         
         {user ? (
           <>

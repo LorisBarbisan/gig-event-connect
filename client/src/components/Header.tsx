@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, MessageSquare } from "lucide-react";
+import { Menu, MessageSquare, Plus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { EventLinkLogo } from "@/components/Logo";
@@ -65,6 +65,18 @@ export const Header = ({ onFeedbackClick }: HeaderProps) => {
           {/* Actions */}
           <div className="flex items-center space-x-3">
             {!isHomePage && <SearchBar />}
+            
+            {/* Post New Job button - only for recruiters */}
+            {user?.role === 'recruiter' && (
+              <Button 
+                onClick={() => setLocation('/dashboard?tab=jobs&action=post')}
+                className="hidden md:flex bg-gradient-primary hover:bg-gradient-primary/90 text-white"
+                data-testid="button-post-job-header"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Post New Job
+              </Button>
+            )}
             
             {user ? (
               <UserMenu />
