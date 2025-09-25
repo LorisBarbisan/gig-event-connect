@@ -10,11 +10,10 @@ import { nukeAllUserData } from "../clearAllUserData";
 import passport from "passport";
 
 // Admin email allowlist for server-side admin role detection
-const ADMIN_EMAILS = [
-  'lorisbarbisan@gmail.com',
-  'loris.barbisan@huzahr.com',
-  'testadmin@example.com'
-];
+// Get admin emails from environment variable instead of hardcoding
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
+  ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+  : [];
 
 // Helper function to compute admin role based on email
 const computeUserRole = (user: any) => {
@@ -25,7 +24,8 @@ const computeUserRole = (user: any) => {
   
   return {
     ...user,
-    role: isAdmin ? 'admin' : (user.role || 'freelancer')
+    role: user.role || 'freelancer', // NEVER override database role
+    is_admin: isAdmin // Add admin flag instead
   };
 };
 
