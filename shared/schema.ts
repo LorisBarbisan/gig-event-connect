@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   profile_photo_url: text("profile_photo_url"), // For social auth profile photos
   last_login_method: text("last_login_method").$type<'email' | 'google' | 'facebook' | 'linkedin'>(),
   last_login_at: timestamp("last_login_at"),
+  // Soft delete support for account deletion conversations
+  deleted_at: timestamp("deleted_at"), // NULL = active user, timestamp = deleted user
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -107,9 +109,10 @@ export const conversations = pgTable("conversations", {
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   conversation_id: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
-  sender_id: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sender_id: integer("sender_id").references(() => users.id, { onDelete: "cascade" }), // Made nullable for system messages
   content: text("content").notNull(),
   is_read: boolean("is_read").default(false).notNull(),
+  is_system_message: boolean("is_system_message").default(false).notNull(), // For account deletion and other system notifications
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -241,7 +244,8 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   created_at: true,
 }).extend({
   conversation_id: z.number(),
-  sender_id: z.number(),
+  sender_id: z.number().nullable().optional(), // Made optional for system messages
+  is_system_message: z.boolean().optional().default(false),
 });
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
