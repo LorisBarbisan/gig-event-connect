@@ -58,12 +58,19 @@ export async function apiRequest(url: string, options?: RequestInit & { skipAuth
       
       // Verify if the session is actually invalid before logging out
       try {
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
         const sessionResponse = await fetch('/api/auth/session', {
           credentials: 'include',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (sessionResponse.ok) {
           // Session is valid, this is just a permission/authorization issue
@@ -74,10 +81,19 @@ export async function apiRequest(url: string, options?: RequestInit & { skipAuth
           window.dispatchEvent(new CustomEvent('auth:invalid'));
           throw new AuthError('Session expired', 401, 'INVALID_SESSION');
         }
-      } catch (sessionError) {
-        // If session check fails, assume invalid session
-        window.dispatchEvent(new CustomEvent('auth:invalid'));
-        throw new AuthError('Session expired', 401, 'INVALID_SESSION');
+      } catch (sessionError: any) {
+        // Check if it's a timeout/network error vs actual session invalid
+        if (sessionError.name === 'AbortError' || sessionError.message?.includes('timeout')) {
+          console.warn('⚠️ Session validation timed out - treating as temporary network issue');
+          // Don't log out user for network timeouts, just throw the original error
+          const error = await response.json().catch(() => ({ error: "Request failed" }));
+          throw new AuthError(error.error || 'Request failed', response.status, 'REQUEST_FAILED');
+        } else {
+          // If session check fails for other reasons, assume invalid session
+          console.log('🔐 Session validation failed - logging out user');
+          window.dispatchEvent(new CustomEvent('auth:invalid'));
+          throw new AuthError('Session expired', 401, 'INVALID_SESSION');
+        }
       }
     }
     

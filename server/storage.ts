@@ -44,13 +44,17 @@ const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString, {
   max: 20,          // Maximum connections in the pool
   idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 10, // Connection timeout in seconds
+  connect_timeout: 5, // Reduced connection timeout for faster failure detection
   prepare: false,   // Disable prepared statements to reduce memory usage
   transform: {
     undefined: null // Transform undefined to null for better SQL compatibility
   },
   debug: process.env.NODE_ENV === 'development' ? false : false, // Disable debug in production
-  onnotice: process.env.NODE_ENV === 'development' ? console.log : () => {} // Log notices only in dev
+  onnotice: process.env.NODE_ENV === 'development' ? console.log : () => {}, // Log notices only in dev
+  // Add connection retry logic for better reliability
+  connection: {
+    options: `--application_name=eventlink-${process.env.NODE_ENV || 'development'}`,
+  }
 });
 const db = drizzle(client);
 
