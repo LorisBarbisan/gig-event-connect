@@ -1,13 +1,14 @@
 import type { Express } from "express";
 import { storage } from "../storage";
+import { authenticateJWT } from "./auth";
 
-// Admin authentication middleware
-export const requireAdminAuth = (req: any, res: any, next: any) => {
+// Admin authentication middleware - requires JWT auth first
+export const requireAdminAuth = [authenticateJWT, (req: any, res: any, next: any) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
-};
+}];
 
 // Admin email allowlist for server-side admin role detection
 // Get admin emails from environment variable
