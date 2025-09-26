@@ -202,6 +202,9 @@ export interface IStorage {
   // Admin management
   updateUserRole(userId: number, role: 'freelancer' | 'recruiter' | 'admin'): Promise<User>;
   getAdminUsers(): Promise<User[]>;
+  
+  // Cache management
+  clearCache(): void;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1711,6 +1714,12 @@ export class DatabaseStorage implements IStorage {
 
     cache.set(cacheKey, adminUsers, 60); // Cache for 1 minute
     return adminUsers;
+  }
+
+  clearCache(): void {
+    console.log('🧹 Clearing server-side SimpleCache...');
+    cache.clear();
+    console.log('✅ Server-side cache cleared');
   }
 }
 

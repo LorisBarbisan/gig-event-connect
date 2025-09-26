@@ -322,6 +322,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ error: "Failed to perform cleanup operation" });
       }
     });
+
+    // Cache clearing endpoint (development only)
+    app.post("/api/clear-cache", async (req, res) => {
+      try {
+        console.log('🧹 Clearing all server-side cache...');
+        
+        // Clear server-side cache (from storage.ts SimpleCache)
+        storage.clearCache();
+        
+        res.json({ 
+          message: "Server-side cache cleared successfully.",
+          clientInstructions: {
+            reactQuery: "Call queryClient.clear() to clear React Query cache",
+            localStorage: "Call localStorage.clear() and sessionStorage.clear()",
+            reload: "Consider window.location.reload() for complete refresh"
+          }
+        });
+      } catch (error) {
+        console.error("Cache clear error:", error);
+        res.status(500).json({ error: "Failed to clear cache" });
+      }
+    });
   }
 
   // WebSocket server for real-time messaging
@@ -361,7 +383,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             conversation_id: conversation.id,
             sender_id: userId,
             content,
-            is_read: false
+            is_read: false,
+            is_system_message: false
           });
 
           // Send to recipient if they're connected
