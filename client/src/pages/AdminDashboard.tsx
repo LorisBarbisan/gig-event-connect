@@ -27,6 +27,7 @@ import {
 import { AdminGuard } from '@/components/AdminGuard';
 import { Layout } from '@/components/Layout';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { trackAdminEvent, trackAdminAnalytics } from '@/lib/analytics';
 
 interface FeedbackItem {
   id: number;
@@ -98,6 +99,11 @@ function AdminDashboardContent() {
   const [isGrantingAdmin, setIsGrantingAdmin] = useState(false);
   const [isRevokingAdmin, setIsRevokingAdmin] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
+
+  // Track Google Analytics when tab changes
+  useEffect(() => {
+    trackAdminAnalytics(activeTab);
+  }, [activeTab]);
 
   // Analytics query
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
@@ -203,6 +209,9 @@ function AdminDashboardContent() {
         body: JSON.stringify({ email: grantAdminEmail.trim() }),
       });
 
+      // Track admin grant success
+      trackAdminEvent('grant_admin_success', grantAdminEmail);
+
       toast({
         title: 'Admin Status Granted',
         description: `Admin privileges have been granted to ${grantAdminEmail}`,
@@ -211,6 +220,9 @@ function AdminDashboardContent() {
       setGrantAdminEmail('');
       refetchAdminUsers();
     } catch (error: any) {
+      // Track admin grant failure
+      trackAdminEvent('grant_admin_failed', grantAdminEmail);
+      
       toast({
         title: 'Grant Admin Failed',
         description: error.response?.data?.error || 'Failed to grant admin status',
