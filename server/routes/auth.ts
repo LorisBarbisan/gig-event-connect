@@ -50,7 +50,7 @@ export const computeUserRole = (user: any) => {
 // JWT utility functions
 const JWT_SECRET = process.env.JWT_SECRET || 'eventlink-jwt-secret-change-in-production';
 
-const generateJWTToken = (user: any) => {
+export const generateJWTToken = (user: any) => {
   const userWithRole = computeUserRole(user);
   return jwt.sign(
     { 

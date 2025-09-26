@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { authenticateJWT } from "./auth";
+import { authenticateJWT, generateJWTToken } from "./auth";
 
 // Admin authentication middleware - requires JWT auth first
 export const requireAdminAuth = async (req: any, res: any, next: any) => {
