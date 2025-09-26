@@ -26,12 +26,61 @@ interface EmailParams {
   html?: string;
 }
 
+// Enhanced email validation
+function validateEmailAddress(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email);
+}
+
+// Check email deliverability score
+function calculateDeliverabilityScore(params: EmailParams): { score: number; warnings: string[] } {
+  const warnings: string[] = [];
+  let score = 100;
+
+  // Check sender domain
+  if (!params.from.includes('@eventlink.one')) {
+    warnings.push('Sender domain not authenticated (not @eventlink.one)');
+    score -= 30;
+  }
+
+  // Check subject line quality
+  const subject = params.subject.toLowerCase();
+  const spamWords = ['free', 'urgent', 'act now', 'limited time', '!!!'];
+  const spamWordsFound = spamWords.filter(word => subject.includes(word));
+  if (spamWordsFound.length > 0) {
+    warnings.push(`Subject contains potential spam words: ${spamWordsFound.join(', ')}`);
+    score -= spamWordsFound.length * 15;
+  }
+
+  // Check text/HTML content balance
+  if (params.html && !params.text) {
+    warnings.push('No plain text version provided - may trigger spam filters');
+    score -= 10;
+  }
+
+  return { score: Math.max(0, score), warnings };
+}
+
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  // Validate email address
+  if (!validateEmailAddress(params.to)) {
+    console.error(`❌ Invalid email address: ${params.to}`);
+    return false;
+  }
+
+  // Check deliverability score
+  const deliverability = calculateDeliverabilityScore(params);
+  if (deliverability.score < 70) {
+    console.warn(`⚠️ Low deliverability score (${deliverability.score}/100) for email to ${params.to}`);
+    deliverability.warnings.forEach(warning => console.warn(`   - ${warning}`));
+  }
+
   // Graceful fallback if email service is not available
   if (!emailServiceEnabled || !mailService) {
     console.log(`📧 Email service unavailable - simulating email to ${params.to}`);
     console.log(`📧 Subject: ${params.subject}`);
     console.log(`📧 From: ${params.from}`);
+    console.log(`📧 Deliverability Score: ${deliverability.score}/100`);
     return true; // Return success to prevent blocking app functionality
   }
 
@@ -59,11 +108,23 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
         spam_check: {
           enable: true,
           threshold: 1
+        },
+        sandbox_mode: {
+          enable: false
         }
       },
       headers: {
         'List-Unsubscribe': '<mailto:unsubscribe@eventlink.one>',
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Auto-Response-Suppress': 'All',
+        'X-Entity-Ref-ID': `eventlink-${Date.now()}`,
+        'Precedence': 'bulk'
+      },
+      categories: ['verification', 'eventlink-platform'],
+      custom_args: {
+        email_type: 'verification',
+        platform: 'eventlink',
+        deliverability_score: deliverability.score.toString()
       }
     };
 
@@ -76,12 +137,12 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     }
 
     await mailService.send(emailData);
-    console.log(`✅ Email sent successfully via SendGrid to: ${params.to}`);
+    console.log(`✅ Email sent successfully via SendGrid to: ${params.to} (Score: ${deliverability.score}/100)`);
     return true;
   } catch (error: any) {
     console.error('📧 SendGrid send error:', error?.message || error);
     
-    // Enhanced error logging for debugging
+    // Enhanced error logging for debugging and authentication issues
     if (error.response && error.response.body && error.response.body.errors) {
       console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
       
@@ -89,12 +150,23 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       const errors = error.response.body.errors;
       for (const err of errors) {
         if (err.message && err.message.includes('does not match a verified Sender Identity')) {
-          console.error('❌ SENDGRID ERROR: Sender email address not verified');
-          console.error('📧 To fix this:');
-          console.error('   1. Go to SendGrid dashboard');
-          console.error('   2. Navigate to Settings > Sender Authentication');
-          console.error('   3. Verify the sender email:', params.from);
-          console.error('   4. Or use a verified sender email address');
+          console.error('🚨 CRITICAL: Sender email address not verified in SendGrid');
+          console.error('📧 IMMEDIATE ACTIONS REQUIRED:');
+          console.error('   1. Login to SendGrid Dashboard → Settings → Sender Authentication');
+          console.error('   2. Click "Authenticate Your Domain" for eventlink.one');
+          console.error('   3. Add provided DNS records to your domain provider');
+          console.error('   4. Wait for DNS propagation (up to 48 hours)');
+          console.error(`   5. Current sender: ${params.from}`);
+        } else if (err.message && err.message.includes('authentication')) {
+          console.error('🚨 EMAIL AUTHENTICATION FAILURE:');
+          console.error('   - SPF/DKIM/DMARC not properly configured');
+          console.error('   - Domain authentication required for deliverability');
+          console.error('   - Emails may be marked as spam or blocked');
+        } else if (err.message && err.message.includes('reputation')) {
+          console.error('🚨 SENDER REPUTATION ISSUE:');
+          console.error('   - Domain/IP reputation may be compromised');
+          console.error('   - Implement domain authentication immediately');
+          console.error('   - Monitor bounce rates and spam complaints');
         }
       }
     }
@@ -104,6 +176,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       console.log(`📧 Development mode: Simulating successful email delivery to ${params.to}`);
       console.log(`📧 Email subject: ${params.subject}`);
       console.log(`📧 From: ${params.from}`);
+      console.log(`📧 Deliverability Score: ${deliverability.score}/100`);
       return true; // Return true to simulate successful delivery
     }
     
