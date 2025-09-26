@@ -10,11 +10,10 @@ export const requireAdminAuth = (req: any, res: any, next: any) => {
 };
 
 // Admin email allowlist for server-side admin role detection
-const ADMIN_EMAILS = [
-  'lorisbarbisan@gmail.com',
-  'loris.barbisan@huzahr.com',
-  'testadmin@example.com'
-];
+// Get admin emails from environment variable
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
+  ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+  : [];
 
 export function registerAdminRoutes(app: Express) {
   // Get all feedback (admin only)
@@ -134,15 +133,24 @@ export function registerAdminRoutes(app: Express) {
   // Grant admin access to user (admin only)
   app.post("/api/admin/users/grant-admin", requireAdminAuth, async (req, res) => {
     try {
-      const { userId } = req.body;
+      const { email, userId } = req.body;
 
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+      // Support both email and userId for backwards compatibility
+      let user;
+      if (email) {
+        // Find user by email
+        user = await storage.getUserByEmail(email.trim().toLowerCase());
+        if (!user) {
+          return res.status(404).json({ error: "User not found with that email address" });
+        }
+      } else if (userId) {
+        // Find user by ID
+        user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+      } else {
+        return res.status(400).json({ error: "Either email or user ID is required" });
       }
 
       // Check if email is in admin allowlist
@@ -152,11 +160,8 @@ export function registerAdminRoutes(app: Express) {
         });
       }
 
-      // Update user role to admin
-      const updatedUser = await storage.updateUser(userId, { role: 'admin' });
-      if (!updatedUser) {
-        return res.status(500).json({ error: "Failed to grant admin access" });
-      }
+      // Update user role to admin using the updateUserRole function
+      const updatedUser = await storage.updateUserRole(user.id, 'admin');
 
       res.json({
         message: "Admin access granted successfully",
@@ -177,31 +182,37 @@ export function registerAdminRoutes(app: Express) {
   // Revoke admin access from user (admin only)
   app.post("/api/admin/users/revoke-admin", requireAdminAuth, async (req, res) => {
     try {
-      const { userId } = req.body;
+      const { email, userId } = req.body;
 
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
+      // Support both email and userId for backwards compatibility
+      let user;
+      if (email) {
+        // Find user by email
+        user = await storage.getUserByEmail(email.trim().toLowerCase());
+        if (!user) {
+          return res.status(404).json({ error: "User not found with that email address" });
+        }
+      } else if (userId) {
+        // Find user by ID
+        user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+      } else {
+        return res.status(400).json({ error: "Either email or user ID is required" });
       }
 
       // Prevent self-demotion
-      if (req.user.id === userId) {
+      if (req.user.id === user.id) {
         return res.status(400).json({ error: "Cannot revoke your own admin access" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
       }
 
       if (user.role !== 'admin') {
         return res.status(400).json({ error: "User is not an admin" });
       }
 
-      // Update user role to freelancer (default)
-      const updatedUser = await storage.updateUser(userId, { role: 'freelancer' });
-      if (!updatedUser) {
-        return res.status(500).json({ error: "Failed to revoke admin access" });
-      }
+      // Update user role to freelancer (default) using the updateUserRole function
+      const updatedUser = await storage.updateUserRole(user.id, 'freelancer');
 
       res.json({
         message: "Admin access revoked successfully",
