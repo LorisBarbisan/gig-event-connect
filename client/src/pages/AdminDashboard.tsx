@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { 
   Users, 
   MessageSquare, 
@@ -218,6 +218,9 @@ function AdminDashboardContent() {
       });
 
       setGrantAdminEmail('');
+      
+      // Invalidate and refetch admin users list to ensure immediate update
+      await queryClient.invalidateQueries({ queryKey: ['/api/admin/users/admins'] });
       refetchAdminUsers();
     } catch (error: any) {
       // Track admin grant failure
@@ -261,6 +264,9 @@ function AdminDashboardContent() {
       });
 
       setRevokeAdminEmail('');
+      
+      // Invalidate and refetch admin users list to ensure immediate update
+      await queryClient.invalidateQueries({ queryKey: ['/api/admin/users/admins'] });
       refetchAdminUsers();
     } catch (error: any) {
       console.error('Revoke admin error:', error);
@@ -306,7 +312,8 @@ function AdminDashboardContent() {
         description: 'You have been granted admin privileges!',
       });
 
-      // Refresh admin users list
+      // Invalidate and refetch admin users list to ensure immediate update
+      await queryClient.invalidateQueries({ queryKey: ['/api/admin/users/admins'] });
       refetchAdminUsers();
       
       // Refresh the page to update authentication state
