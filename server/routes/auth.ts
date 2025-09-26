@@ -91,14 +91,11 @@ export const authenticateJWT = async (req: any, res: any, next: any) => {
   try {
     // Check for JWT token in Authorization header
     const authHeader = req.headers.authorization;
-    console.log('🔧 Auth header:', authHeader ? 'Present' : 'Missing');
     const token = authHeader && authHeader.startsWith('Bearer ') 
       ? authHeader.substring(7) 
       : null;
-    console.log('🔧 Token extracted:', token ? 'Present' : 'Missing');
 
     if (!token) {
-      console.log('🔧 No token found in request');
       return res.status(401).json({ error: "Not authenticated" });
     }
 
