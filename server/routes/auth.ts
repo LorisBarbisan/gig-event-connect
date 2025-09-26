@@ -631,6 +631,51 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  // Resend verification email endpoint
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (user.email_verified) {
+        return res.status(400).json({ error: "Email is already verified" });
+      }
+
+      // Generate new verification token
+      const emailVerificationToken = randomBytes(32).toString('hex');
+      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Update user with new verification token
+      await storage.updateUserVerificationToken(user.id, emailVerificationToken, emailVerificationExpires);
+
+      // Send verification email
+      try {
+        const baseUrl = getOrigin(req);
+        await sendVerificationEmail(email, emailVerificationToken, baseUrl);
+        console.log(`✅ Resent verification email to: ${email}`);
+        
+        res.json({ 
+          message: "Verification email resent successfully. Please check your email and spam folder.",
+          success: true
+        });
+      } catch (emailError) {
+        console.error('Failed to resend verification email:', emailError);
+        res.status(500).json({ error: "Failed to send verification email. Please try again later." });
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Email verification endpoint
   app.get("/verify-email", async (req, res) => {
     try {

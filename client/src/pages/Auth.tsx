@@ -213,8 +213,11 @@ export default function Auth() {
       } else {
         toast({
           title: "Registration Successful!",
-          description: message || "Please check your email to verify your account before signing in."
+          description: message || "Please check your email and spam folder to verify your account before signing in."
         });
+        // Set up resend verification option
+        setShowResendOption(true);
+        setPendingVerificationEmail(signUpData.email);
         // Clear the form after successful signup
         setSignUpData({
           email: '',
@@ -289,13 +292,31 @@ export default function Auth() {
     
     setLoading(true);
     try {
-      // For now, just show a message since resendVerificationEmail is not in optimized auth
-      toast({
-        title: "Feature Unavailable",
-        description: "Please try signing up again to get a new verification email.",
-        variant: "default"
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: pendingVerificationEmail }),
       });
-      setShowResendOption(false);
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast({
+          title: "Verification Email Sent!",
+          description: "Please check your email and spam folder for the verification link.",
+          variant: "default"
+        });
+        setShowResendOption(false);
+        setPendingVerificationEmail('');
+      } else {
+        toast({
+          title: "Failed to Resend",
+          description: data.error || "Failed to resend verification email. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (err) {
       toast({
         title: "Error",
