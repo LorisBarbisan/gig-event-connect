@@ -144,6 +144,8 @@ export function registerAdminRoutes(app: Express) {
 
   // Grant admin access to user (admin only)
   app.post("/api/admin/users/grant-admin", requireAdminAuth, async (req, res) => {
+    console.log('🔧 Grant admin request received:', req.body);
+    console.log('🔧 Authenticated user:', req.user?.email, 'role:', req.user?.role);
     try {
       const { email, userId } = req.body;
 
