@@ -3,12 +3,26 @@ import { storage } from "../storage";
 import { authenticateJWT } from "./auth";
 
 // Admin authentication middleware - requires JWT auth first
-export const requireAdminAuth = [authenticateJWT, (req: any, res: any, next: any) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
+export const requireAdminAuth = async (req: any, res: any, next: any) => {
+  // First run JWT authentication
+  try {
+    await new Promise((resolve, reject) => {
+      authenticateJWT(req, res, (err: any) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+    
+    // Then check if user has admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Authentication failed' });
   }
-  next();
-}];
+};
 
 // Admin email allowlist for server-side admin role detection
 // Get admin emails from environment variable
