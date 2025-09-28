@@ -63,8 +63,8 @@ export const DEFAULT_JOB_CONFIG: JobSearchConfig = {
   },
   
   adzuna: {
-    // Keywords to search for on Adzuna - specific event industry roles
-    keywords: 'AV technician lighting technician camera operator photographer video mixer streaming engineer stage manager sound engineer',
+    // Keywords to search for on Adzuna - simple event search
+    keywords: 'events',
     // Country code (gb = UK, us = USA, au = Australia, etc.)
     country: 'gb',
     options: {

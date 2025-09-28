@@ -246,8 +246,7 @@ export class JobAggregator {
             'Authorization': `Basic ${Buffer.from(this.reedApiKey + ':').toString('base64')}`,
             'User-Agent': 'EventLink/1.0',
             'Accept': 'application/json'
-          },
-          timeout: 15000 // 15 second timeout
+          }
         });
 
         if (!response.ok) {
@@ -320,7 +319,7 @@ export class JobAggregator {
    * - contract_type: 'permanent', 'contract', 'part_time', 'temporary'
    */
   async fetchAdzunaJobs(
-    keywords = 'events OR "AV technician" OR "lighting technician" OR "camera operator" OR photographer OR "video mixer" OR "streaming engineer" OR "stage manager" OR "sound engineer"',
+    keywords = 'events',
     country = 'gb',
     options: {
       location?: string;
@@ -348,8 +347,7 @@ export class JobAggregator {
           app_key: this.adzunaApiKey!,
           what: keywords,
           results_per_page: (options.results_per_page || 25).toString(),
-          sort_by: 'date', // Get most recent jobs first
-          full_time: '1' // Focus on full-time positions
+          sort_by: 'date' // Get most recent jobs first
         });
 
         // Add optional filters
@@ -364,8 +362,7 @@ export class JobAggregator {
           headers: {
             'User-Agent': 'EventLink/1.0',
             'Accept': 'application/json'
-          },
-          timeout: 15000 // 15 second timeout
+          }
         });
 
         if (!response.ok) {
@@ -391,6 +388,7 @@ export class JobAggregator {
 
         const data = await response.json();
         console.log(`✅ Adzuna API returned ${data.results?.length || 0} jobs`);
+        console.log('🔍 Adzuna API full response:', JSON.stringify(data, null, 2));
         
         if (data.results?.length > 0) {
           console.log('📋 Adzuna sample job:', JSON.stringify(data.results[0], null, 2));
