@@ -135,7 +135,9 @@ export default function SimplifiedRecruiterDashboard() {
       });
     },
     onSuccess: () => {
+      // Invalidate both the recruiter's job list AND the main jobs list
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({
         title: 'Job posted',
         description: 'Your job has been posted successfully.',
@@ -161,7 +163,9 @@ export default function SimplifiedRecruiterDashboard() {
       });
     },
     onSuccess: () => {
+      // Invalidate both the recruiter's job list AND the main jobs list
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       setEditingJob(null);
       toast({
         title: 'Success',
