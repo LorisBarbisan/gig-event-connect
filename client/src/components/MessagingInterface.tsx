@@ -392,9 +392,10 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
                             {message.content}
                           </p>
                           <div className="flex items-center justify-between mt-1">
-                            <div className="text-xs opacity-70">
-                              <p>{formatDate(message.created_at)}</p>
-                              <p>{formatTime(message.created_at)}</p>
+                            <div className="text-xs opacity-70 flex items-center gap-2">
+                              <span>{formatDate(message.created_at)}</span>
+                              <span>•</span>
+                              <span>{formatTime(message.created_at)}</span>
                             </div>
                             {/* Delete button for user's own messages (not system messages) */}
                             {!message.is_system_message && message.sender_id === currentUser.id && (
