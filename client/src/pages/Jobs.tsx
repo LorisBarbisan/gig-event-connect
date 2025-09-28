@@ -59,11 +59,42 @@ export default function Jobs() {
     setCurrentPage(1);
   }, [searchQuery, locationFilter, categoryFilter]);
 
-  // Fetch real jobs data from API
-  const { data: jobs = [], isLoading } = useQuery({
+  // Fetch real jobs data from API with automatic sync
+  const { data: jobs = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/jobs'],
-    queryFn: () => apiRequest('/api/jobs')
+    queryFn: () => apiRequest('/api/jobs'),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
+
+  // Auto-sync external jobs when page loads
+  useEffect(() => {
+    const autoSync = async () => {
+      try {
+        console.log('🔄 Auto-syncing external jobs on page load...');
+        await apiRequest('/api/jobs/sync-external', {
+          method: 'POST',
+        });
+        // Refresh jobs after sync
+        await refetch();
+        console.log('✅ Auto-sync completed successfully');
+      } catch (error) {
+        console.warn('⚠️ Auto-sync failed:', error);
+        // Don't show error toast for automatic sync - silent fail
+      }
+    };
+    
+    // Only auto-sync if we haven't synced recently
+    const lastSync = localStorage.getItem('lastJobSync');
+    const now = Date.now();
+    const SYNC_INTERVAL = 30 * 60 * 1000; // 30 minutes
+    
+    if (!lastSync || now - parseInt(lastSync) > SYNC_INTERVAL) {
+      autoSync();
+      localStorage.setItem('lastJobSync', now.toString());
+    }
+  }, [refetch]);
 
   // Sync external jobs mutation
   const syncExternalJobsMutation = useMutation({
