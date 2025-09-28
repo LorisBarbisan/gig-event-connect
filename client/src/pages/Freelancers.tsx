@@ -153,6 +153,36 @@ export default function Freelancers() {
             </div>
           </div>
 
+          {/* No Freelancers Message */}
+          {!isLoading && filteredFreelancers.length === 0 && (
+            <Card className="p-8 text-center">
+              <CardContent>
+                <div className="space-y-4">
+                  <User className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="text-xl font-semibold">No Freelancers Available</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    There are currently no freelancer profiles available. Freelancers need to complete their profiles before appearing in search results.
+                  </p>
+                  <div className="pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setLocation('/auth?tab=signup')}
+                      className="mr-4"
+                    >
+                      Join as Freelancer
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setLocation('/jobs')}
+                    >
+                      Browse Jobs Instead
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredFreelancers.map((freelancer: any) => (
                 <Card 
