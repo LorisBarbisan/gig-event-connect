@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { ObjectStorageService, ObjectNotFoundError } from "../objectStorage";
+import { authenticateJWT } from "./auth";
+import { z } from "zod";
+import { insertMessageAttachmentSchema } from "@shared/schema";
 
 export function registerFileRoutes(app: Express) {
   // Get CV upload URL (presigned URL for direct upload)
@@ -163,6 +166,219 @@ export function registerFileRoutes(app: Express) {
     } catch (error) {
       console.error("Serve object error:", error);
       res.status(500).json({ error: "Failed to serve object" });
+    }
+  });
+
+  // MESSAGE ATTACHMENTS
+
+  // Get attachment upload URL
+  app.post("/api/objects/upload", authenticateJWT, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Get upload URL error:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Create attachment after file upload
+  app.post("/api/attachments/create", authenticateJWT, async (req, res) => {
+    try {
+      const { uploadURL, originalFilename, fileType, fileSize } = req.body;
+
+      // Validate file type and size
+      const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+      if (!ALLOWED_FILE_TYPES.includes(fileType)) {
+        return res.status(400).json({ 
+          error: "File type not allowed",
+          allowed: ALLOWED_FILE_TYPES
+        });
+      }
+
+      if (fileSize > MAX_FILE_SIZE) {
+        return res.status(400).json({ error: "File size must be less than 5MB" });
+      }
+
+      // Normalize object path from upload URL
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+      // Set ACL policy for the uploaded file
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(uploadURL, {
+        owner: req.user.id.toString(),
+        visibility: "private",
+      });
+
+      res.json({ 
+        objectPath: normalizedPath,
+        scanResult: { safe: true }, // Placeholder - would implement virus scanning
+        moderationResult: { approved: true } // Placeholder - would implement content moderation
+      });
+
+    } catch (error) {
+      console.error("Create attachment error:", error);
+      res.status(500).json({ error: "Failed to process attachment" });
+    }
+  });
+
+  // Add attachment to message
+  app.post("/api/messages/:messageId/attachments", authenticateJWT, async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      
+      if (Number.isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+
+      // Verify user owns the message or is participant in conversation
+      const message = await storage.getMessageById(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      const hasAccess = conversations.some(c => c.id === message.conversation_id);
+      
+      if (!hasAccess && message.sender_id !== req.user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const attachmentData = {
+        message_id: messageId,
+        object_path: req.body.objectPath,
+        original_filename: req.body.originalFilename,
+        file_type: req.body.fileType,
+        file_size: req.body.fileSize,
+        scan_status: 'safe' as const,
+        scan_result: JSON.stringify(req.body.scanResult || {}),
+        moderation_status: 'approved' as const,
+        moderation_result: JSON.stringify(req.body.moderationResult || {}),
+      };
+
+      const result = insertMessageAttachmentSchema.safeParse(attachmentData);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid attachment data",
+          details: result.error.issues
+        });
+      }
+
+      const attachment = await storage.createMessageAttachment(result.data);
+      res.status(201).json(attachment);
+
+    } catch (error) {
+      console.error("Add attachment to message error:", error);
+      res.status(500).json({ error: "Failed to add attachment" });
+    }
+  });
+
+  // Get message attachments
+  app.get("/api/messages/:messageId/attachments", authenticateJWT, async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      
+      if (Number.isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+
+      // Verify user has access to the message
+      const message = await storage.getMessageById(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      const hasAccess = conversations.some(c => c.id === message.conversation_id);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const attachments = await storage.getMessageAttachments(messageId);
+      res.json(attachments);
+
+    } catch (error) {
+      console.error("Get message attachments error:", error);
+      res.status(500).json({ error: "Failed to get attachments" });
+    }
+  });
+
+  // Download attachment (secure access)
+  app.get("/api/attachments/:attachmentId/download", authenticateJWT, async (req, res) => {
+    try {
+      const attachmentId = parseInt(req.params.attachmentId);
+      
+      if (Number.isNaN(attachmentId)) {
+        return res.status(400).json({ error: "Invalid attachment ID" });
+      }
+
+      const attachment = await storage.getMessageAttachmentById(attachmentId);
+      if (!attachment) {
+        return res.status(404).json({ error: "Attachment not found" });
+      }
+
+      // Verify user has access to the attachment's message
+      const message = await storage.getMessageById(attachment.message_id);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const conversations = await storage.getConversationsByUserId(req.user.id);
+      const hasAccess = conversations.some(c => c.id === message.conversation_id);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get the file from object storage and stream it
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(attachment.object_path);
+      await objectStorageService.downloadObject(objectFile, res);
+
+    } catch (error) {
+      console.error("Download attachment error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to download attachment" });
+      }
+    }
+  });
+
+  // Report attachment
+  app.post("/api/attachments/:attachmentId/report", authenticateJWT, async (req, res) => {
+    try {
+      const attachmentId = parseInt(req.params.attachmentId);
+      
+      if (Number.isNaN(attachmentId)) {
+        return res.status(400).json({ error: "Invalid attachment ID" });
+      }
+
+      const { reason, details } = req.body;
+      
+      if (!['malware', 'inappropriate', 'harassment', 'other'].includes(reason)) {
+        return res.status(400).json({ error: "Invalid report reason" });
+      }
+
+      const attachment = await storage.getMessageAttachmentById(attachmentId);
+      if (!attachment) {
+        return res.status(404).json({ error: "Attachment not found" });
+      }
+
+      const report = await storage.createFileReport({
+        attachment_id: attachmentId,
+        reporter_id: req.user.id,
+        report_reason: reason,
+        report_details: details || null,
+      });
+
+      res.status(201).json(report);
+
+    } catch (error) {
+      console.error("Report attachment error:", error);
+      res.status(500).json({ error: "Failed to report attachment" });
     }
   });
 }

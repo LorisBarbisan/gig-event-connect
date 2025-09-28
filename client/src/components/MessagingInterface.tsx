@@ -328,9 +328,7 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className={`truncate ${
-                            hasUnreadMessages ? 'font-bold text-gray-900 dark:text-gray-100' : 'font-medium'
-                          }`}>
+                          <p className={`truncate ${hasUnreadMessages ? 'font-bold text-gray-900 dark:text-gray-100' : 'font-medium'}`}>
                             {getDisplayName(conversation.otherUser)}
                           </p>
                           {isUserDeleted(conversation.otherUser) && (
