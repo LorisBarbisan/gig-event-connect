@@ -84,15 +84,15 @@ export default function HowItWorks() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Register for free, upload your CV, add photos of your work, and highlight your skills. 
                         Showcase your expertise in AV, event management, technical production, or other event specialties.
                       </p>
@@ -101,15 +101,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <BriefcaseIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Get Matched with Jobs</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Recruiters post opportunities and you can apply directly. Browse corporate events, 
                         conferences, exhibitions, and other exciting projects that match your skills.
                       </p>
@@ -118,15 +118,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <MessageCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Communicate Easily</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Use our internal messaging system to stay connected with recruiters. 
                         Discuss project details, negotiate terms, and confirm bookings all in one place.
                       </p>
@@ -135,15 +135,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Star className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Grow Your Reputation</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Get rated by recruiters and showcase your reliability and expertise. 
                         Build a strong professional reputation that opens doors to better opportunities.
                       </p>
@@ -176,15 +176,15 @@ export default function HowItWorks() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <BriefcaseIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Post Your Job</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Share event roles quickly and for free. Detail your requirements, location, 
                         budget, and timeline to attract the right candidates for your corporate events.
                       </p>
@@ -193,15 +193,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Users className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Browse Freelancer Profiles</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Discover qualified AV techs, event crew, and specialists with ease. 
                         Filter by location, skills, experience, and availability to find your ideal team.
                       </p>
@@ -210,15 +210,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Phone className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Connect & Hire</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Review applications, message candidates directly, and confirm bookings. 
                         Streamline your hiring process with our integrated communication tools.
                       </p>
@@ -227,15 +227,15 @@ export default function HowItWorks() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+              <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow h-[140px]">
+                <CardContent className="p-6 h-full">
+                  <div className="flex items-start space-x-4 h-full">
                     <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Award className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Build Your Trusted Crew</h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         Rate freelancers and re-hire the best professionals for future projects. 
                         Create a reliable network of event specialists you can count on.
                       </p>
