@@ -5,6 +5,7 @@ import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { EventLinkLogo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { SearchBar } from "@/components/SearchBar";
+import { NotificationSystem } from "@/components/NotificationSystem";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNavigation } from "@/components/MobileNavigation";
 
@@ -79,7 +80,10 @@ export const Header = ({ onFeedbackClick }: HeaderProps) => {
             )}
             
             {user ? (
-              <UserMenu />
+              <div className="flex items-center space-x-2">
+                <NotificationSystem userId={user.id} />
+                <UserMenu />
+              </div>
             ) : (
               <div className="hidden md:flex items-center space-x-3">
                 <Link to="/auth">
