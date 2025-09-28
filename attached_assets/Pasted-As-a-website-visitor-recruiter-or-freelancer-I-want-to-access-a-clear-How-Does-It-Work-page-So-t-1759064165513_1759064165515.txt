@@ -1,0 +1,121 @@
+As a website visitor (recruiter or freelancer)
+I want to access a clear "How Does It Work" page
+So that I can quickly understand the platform’s value, how it works, and how to use it before signing up.
+
+✅ Acceptance Criteria
+Page Content & Structure
+
+ A new page called “How Does It Work” is created and accessible to all (no login required).
+
+ Page clearly explains:
+
+How the platform works for Freelancers.
+
+How the platform works for Recruiters.
+
+Simple step-by-step guidance.
+
+ Page includes a mix of text, icons, and visuals for clarity.
+
+ Page has two sections with subheadings:
+
+“For Freelancers”
+
+“For Recruiters”
+
+ Clear Call-to-Action buttons at the end of each section:
+
+Freelancers → “Create Your Profile” (link to sign-up page).
+
+Recruiters → “Post a Job” (link to sign-up page if not logged in, or job form if logged in).
+
+Footer Link
+
+ In the website footer, under Freelancers, replace Sign Up with How Does It Work.
+
+ Clicking this link routes users to the new page.
+
+Technical / Functional
+
+ Page is mobile-friendly and responsive.
+
+ Page loads within < 2 seconds.
+
+ SEO-friendly: title and meta description included.
+
+ Content is editable via CMS or code (so it can evolve).
+
+Testing
+
+ Verified link appears correctly in footer under Freelancers.
+
+ Verified the link replaces “Sign Up.”
+
+ Verified page is accessible without login.
+
+ Verified content displays correctly on desktop, tablet, and mobile.
+
+ Verified buttons redirect correctly to sign-up or job-post pages.
+
+📖 Draft Page Content
+Title: How Does It Work
+👩‍🎤 For Freelancers
+
+Create Your Profile → Register for free, upload your CV, add photos of your work, and highlight your skills.
+
+Get Matched with Jobs → Recruiters post opportunities and you can apply directly.
+
+Communicate Easily → Use our internal messaging system to stay connected with recruiters.
+
+Grow Your Reputation → Get rated by recruiters and showcase your reliability and expertise.
+
+👉 Call-to-Action Button: Create Your Profile
+
+🏢 For Recruiters
+
+Post Your Job → Share event roles quickly and for free.
+
+Browse Freelancer Profiles → Discover qualified AV techs, event crew, and specialists with ease.
+
+Connect & Hire → Review applications, message candidates directly, and confirm bookings.
+
+Build Your Trusted Crew → Rate freelancers and re-hire the best professionals for future projects.
+
+👉 Call-to-Action Button: Post a Job
+
+🔨 Breakdown of Work / Approach
+Backend
+
+No major backend changes required (static/dynamic content page).
+
+Ensure footer link routing is updated.
+
+Frontend
+
+Page Creation
+
+Build new “How Does It Work” page template.
+
+Add content (text, icons, styled sections).
+
+Add CTA buttons linked to existing sign-up/job pages.
+
+Footer Update
+
+Replace “Sign Up” with “How Does It Work” under Freelancers category.
+
+Design
+
+Ensure consistent branding (fonts, colors, buttons).
+
+Add light illustrations/icons for steps (optional).
+
+QA / Testing
+
+Click-through tests for footer → new page.
+
+CTA buttons redirect correctly.
+
+Page layout verified across devices.
+
+Page loads quickly and SEO metadata appears in page source.
