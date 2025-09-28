@@ -157,11 +157,30 @@ export function registerMessagingRoutes(app: Express) {
       
       // Create notification for other participant in conversation (only if recipient is not deleted)
       if (conversation.otherUser && !await storage.isUserDeleted(conversation.otherUser.id)) {
+        // Get sender's display name (company name for recruiters, name for freelancers)
+        let senderDisplayName = req.user.email; // fallback
+        try {
+          if (req.user.role === 'recruiter') {
+            const recruiterProfile = await storage.getRecruiterProfile(req.user.id);
+            senderDisplayName = recruiterProfile?.company_name || req.user.email;
+          } else if (req.user.role === 'freelancer') {
+            const freelancerProfile = await storage.getFreelancerProfile(req.user.id);
+            if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+              const firstName = freelancerProfile.first_name || '';
+              const lastName = freelancerProfile.last_name || '';
+              senderDisplayName = `${firstName} ${lastName}`.trim() || req.user.email;
+            }
+          }
+        } catch (profileError) {
+          console.error("Error fetching sender profile for notification:", profileError);
+          // Keep fallback to email
+        }
+        
         await storage.createNotification({
           user_id: conversation.otherUser.id,
           type: 'new_message',
           title: 'New Message',
-          message: `You have a new message from ${req.user.email}`,
+          message: `You have a new message from ${senderDisplayName}`,
           related_entity_type: 'message',
           related_entity_id: message.id,
           metadata: JSON.stringify({ sender_id: req.user.id })
