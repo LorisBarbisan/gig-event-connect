@@ -5,12 +5,8 @@ import { authenticateJWT } from "./auth";
 
 export function registerNotificationRoutes(app: Express) {
   // Get user notifications
-  app.get("/api/notifications", async (req, res) => {
+  app.get("/api/notifications", authenticateJWT, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const notifications = await storage.getUserNotifications(req.user.id);
       res.json(notifications);
     } catch (error) {
@@ -62,12 +58,8 @@ export function registerNotificationRoutes(app: Express) {
   });
 
   // Mark notification as read
-  app.patch("/api/notifications/:id/read", async (req, res) => {
+  app.patch("/api/notifications/:id/read", authenticateJWT, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const notificationId = parseInt(req.params.id);
       
       // Check if notification belongs to user
@@ -89,12 +81,8 @@ export function registerNotificationRoutes(app: Express) {
   });
 
   // Mark all notifications as read
-  app.patch("/api/notifications/mark-all-read", async (req, res) => {
+  app.patch("/api/notifications/mark-all-read", authenticateJWT, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       await storage.markAllNotificationsAsRead(req.user.id);
       res.json({ message: "All notifications marked as read" });
     } catch (error) {
@@ -121,12 +109,8 @@ export function registerNotificationRoutes(app: Express) {
   });
 
   // Delete notification
-  app.delete("/api/notifications/:id", async (req, res) => {
+  app.delete("/api/notifications/:id", authenticateJWT, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const notificationId = parseInt(req.params.id);
       
       // Check if notification belongs to user

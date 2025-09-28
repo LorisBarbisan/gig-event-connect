@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { apiRequest } from '@/lib/queryClient';
 import { useEffect, useRef } from 'react';
 
 interface BadgeCounts {
@@ -26,15 +27,7 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
       if (!user?.id) return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
       
       try {
-        const response = await fetch('/api/notifications/category-counts', {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch badge counts');
-        }
-        
-        return await response.json();
+        return await apiRequest('/api/notifications/category-counts');
       } catch (error) {
         console.error('Error fetching badge counts:', error);
         return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
@@ -121,16 +114,13 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
     if (!user?.id) return;
 
     try {
-      const response = await fetch(`/api/notifications/mark-category-read/${category}`, {
+      await apiRequest(`/api/notifications/mark-category-read/${category}`, {
         method: 'PATCH',
-        credentials: 'include'
       });
-
-      if (response.ok) {
-        // Refetch badge counts after marking as read
-        refetch();
-        console.log(`${category} notifications marked as read`);
-      }
+      
+      // Refetch badge counts after marking as read
+      refetch();
+      console.log(`${category} notifications marked as read`);
     } catch (error) {
       console.error(`Error marking ${category} notifications as read:`, error);
     }

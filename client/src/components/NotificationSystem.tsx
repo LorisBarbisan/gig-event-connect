@@ -72,7 +72,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   // Fetch notifications - only when dropdown is open
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['/api/notifications', userId],
-    queryFn: () => apiRequest(`/api/notifications?userId=${userId}`) as Promise<Notification[]>,
+    queryFn: () => apiRequest('/api/notifications') as Promise<Notification[]>,
     refetchInterval: isOpen ? 10000 : false, // Only poll when dropdown is open
     enabled: isOpen, // Only fetch when user opens dropdown
   });
@@ -81,7 +81,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['/api/notifications/unread-count', userId],
     queryFn: async () => {
-      const data = await apiRequest(`/api/notifications/unread-count?userId=${userId}`);
+      const data = await apiRequest('/api/notifications/unread-count');
       return data.count;
     },
     refetchInterval: 20000, // Reduced from 10s to 20s
@@ -113,8 +113,6 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     mutationFn: async () => {
       return apiRequest('/api/notifications/mark-all-read', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
       });
     },
     onSuccess: () => {
