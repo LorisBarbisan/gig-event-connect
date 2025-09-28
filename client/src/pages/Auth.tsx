@@ -562,15 +562,6 @@ export default function Auth() {
                         >
                           Terms and Conditions
                         </button>
-                        {' '}and{' '}
-                        <button
-                          type="button"
-                          onClick={() => window.open('/terms-of-use.pdf', '_blank')}
-                          className="text-primary hover:text-primary/80 underline"
-                          data-testid="link-privacy"
-                        >
-                          Privacy Policy
-                        </button>
                       </Label>
                     </div>
                   </div>
