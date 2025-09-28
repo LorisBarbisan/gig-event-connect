@@ -93,7 +93,7 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Register for free, upload your CV, add photos of your work, and highlight your skills. 
+                        Register for free, upload your CV, and highlight your skills. 
                         Showcase your expertise in AV, event management, technical production, or other event specialties.
                       </p>
                     </div>
