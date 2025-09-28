@@ -173,6 +173,7 @@ export interface IStorage {
   
   // Notification management
   createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotification(notificationId: number): Promise<Notification | undefined>;
   getUserNotifications(userId: number, limit?: number): Promise<Notification[]>;
   getUnreadNotificationCount(userId: number): Promise<number>;
   markNotificationAsRead(notificationId: number): Promise<void>;
@@ -1137,6 +1138,14 @@ export class DatabaseStorage implements IStorage {
       type: notification.type as "application_update" | "new_message" | "job_update" | "profile_view" | "system",
       priority: notification.priority as "low" | "normal" | "high" | "urgent" | null | undefined
     }]).returning();
+    return result[0];
+  }
+
+  async getNotification(notificationId: number): Promise<Notification | undefined> {
+    const result = await db.select()
+      .from(notifications)
+      .where(eq(notifications.id, notificationId))
+      .limit(1);
     return result[0];
   }
 
