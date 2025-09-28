@@ -1,0 +1,143 @@
+📌 Epic: Safe Attachments in Messaging
+
+As a Platform User
+I want to be able to send and receive attachments safely in messages
+So that I can share relevant files without risking malware, inappropriate content, or storage abuse.
+
+🧩 User Stories
+1️⃣ Upload Attachments in Messages
+
+As a user
+I want to upload files to my messages
+So that I can share CVs, job briefs, and images.
+
+Acceptance Criteria
+
+ Users can attach a file to a message before sending.
+
+ Only approved file types allowed (.pdf, .jpg, .png, .docx).
+
+ Max file size limit (e.g., 5MB).
+
+ Error message shown if file type/size invalid.
+
+ File is uploaded securely and linked to the message.
+
+2️⃣ File Safety Scanning
+
+As a platform
+I want to automatically scan all uploaded files for viruses/malware
+So that unsafe files never reach other users.
+
+Acceptance Criteria
+
+ All files scanned via ClamAV or external API (VirusTotal, etc.).
+
+ Suspicious/malicious files are blocked and not delivered.
+
+ User uploading the file receives error notification.
+
+ Logs kept for each scan result.
+
+3️⃣ Content Moderation for Attachments
+
+As a platform
+I want to screen images and documents for inappropriate content
+So that users are protected from abuse.
+
+Acceptance Criteria
+
+ All image uploads pass through a content moderation API (Google Vision SafeSearch, AWS Rekognition, etc.).
+
+ Inappropriate content (nudity, violence, hate) is flagged.
+
+ Blocked files show an error message to the sender.
+
+ Logs stored for admin review.
+
+4️⃣ Temporary Storage & Access Control
+
+As a developer
+I want attachments stored securely with limited access
+So that files can’t be exploited or overused.
+
+Acceptance Criteria
+
+ Files stored in secure cloud storage (AWS S3, GCP, or similar).
+
+ Database stores metadata only (path, file type, sender, timestamp).
+
+ Download links are time-limited (e.g., expire after 24h).
+
+ Deleted users’ files are purged.
+
+5️⃣ Reporting Attachments
+
+As a user
+I want to report unsafe or inappropriate attachments
+So that the platform can investigate and take action.
+
+Acceptance Criteria
+
+ Each message with an attachment has a “Report” option.
+
+ Report reasons: Malware / Inappropriate / Harassment.
+
+ Report triggers an entry in the Admin Dashboard.
+
+ User reporting receives confirmation: “Thank you, our team will review this.”
+
+6️⃣ Admin Moderation Tools
+
+As an admin
+I want to view and manage reported attachments
+So that I can enforce safety rules.
+
+Acceptance Criteria
+
+ Admin dashboard shows reported attachments (file name, type, sender, report reason).
+
+ Admins can view/download reported files safely.
+
+ Admins can take actions: Remove File, Suspend User, Ban User.
+
+ Repeat offenders flagged automatically.
+
+🔨 Breakdown of Work / Approach
+Backend
+
+Extend messaging API to support file upload metadata.
+
+Add middleware for file type validation + virus scanning.
+
+Integrate moderation API for image safety checks.
+
+Add reporting system + admin actions.
+
+Secure storage and expiring download links.
+
+Frontend
+
+Update messaging UI with “Attach File” button.
+
+Display attachment previews (icon/thumbnail).
+
+Show error messages on blocked files.
+
+Add “Report” option on attachments.
+
+Update admin UI to review reports.
+
+QA / Testing
+
+✅ Test safe uploads (valid PDF, image).
+
+✅ Test blocked uploads (wrong type, too large).
+
+✅ Test malware detection (dummy infected file).
+
+✅ Test inappropriate content detection.
+
+✅ Test report → admin notification flow.
+
+✅ Test download links expire correctly.
