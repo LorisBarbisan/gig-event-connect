@@ -6,6 +6,7 @@ import { Route, Switch } from "wouter";
 import { OptimizedAuthProvider } from "@/hooks/useOptimizedAuth";
 import { queryClient } from "@/lib/queryClient";
 import { LiveNotificationPopups } from "@/components/LiveNotificationPopups";
+import { TabNotificationManager } from "@/components/TabNotificationManager";
 import { useEffect } from "react";
 import { initGA } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -66,6 +67,7 @@ function App() {
           <Toaster />
           <Sonner />
           <LiveNotificationPopups />
+          <TabNotificationManager />
           <AppRouter />
         </TooltipProvider>
       </OptimizedAuthProvider>
