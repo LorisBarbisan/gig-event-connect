@@ -73,6 +73,21 @@ export function registerNotificationRoutes(app: Express) {
       }
 
       await storage.markNotificationAsRead(notificationId);
+      
+      // Send WebSocket update for badge counts
+      try {
+        const counts = await storage.getCategoryUnreadCounts(req.user.id);
+        const broadcastToUser = (global as any).broadcastToUser;
+        if (broadcastToUser) {
+          broadcastToUser(req.user.id, {
+            type: 'badge_counts_update',
+            counts: counts
+          });
+        }
+      } catch (wsError) {
+        console.error("WebSocket broadcast error:", wsError);
+      }
+      
       res.json({ message: "Notification marked as read" });
     } catch (error) {
       console.error("Mark notification as read error:", error);
@@ -84,6 +99,21 @@ export function registerNotificationRoutes(app: Express) {
   app.patch("/api/notifications/mark-all-read", authenticateJWT, async (req, res) => {
     try {
       await storage.markAllNotificationsAsRead(req.user.id);
+      
+      // Send WebSocket update for badge counts
+      try {
+        const counts = await storage.getCategoryUnreadCounts(req.user.id);
+        const broadcastToUser = (global as any).broadcastToUser;
+        if (broadcastToUser) {
+          broadcastToUser(req.user.id, {
+            type: 'badge_counts_update',
+            counts: counts
+          });
+        }
+      } catch (wsError) {
+        console.error("WebSocket broadcast error:", wsError);
+      }
+      
       res.json({ message: "All notifications marked as read" });
     } catch (error) {
       console.error("Mark all notifications as read error:", error);
@@ -124,6 +154,21 @@ export function registerNotificationRoutes(app: Express) {
       }
 
       await storage.deleteNotification(notificationId);
+      
+      // Send WebSocket update for badge counts
+      try {
+        const counts = await storage.getCategoryUnreadCounts(req.user.id);
+        const broadcastToUser = (global as any).broadcastToUser;
+        if (broadcastToUser) {
+          broadcastToUser(req.user.id, {
+            type: 'badge_counts_update',
+            counts: counts
+          });
+        }
+      } catch (wsError) {
+        console.error("WebSocket broadcast error:", wsError);
+      }
+      
       res.json({ message: "Notification deleted successfully" });
     } catch (error) {
       console.error("Delete notification error:", error);

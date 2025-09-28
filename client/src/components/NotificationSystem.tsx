@@ -184,6 +184,55 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     };
   }, [isOpen]);
 
+  // WebSocket connection for real-time badge count updates
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('Notification system WebSocket connected');
+        ws.send(JSON.stringify({ type: 'authenticate', userId: userId }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'badge_counts_update') {
+            console.log('Notification system received badge counts update:', data.counts);
+            // Invalidate the unread count query to trigger refetch
+            queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+            // Also invalidate the notifications list if dropdown is open
+            if (isOpen) {
+              queryClient.invalidateQueries({ queryKey: ['/api/notifications', userId] });
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Notification system WebSocket disconnected');
+      };
+
+      ws.onerror = (error) => {
+        console.error('Notification system WebSocket error:', error);
+      };
+
+      return () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      };
+    } catch (error) {
+      console.error('Error creating notification system WebSocket connection:', error);
+    }
+  }, [userId, queryClient, isOpen]);
+
   return (
     <div className="relative">
       <Button
