@@ -183,7 +183,7 @@ export default function HowItWorks() {
                       <BriefcaseIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div className="flex flex-col">
-                      <h3 className="text-xl font-semibold mb-2">Post Your Job</h3>
+                      <h3 className="text-xl font-semibold mb-2">post jobs</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
                         Share event roles quickly and for free. Detail your requirements, location, 
                         budget, and timeline to attract the right candidates for your corporate events.
