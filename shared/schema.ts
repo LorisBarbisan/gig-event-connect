@@ -124,6 +124,34 @@ export const message_user_states = pgTable("message_user_states", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const message_attachments = pgTable("message_attachments", {
+  id: serial("id").primaryKey(),
+  message_id: integer("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+  object_path: text("object_path").notNull(), // Path to file in object storage (e.g., "/objects/uuid")
+  original_filename: text("original_filename").notNull(), // Original filename from user
+  file_type: text("file_type").notNull(), // MIME type (e.g., "application/pdf", "image/jpeg")
+  file_size: integer("file_size").notNull(), // Size in bytes
+  scan_status: text("scan_status").default('pending').$type<'pending' | 'safe' | 'unsafe' | 'error'>(),
+  scan_result: text("scan_result"), // JSON string with scan details
+  moderation_status: text("moderation_status").default('pending').$type<'pending' | 'approved' | 'rejected' | 'error'>(),
+  moderation_result: text("moderation_result"), // JSON string with moderation details
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const file_reports = pgTable("file_reports", {
+  id: serial("id").primaryKey(),
+  attachment_id: integer("attachment_id").notNull().references(() => message_attachments.id, { onDelete: "cascade" }),
+  reporter_id: integer("reporter_id").notNull().references(() => users.id, { onDelete: "set null" }),
+  report_reason: text("report_reason").notNull().$type<'malware' | 'inappropriate' | 'harassment' | 'other'>(),
+  report_details: text("report_details"), // Additional details from reporter
+  status: text("status").default('pending').$type<'pending' | 'under_review' | 'resolved' | 'dismissed'>(),
+  admin_notes: text("admin_notes"), // Admin notes for review
+  admin_user_id: integer("admin_user_id").references(() => users.id, { onDelete: "set null" }),
+  resolved_at: timestamp("resolved_at"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -303,6 +331,18 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   resolved_at: true,
 });
 
+export const insertMessageAttachmentSchema = createInsertSchema(message_attachments).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertFileReportSchema = createInsertSchema(file_reports).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+  resolved_at: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSocialUser = z.infer<typeof insertSocialUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -319,9 +359,13 @@ export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type MessageUserState = typeof message_user_states.$inferSelect;
+export type MessageAttachment = typeof message_attachments.$inferSelect;
+export type FileReport = typeof file_reports.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertMessageUserState = z.infer<typeof insertMessageUserStateSchema>;
+export type InsertMessageAttachment = z.infer<typeof insertMessageAttachmentSchema>;
+export type InsertFileReport = z.infer<typeof insertFileReportSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Rating = typeof ratings.$inferSelect;

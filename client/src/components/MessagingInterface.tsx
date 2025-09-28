@@ -107,7 +107,7 @@ export function MessagingInterface({ currentUser }: MessagingInterfaceProps) {
       
       // Mark this conversation as viewed
       if (selectedConversation) {
-        setViewedConversations(prev => new Set([...prev, selectedConversation]));
+        setViewedConversations(prev => new Set([...Array.from(prev), selectedConversation]));
         
         // Mark message notifications as read when conversation is opened
         try {
