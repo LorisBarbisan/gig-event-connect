@@ -154,64 +154,99 @@ export class JobAggregator {
     } = {}
   ): Promise<ExternalJob[]> {
     if (!this.reedApiKey) {
-      console.log('Reed API key not configured');
+      console.log('❌ Reed API key not configured');
       return [];
     }
 
-    try {
-      // Build query parameters
-      const params = new URLSearchParams({
-        keywords: keywords,
-        locationName: location,
-        resultsToTake: (options.resultsToTake || 20).toString()
-      });
-      
-      // Add optional filters
-      if (options.minimumSalary) params.append('minimumSalary', options.minimumSalary.toString());
-      if (options.maximumSalary) params.append('maximumSalary', options.maximumSalary.toString());
-      if (options.employmentType) params.append('employmentType', options.employmentType);
-      if (options.graduate !== undefined) params.append('graduate', options.graduate.toString());
-      if (options.postedByRecruitmentAgency !== undefined) params.append('postedByRecruitmentAgency', options.postedByRecruitmentAgency.toString());
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      console.log(`Reed API URL: https://www.reed.co.uk/api/1.0/search?${params.toString()}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔍 Reed API attempt ${attempt}/${maxRetries}`);
+        
+        // Build query parameters
+        const params = new URLSearchParams({
+          keywords: keywords,
+          locationName: location,
+          resultsToTake: (options.resultsToTake || 25).toString()
+        });
+        
+        // Add optional filters
+        if (options.minimumSalary) params.append('minimumSalary', options.minimumSalary.toString());
+        if (options.maximumSalary) params.append('maximumSalary', options.maximumSalary.toString());
+        if (options.employmentType) params.append('employmentType', options.employmentType);
+        if (options.graduate !== undefined) params.append('graduate', options.graduate.toString());
+        if (options.postedByRecruitmentAgency !== undefined) params.append('postedByRecruitmentAgency', options.postedByRecruitmentAgency.toString());
 
-      const response = await fetch(
-        `https://www.reed.co.uk/api/1.0/search?${params.toString()}`,
-        {
+        const url = `https://www.reed.co.uk/api/1.0/search?${params.toString()}`;
+        console.log(`📡 Reed API URL: ${url}`);
+
+        const response = await fetch(url, {
           headers: {
             'Authorization': `Basic ${Buffer.from(this.reedApiKey + ':').toString('base64')}`,
-            'User-Agent': 'EventLink/1.0'
+            'User-Agent': 'EventLink/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 15000 // 15 second timeout
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Reed API error (attempt ${attempt}):`, response.status, response.statusText, errorText);
+          
+          if (response.status === 429) {
+            // Rate limited - wait before retrying
+            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+            console.log(`⏳ Rate limited, waiting ${delay}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
           }
+          
+          if (response.status >= 500) {
+            // Server error - retry
+            continue;
+          }
+          
+          // Client error - don't retry
+          return [];
         }
-      );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Reed API error:', response.status, response.statusText, errorText);
-        return [];
+        const data = await response.json();
+        console.log(`✅ Reed API returned ${data.results?.length || 0} jobs`);
+        
+        if (data.results?.length > 0) {
+          console.log('📋 Reed sample job:', JSON.stringify(data.results[0], null, 2));
+        }
+        
+        const jobs = data.results || [];
+
+        return jobs.map((job: ReedJobResponse): ExternalJob => ({
+          id: `reed_${job.jobId}`,
+          title: job.jobTitle,
+          company: job.employerName,
+          location: job.locationName,
+          description: job.jobDescription,
+          salary: this.formatReedSalary(job.minimumSalary, job.maximumSalary, job.currency),
+          jobUrl: job.jobUrl,
+          postedDate: job.date,
+          source: 'reed',
+          employmentType: job.employmentType
+        }));
+      } catch (error) {
+        console.error(`❌ Reed fetch attempt ${attempt} failed:`, error);
+        lastError = error as Error;
+        
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`⏳ Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-
-      const data = await response.json();
-      console.log(`Reed API returned ${data.results?.length || 0} jobs`);
-      console.log('Reed API response sample:', JSON.stringify(data, null, 2));
-      const jobs = data.results || [];
-
-      return jobs.map((job: ReedJobResponse): ExternalJob => ({
-        id: `reed_${job.jobId}`,
-        title: job.jobTitle,
-        company: job.employerName,
-        location: job.locationName,
-        description: job.jobDescription,
-        salary: this.formatReedSalary(job.minimumSalary, job.maximumSalary, job.currency),
-        jobUrl: job.jobUrl,
-        postedDate: job.date,
-        source: 'reed',
-        employmentType: job.employmentType
-      }));
-    } catch (error) {
-      console.error('Error fetching Reed jobs:', error);
-      return [];
     }
+
+    console.error('❌ All Reed fetch attempts failed:', lastError);
+    return [];
   }
 
   /**
@@ -226,7 +261,7 @@ export class JobAggregator {
    * - contract_type: 'permanent', 'contract', 'part_time', 'temporary'
    */
   async fetchAdzunaJobs(
-    keywords = 'AV technician lighting technician camera operator photographer video mixer streaming engineer stage manager sound engineer',
+    keywords = 'events OR "AV technician" OR "lighting technician" OR "camera operator" OR photographer OR "video mixer" OR "streaming engineer" OR "stage manager" OR "sound engineer"',
     country = 'gb',
     options: {
       location?: string;
@@ -237,59 +272,99 @@ export class JobAggregator {
     } = {}
   ): Promise<ExternalJob[]> {
     if (!this.adzunaApiKey || !this.adzunaAppId) {
-      console.log('Adzuna API credentials not configured');
+      console.log('❌ Adzuna API credentials not configured');
       return [];
     }
 
-    try {
-      // Build query parameters  
-      const params = new URLSearchParams({
-        app_id: this.adzunaAppId!,
-        app_key: this.adzunaApiKey!,
-        what: keywords,
-        results_per_page: (options.results_per_page || 20).toString(),
-        'content-type': 'application/json'
-      });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      // Add optional filters
-      if (options.location) params.append('where', options.location);
-      if (options.salary_min) params.append('salary_min', options.salary_min.toString());
-      if (options.salary_max) params.append('salary_max', options.salary_max.toString());
-      if (options.contract_type) params.append('category', options.contract_type);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔍 Adzuna API attempt ${attempt}/${maxRetries}`);
+        
+        // Build query parameters  
+        const params = new URLSearchParams({
+          app_id: this.adzunaAppId!,
+          app_key: this.adzunaApiKey!,
+          what: keywords,
+          results_per_page: (options.results_per_page || 25).toString(),
+          sort_by: 'date', // Get most recent jobs first
+          full_time: '1' // Focus on full-time positions
+        });
 
-      console.log(`Adzuna API URL: https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`);
+        // Add optional filters
+        if (options.location) params.append('where', options.location);
+        if (options.salary_min) params.append('salary_min', options.salary_min.toString());
+        if (options.salary_max) params.append('salary_max', options.salary_max.toString());
 
-      const response = await fetch(
-        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`
-      );
+        const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`;
+        console.log(`📡 Adzuna API URL: ${url}`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Adzuna API error:', response.status, response.statusText, errorText);
-        return [];
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'EventLink/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 15000 // 15 second timeout
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Adzuna API error (attempt ${attempt}):`, response.status, response.statusText, errorText);
+          
+          if (response.status === 429) {
+            // Rate limited - wait before retrying
+            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+            console.log(`⏳ Rate limited, waiting ${delay}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          
+          if (response.status >= 500) {
+            // Server error - retry
+            continue;
+          }
+          
+          // Client error - don't retry
+          return [];
+        }
+
+        const data = await response.json();
+        console.log(`✅ Adzuna API returned ${data.results?.length || 0} jobs`);
+        
+        if (data.results?.length > 0) {
+          console.log('📋 Adzuna sample job:', JSON.stringify(data.results[0], null, 2));
+        }
+        
+        const jobs = data.results || [];
+
+        return jobs.map((job: AdzunaJobResponse): ExternalJob => ({
+          id: `adzuna_${job.id}`,
+          title: job.title,
+          company: job.company?.display_name || 'Company not specified',
+          location: job.location?.display_name || 'Location not specified',
+          description: job.description || 'Description not available',
+          salary: this.formatAdzunaSalary(job.salary_min, job.salary_max),
+          jobUrl: job.redirect_url,
+          postedDate: job.created,
+          source: 'adzuna',
+          employmentType: job.contract_type || job.contract_time
+        }));
+      } catch (error) {
+        console.error(`❌ Adzuna fetch attempt ${attempt} failed:`, error);
+        lastError = error as Error;
+        
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`⏳ Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-
-      const data = await response.json();
-      console.log(`Adzuna API returned ${data.results?.length || 0} jobs`);
-      console.log('Adzuna API response sample:', JSON.stringify(data, null, 2));
-      const jobs = data.results || [];
-
-      return jobs.map((job: AdzunaJobResponse): ExternalJob => ({
-        id: `adzuna_${job.id}`,
-        title: job.title,
-        company: job.company.display_name,
-        location: job.location.display_name,
-        description: job.description,
-        salary: this.formatAdzunaSalary(job.salary_min, job.salary_max),
-        jobUrl: job.redirect_url,
-        postedDate: job.created,
-        source: 'adzuna',
-        employmentType: job.contract_type
-      }));
-    } catch (error) {
-      console.error('Error fetching Adzuna jobs:', error);
-      return [];
     }
+
+    console.error('❌ All Adzuna fetch attempts failed:', lastError);
+    return [];
   }
 
   /**
