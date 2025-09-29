@@ -1115,7 +1115,12 @@ export class DatabaseStorage implements IStorage {
 
   // Message attachment methods
   async createMessageAttachment(attachment: InsertMessageAttachment): Promise<MessageAttachment> {
-    const result = await db.insert(message_attachments).values([attachment]).returning();
+    const attachmentData = {
+      ...attachment,
+      scan_status: attachment.scan_status as 'pending' | 'safe' | 'unsafe' | 'error' | null,
+      moderation_status: attachment.moderation_status as 'pending' | 'approved' | 'rejected' | 'error' | null
+    };
+    const result = await db.insert(message_attachments).values([attachmentData]).returning();
     return result[0];
   }
 
