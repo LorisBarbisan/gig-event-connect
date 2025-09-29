@@ -9,6 +9,7 @@ import {
   conversations,
   messages,
   message_user_states,
+  message_attachments,
   notifications,
   ratings,
   rating_requests,
@@ -26,9 +27,11 @@ import {
   type Conversation,
   type Message,
   type MessageUserState,
+  type MessageAttachment,
   type InsertConversation,
   type InsertMessage,
   type InsertMessageUserState,
+  type InsertMessageAttachment,
   type Notification,
   type InsertNotification,
   type Rating,
@@ -164,12 +167,17 @@ export interface IStorage {
   getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation>;
   getConversationsByUserId(userId: number): Promise<Array<Conversation & { otherUser: User }>>;
   sendMessage(message: InsertMessage): Promise<Message>;
-  getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User }>>;
-  getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User }>>;
+  getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
+  getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
   markMessagesAsRead(conversationId: number, userId: number): Promise<void>;
   getUnreadMessageCount(userId: number): Promise<number>;
   // Soft delete methods for messages
   markMessageDeletedForUser(messageId: number, userId: number): Promise<void>;
+  
+  // Message attachment management
+  createMessageAttachment(attachment: InsertMessageAttachment): Promise<MessageAttachment>;
+  getMessageAttachments(messageId: number): Promise<MessageAttachment[]>;
+  getAttachmentById(attachmentId: number): Promise<MessageAttachment | undefined>;
   
   // Notification management
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -975,7 +983,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User }>> {
+  async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
     const result = await db.select({
       id: messages.id,
       conversation_id: messages.conversation_id,
@@ -1028,7 +1036,7 @@ export class DatabaseStorage implements IStorage {
   }
 
 
-  async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User }>> {
+  async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
     const result = await db.select({
       id: messages.id,
       conversation_id: messages.conversation_id,
@@ -1103,6 +1111,28 @@ export class DatabaseStorage implements IStorage {
           sql`${messages.sender_id} != ${userId}` // Don't mark own messages as read
         )
       );
+  }
+
+  // Message attachment methods
+  async createMessageAttachment(attachment: InsertMessageAttachment): Promise<MessageAttachment> {
+    const result = await db.insert(message_attachments).values([attachment]).returning();
+    return result[0];
+  }
+
+  async getMessageAttachments(messageId: number): Promise<MessageAttachment[]> {
+    const result = await db.select()
+      .from(message_attachments)
+      .where(eq(message_attachments.message_id, messageId))
+      .orderBy(message_attachments.created_at);
+    return result;
+  }
+
+  async getAttachmentById(attachmentId: number): Promise<MessageAttachment | undefined> {
+    const result = await db.select()
+      .from(message_attachments)
+      .where(eq(message_attachments.id, attachmentId))
+      .limit(1);
+    return result[0];
   }
 
   async getUnreadMessageCount(userId: number): Promise<number> {

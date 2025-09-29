@@ -120,10 +120,10 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { conversation_id, content } = req.body;
+      const { conversation_id, content, attachment } = req.body;
 
-      if (!conversation_id || !content) {
-        return res.status(400).json({ error: "Conversation ID and content are required" });
+      if (!conversation_id || (!content && !attachment)) {
+        return res.status(400).json({ error: "Conversation ID and either content or attachment are required" });
       }
 
       // Get conversation to find the recipient
@@ -154,6 +154,19 @@ export function registerMessagingRoutes(app: Express) {
       }
 
       const message = await storage.sendMessage(result.data);
+      
+      // Create file attachment if provided
+      if (attachment) {
+        await storage.createMessageAttachment({
+          message_id: message.id,
+          object_path: attachment.path,
+          original_filename: attachment.name,
+          file_type: attachment.type,
+          file_size: attachment.size,
+          scan_status: 'pending' as const,
+          moderation_status: 'pending' as const
+        });
+      }
       
       // Create notification for other participant in conversation (only if recipient is not deleted)
       if (conversation.otherUser && !await storage.isUserDeleted(conversation.otherUser.id)) {
@@ -197,6 +210,10 @@ export function registerMessagingRoutes(app: Express) {
   // Get unread message count
   app.get("/api/messages/unread-count", authenticateJWT, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
       const unreadCount = await storage.getUnreadMessageCount(req.user.id);
       res.json({ count: unreadCount });
     } catch (error) {
