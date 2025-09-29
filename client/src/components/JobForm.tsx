@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 import { UKLocationInput } from '@/components/ui/uk-location-input';
 import type { JobFormData } from '@shared/types';
 
@@ -114,23 +115,28 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
         {/* Step 1: Job Type Selection */}
         <div className="max-w-md">
           <Label htmlFor="job-type">Job Type</Label>
-          <Select 
-            value={formData.type} 
-            onValueChange={(value) => {
-              handleInputChange('type', value);
-              if (value !== 'contract') {
-                handleInputChange('contract_type', '');
-              }
-            }}
-          >
-            <SelectTrigger data-testid="select-job-type">
-              <SelectValue placeholder="Select job type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="contract">Contract</SelectItem>
-              <SelectItem value="freelance">Freelance</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center space-x-4">
+              <span className={`text-sm font-medium ${formData.type === 'contract' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Contract
+              </span>
+              <Switch
+                id="job-type"
+                checked={formData.type === 'gig'}
+                onCheckedChange={(checked) => {
+                  const newType = checked ? 'gig' : 'contract';
+                  handleInputChange('type', newType);
+                  if (newType !== 'contract') {
+                    handleInputChange('contract_type', '');
+                  }
+                }}
+                data-testid="toggle-job-type"
+              />
+              <span className={`text-sm font-medium ${formData.type === 'gig' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Gig
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Contract-specific fields */}
