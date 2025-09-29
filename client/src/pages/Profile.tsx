@@ -94,15 +94,22 @@ export default function Profile() {
     }
 
     try {
+      // Get JWT token from localStorage for authentication
+      const token = localStorage.getItem('auth_token');
+      
       const response = await fetch(
         `/api/cv/download/${profile.user_id}?userId=${user.id}`,
         {
           method: 'GET',
+          credentials: 'include',
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
         // Handle contact info response for CV access
         if (errorData.reason === "direct_contact_required") {
           const contactDetails = errorData.contact_details;

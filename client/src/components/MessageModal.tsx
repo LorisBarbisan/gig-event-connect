@@ -166,9 +166,21 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
             {showFileUploader && !attachedFile && (
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-4">
                 <FileUploader
-                  onFileSelect={handleFileSelect}
-                  maxSize={5 * 1024 * 1024} // 5MB limit
-                  acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.docx']}
+                  onUploadComplete={(filePath, fileName, fileSize, fileType) => {
+                    // Create a fake File object for consistency
+                    const file = new File([''], fileName, { type: fileType });
+                    Object.defineProperty(file, 'size', { value: fileSize, writable: false });
+                    handleFileSelect(file);
+                  }}
+                  onUploadError={(error) => {
+                    toast({
+                      title: 'Upload Error',
+                      description: error,
+                      variant: 'destructive',
+                    });
+                  }}
+                  maxFileSize={5 * 1024 * 1024} // 5MB limit
+                  allowedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.docx']}
                 />
               </div>
             )}
