@@ -69,6 +69,13 @@ export interface Job {
   type: string;
   rate: string;
   description: string;
+  event_date: string;
+  // Job duration fields
+  duration_type?: 'time' | 'days' | 'hours' | null;
+  start_time?: string;
+  end_time?: string;
+  days?: number;
+  hours?: number;
   status: 'active' | 'paused' | 'closed';
   external_id?: string;
   external_source?: string;
