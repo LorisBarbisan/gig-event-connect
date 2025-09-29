@@ -121,6 +121,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       const result = await apiRequest('/api/auth/signin', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
+        skipAuthRedirect: true,
       });
       
       // Store JWT token and user data from signin response
