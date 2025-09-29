@@ -5,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, Paperclip, X } from 'lucide-react';
+import { FileUploader } from '@/components/FileUploader';
 
 interface MessageModalProps {
   isOpen: boolean;
@@ -18,13 +19,15 @@ interface MessageModalProps {
 export function MessageModal({ isOpen, onClose, recipientId, recipientName, senderId }: MessageModalProps) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [showFileUploader, setShowFileUploader] = useState(false);
   const { toast } = useToast();
 
   const handleSendMessage = async () => {
-    if (!message.trim()) {
+    if (!message.trim() && !attachedFile) {
       toast({
         title: 'Error',
-        description: 'Please enter a message.',
+        description: 'Please enter a message or attach a file.',
         variant: 'destructive',
       });
       return;
@@ -42,15 +45,37 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
         }),
       });
 
-      // Then send the message
+      // Prepare message data
+      const messageData: any = {
+        conversation_id: conversation.id,
+        sender_id: senderId,
+        content: message.trim(),
+      };
+
+      // Handle file attachment if present
+      if (attachedFile) {
+        // Upload file first
+        const formData = new FormData();
+        formData.append('file', attachedFile);
+        
+        const uploadResponse = await apiRequest('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        messageData.attachment = {
+          path: uploadResponse.path,
+          name: attachedFile.name,
+          type: attachedFile.type,
+          size: attachedFile.size,
+        };
+      }
+
+      // Send the message with optional attachment
       await apiRequest('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: conversation.id,
-          sender_id: senderId,
-          content: message.trim(),
-        }),
+        body: JSON.stringify(messageData),
       });
 
       toast({
@@ -59,6 +84,8 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
       });
 
       setMessage('');
+      setAttachedFile(null);
+      setShowFileUploader(false);
       onClose();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -72,8 +99,19 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
     }
   };
 
+  const handleFileSelect = (file: File) => {
+    setAttachedFile(file);
+    setShowFileUploader(false);
+  };
+
+  const handleRemoveFile = () => {
+    setAttachedFile(null);
+  };
+
   const handleClose = () => {
     setMessage('');
+    setAttachedFile(null);
+    setShowFileUploader(false);
     onClose();
   };
 
@@ -105,6 +143,58 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
             <p className="text-xs text-muted-foreground mt-1">
               {message.length}/1000 characters
             </p>
+          </div>
+
+          {/* File Attachment Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Attachment</Label>
+              {!attachedFile && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFileUploader(!showFileUploader)}
+                  data-testid="button-toggle-file-upload"
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  {showFileUploader ? 'Cancel' : 'Attach File'}
+                </Button>
+              )}
+            </div>
+
+            {showFileUploader && !attachedFile && (
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-4">
+                <FileUploader
+                  onFileSelect={handleFileSelect}
+                  maxSize={5 * 1024 * 1024} // 5MB limit
+                  acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.docx']}
+                />
+              </div>
+            )}
+
+            {attachedFile && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                <div className="flex items-center space-x-2">
+                  <Paperclip className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">{attachedFile.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(attachedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveFile}
+                  data-testid="button-remove-attachment"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
