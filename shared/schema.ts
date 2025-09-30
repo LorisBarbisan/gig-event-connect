@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, uuid, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, uuid, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -30,7 +30,7 @@ export const users = pgTable("users", {
 
 export const freelancer_profiles = pgTable("freelancer_profiles", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   first_name: text("first_name"),
   last_name: text("last_name"),
   title: text("title"),
@@ -53,7 +53,7 @@ export const freelancer_profiles = pgTable("freelancer_profiles", {
 
 export const recruiter_profiles = pgTable("recruiter_profiles", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   company_name: text("company_name").notNull(),
   contact_name: text("contact_name"),
   company_type: text("company_type"),
@@ -102,7 +102,10 @@ export const job_applications = pgTable("job_applications", {
   recruiter_deleted: boolean("recruiter_deleted").default(false).notNull(), // Soft delete flag for recruiter view
   applied_at: timestamp("applied_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  jobIdx: index("job_applications_job_idx").on(table.job_id),
+  freelancerIdx: index("job_applications_freelancer_idx").on(table.freelancer_id),
+}));
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
@@ -110,7 +113,12 @@ export const conversations = pgTable("conversations", {
   participant_two_id: integer("participant_two_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   last_message_at: timestamp("last_message_at").defaultNow().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  uniqueParticipants: uniqueIndex("conversations_participants_unique").on(table.participant_one_id, table.participant_two_id),
+  participantOneIdx: index("conversations_participant_one_idx").on(table.participant_one_id),
+  participantTwoIdx: index("conversations_participant_two_idx").on(table.participant_two_id),
+  lastMessageIdx: index("conversations_last_message_idx").on(table.last_message_at),
+}));
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
@@ -120,7 +128,9 @@ export const messages = pgTable("messages", {
   is_read: boolean("is_read").default(false).notNull(),
   is_system_message: boolean("is_system_message").default(false).notNull(), // For account deletion and other system notifications
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  conversationCreatedIdx: index("messages_conversation_created_idx").on(table.conversation_id, table.created_at),
+}));
 
 export const message_user_states = pgTable("message_user_states", {
   id: serial("id").primaryKey(),
@@ -128,7 +138,9 @@ export const message_user_states = pgTable("message_user_states", {
   user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   deleted_at: timestamp("deleted_at").defaultNow().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  uniqueMessageUser: uniqueIndex("message_user_states_unique").on(table.message_id, table.user_id),
+}));
 
 export const message_attachments = pgTable("message_attachments", {
   id: serial("id").primaryKey(),
@@ -147,7 +159,7 @@ export const message_attachments = pgTable("message_attachments", {
 export const file_reports = pgTable("file_reports", {
   id: serial("id").primaryKey(),
   attachment_id: integer("attachment_id").notNull().references(() => message_attachments.id, { onDelete: "cascade" }),
-  reporter_id: integer("reporter_id").notNull().references(() => users.id, { onDelete: "set null" }),
+  reporter_id: integer("reporter_id").references(() => users.id, { onDelete: "set null" }),
   report_reason: text("report_reason").notNull().$type<'malware' | 'inappropriate' | 'harassment' | 'other'>(),
   report_details: text("report_details"), // Additional details from reporter
   status: text("status").default('pending').$type<'pending' | 'under_review' | 'resolved' | 'dismissed'>(),
@@ -172,7 +184,9 @@ export const notifications = pgTable("notifications", {
   metadata: text("metadata"), // JSON string for additional data
   expires_at: timestamp("expires_at"), // Optional expiration for temporary notifications
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userReadCreatedIdx: index("notifications_user_read_created_idx").on(table.user_id, table.is_read, table.created_at),
+}));
 
 export const ratings = pgTable("ratings", {
   id: serial("id").primaryKey(),
