@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, uuid, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, uuid, timestamp, index, uniqueIndex, check, sql } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -114,6 +114,7 @@ export const conversations = pgTable("conversations", {
   last_message_at: timestamp("last_message_at").defaultNow().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
+  canonicalOrder: check("conversations_canonical_order", sql`${table.participant_one_id} < ${table.participant_two_id}`),
   uniqueParticipants: uniqueIndex("conversations_participants_unique").on(table.participant_one_id, table.participant_two_id),
   participantOneIdx: index("conversations_participant_one_idx").on(table.participant_one_id),
   participantTwoIdx: index("conversations_participant_two_idx").on(table.participant_two_id),
