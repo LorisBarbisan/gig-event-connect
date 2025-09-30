@@ -9,6 +9,21 @@ EventLink is a freelance marketplace platform specifically designed for the even
 - Minimal file structure with consolidated components where appropriate
 - Maximum system efficiency and performance optimization
 
+## Development Protocol (Agent 3 - Established September 30, 2025)
+The project follows a structured multi-role expert development approach:
+
+1. **Expert Roleplay**: Each task explicitly declares the relevant expert role (Backend Engineer, Database Architect, Frontend Developer, DevOps Specialist, QA Engineer, Security Auditor, etc.)
+2. **Chronology Tracking**: All changes logged in `CHANGELOG.md` with timestamps, rationale, and impact
+3. **Structured Debugging**:
+   - Step 1: Reproduce issue
+   - Step 2: Trace logs and flow
+   - Step 3: Isolate change that caused it
+   - Step 4: Suggest minimal, efficient fix
+   - Step 5: Re-test with alternative hypotheses
+4. **Proactive Optimization**: Review all affected code for efficiency, readability, and reliability
+5. **Security Standards**: OWASP Top 10 awareness, input validation, output escaping, UK GDPR compliance
+6. **Comprehensive Testing**: Unit, integration, and regression testing instructions for all changes
+
 ## System Architecture
 The EventLink platform utilizes a modern web application stack with recent optimization improvements.
 
