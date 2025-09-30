@@ -41,10 +41,17 @@ export function registerProfileRoutes(app: Express) {
   });
 
   // Create freelancer profile
-  app.post("/api/freelancer", async (req, res) => {
+  app.post("/api/freelancer", authenticateJWT, async (req, res) => {
     try {
+      // Verify user is authorized to create profile for this user_id
+      const requestedUserId = req.body.user_id;
+      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: "Not authorized to create this profile" });
+      }
+
       const result = insertFreelancerProfileSchema.safeParse(req.body);
       if (!result.success) {
+        console.error("Freelancer profile validation failed:", result.error.issues);
         return res.status(400).json({ error: "Invalid input", details: result.error.issues });
       }
 
@@ -101,10 +108,17 @@ export function registerProfileRoutes(app: Express) {
   });
 
   // Create recruiter profile
-  app.post("/api/recruiter", async (req, res) => {
+  app.post("/api/recruiter", authenticateJWT, async (req, res) => {
     try {
+      // Verify user is authorized to create profile for this user_id
+      const requestedUserId = req.body.user_id;
+      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: "Not authorized to create this profile" });
+      }
+
       const result = insertRecruiterProfileSchema.safeParse(req.body);
       if (!result.success) {
+        console.error("Recruiter profile validation failed:", result.error.issues);
         return res.status(400).json({ error: "Invalid input", details: result.error.issues });
       }
 
