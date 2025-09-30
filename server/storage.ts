@@ -870,21 +870,12 @@ export class DatabaseStorage implements IStorage {
 
   // Messaging methods
   async getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation> {
-    // Guard against self-conversations
-    if (userOneId === userTwoId) {
-      throw new Error("Cannot create conversation with yourself");
-    }
-
-    // Normalize participant IDs to ensure canonical ordering (smaller ID first)
-    const participantOne = Math.min(userOneId, userTwoId);
-    const participantTwo = Math.max(userOneId, userTwoId);
-
     // First try to find existing conversation
     const existing = await db.select().from(conversations)
       .where(
-        and(
-          eq(conversations.participant_one_id, participantOne),
-          eq(conversations.participant_two_id, participantTwo)
+        or(
+          and(eq(conversations.participant_one_id, userOneId), eq(conversations.participant_two_id, userTwoId)),
+          and(eq(conversations.participant_one_id, userTwoId), eq(conversations.participant_two_id, userOneId))
         )
       )
       .limit(1);
@@ -893,30 +884,12 @@ export class DatabaseStorage implements IStorage {
       return existing[0];
     }
 
-    // Create new conversation with normalized participant ordering
-    try {
-      const result = await db.insert(conversations).values({
-        participant_one_id: participantOne,
-        participant_two_id: participantTwo
-      }).returning();
-      return result[0];
-    } catch (error: any) {
-      // Handle race condition: if unique constraint fails, another thread created it
-      if (error?.code === '23505' || error?.message?.includes('unique')) {
-        const retry = await db.select().from(conversations)
-          .where(
-            and(
-              eq(conversations.participant_one_id, participantOne),
-              eq(conversations.participant_two_id, participantTwo)
-            )
-          )
-          .limit(1);
-        if (retry[0]) {
-          return retry[0];
-        }
-      }
-      throw error;
-    }
+    // Create new conversation
+    const result = await db.insert(conversations).values({
+      participant_one_id: userOneId,
+      participant_two_id: userTwoId
+    }).returning();
+    return result[0];
   }
 
   async getConversationsByUserId(userId: number): Promise<Array<Conversation & { otherUser: User }>> {
