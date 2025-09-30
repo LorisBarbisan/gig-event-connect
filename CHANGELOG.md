@@ -60,6 +60,40 @@ This log tracks all changes, debugging sessions, optimizations, and key decision
 
 ---
 
+## 2025-09-30 | Freelancer Profile Visibility Issue - Role Configuration
+
+**🎭 Role:** Backend Engineer & Database Specialist
+
+**Action:** Fixed lorisbarbisan@gmail.com unable to create freelancer profile
+
+**Rationale:** User reported creating freelancer profile but it not appearing on find crew page. Investigation revealed profile was never created due to incorrect role assignment.
+
+**Debugging Steps:**
+1. ✅ **Reproduce**: Confirmed no freelancer_profiles record exists for user_id 18
+2. ✅ **Trace**: Checked `/api/freelancers` endpoint - returns all profiles, no role filter issue
+3. ✅ **Isolate**: User's role was 'recruiter' (changed earlier during admin access removal), causing ProfileForm to show recruiter fields instead of freelancer fields
+4. ✅ **Fix**: Changed user role from 'recruiter' to 'freelancer' in database
+5. ⏳ **Verify**: User needs to log out/refresh and create freelancer profile
+
+**Root Cause:**
+- ProfileForm component determines which form fields to show based on user's role
+- When role was changed from 'admin' to 'recruiter', system prevented freelancer profile creation
+- User saw recruiter form instead of freelancer form
+
+**Details:**
+- Changed `users.role` from 'recruiter' to 'freelancer' for user_id 18
+- ProfileForm uses `userType` prop derived from user role to render correct fields
+- Once user recreates profile with correct role, it will appear in `/api/freelancers` results
+
+**Impact:** User can now create freelancer profile. Profile will appear on find crew page after creation.
+
+**User Action Required:** 
+1. Log out and log back in (or refresh browser)
+2. Complete freelancer profile creation
+3. Profile will automatically appear on find crew page
+
+---
+
 ## Historical Context (Pre-Protocol)
 
 ### September 13, 2025
