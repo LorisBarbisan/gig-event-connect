@@ -36,16 +36,8 @@ export default function SimplifiedFreelancerDashboard() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['/api/freelancer/profile', user?.id],
     queryFn: async () => {
-      console.log('Fetching own profile for user:', user);
       if (!user?.id) return null;
       const data = await apiRequest(`/api/freelancer/${user.id}`);
-      console.log('Profile data received:', data);
-      console.log('Profile CV fields:', {
-        cv_file_name: data?.cv_file_name,
-        cv_file_url: data?.cv_file_url,
-        cv_file_size: data?.cv_file_size,
-        cv_file_type: data?.cv_file_type
-      });
       return data;
     },
     retry: false,

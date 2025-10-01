@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -520,19 +521,20 @@ function FreelancerFormFields({
 function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   const { user } = useOptimizedAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Only show if user is a freelancer
   if (!user || user.role !== 'freelancer') {
     return null;
   }
 
-  const handleUploadComplete = () => {
+  const handleUploadComplete = async () => {
     toast({
       title: "Success",
       description: "Your CV has been uploaded successfully!",
     });
-    // Force a page refresh to show the updated CV
-    window.location.reload();
+    // Invalidate the profile query to refetch updated CV data
+    await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile', user.id] });
   };
 
   // Prepare current CV data for CVUploader

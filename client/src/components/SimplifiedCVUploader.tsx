@@ -17,10 +17,6 @@ interface CVUploaderProps {
 }
 
 export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CVUploaderProps) {
-  console.log('SimplifiedCVUploader render - userId:', userId);
-  console.log('SimplifiedCVUploader render - currentCV:', currentCV);
-  console.log('SimplifiedCVUploader render - has fileName?:', !!currentCV?.fileName);
-  
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
