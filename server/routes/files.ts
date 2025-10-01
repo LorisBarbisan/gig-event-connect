@@ -50,12 +50,7 @@ export function registerFileRoutes(app: Express) {
         return res.status(400).json({ error: "Object key and filename are required" });
       }
 
-      // Update freelancer profile with CV information
-      const profile = await storage.getFreelancerProfile(req.user.id);
-      if (!profile) {
-        return res.status(404).json({ error: "Freelancer profile not found" });
-      }
-
+      // Update freelancer profile with CV information directly (no need to fetch first)
       const updatedProfile = await storage.updateFreelancerProfile(req.user.id, {
         cv_file_url: objectKey,
         cv_file_name: filename,
@@ -80,6 +75,7 @@ export function registerFileRoutes(app: Express) {
         return res.status(403).json({ error: "Only freelancers can delete their CVs" });
       }
 
+      // Get profile to find the CV file URL for deletion (but immediately clear it from cache)
       const profile = await storage.getFreelancerProfile(req.user.id);
       if (!profile || !profile.cv_file_url) {
         return res.status(404).json({ error: "No CV found to delete" });
