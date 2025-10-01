@@ -97,7 +97,10 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
         description: 'Your CV has been uploaded and saved.',
       });
 
-      onUploadComplete?.();
+      // Wait for the callback to complete before finishing
+      if (onUploadComplete) {
+        await onUploadComplete();
+      }
     } catch (error) {
       console.error('❌ CV upload error:', error);
       console.error('Error type:', typeof error);
@@ -137,7 +140,10 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
         description: 'Your CV has been removed.',
       });
 
-      onUploadComplete?.();
+      // Wait for the callback to complete before finishing
+      if (onUploadComplete) {
+        await onUploadComplete();
+      }
     } catch (error) {
       toast({
         title: 'Delete failed',
@@ -190,7 +196,33 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(`/api/cv/download/${userId}`, '_blank')}
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('auth_token');
+                        const response = await fetch(`/api/cv/download/${userId}`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`
+                          }
+                        });
+                        if (response.ok) {
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          window.open(url, '_blank');
+                        } else {
+                          toast({
+                            title: 'Download failed',
+                            description: 'Failed to download CV. Please try again.',
+                            variant: 'destructive',
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: 'Download failed',
+                          description: 'Failed to download CV. Please try again.',
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
                     data-testid="button-download-cv"
                   >
                     <Download className="w-4 h-4 mr-1" />
