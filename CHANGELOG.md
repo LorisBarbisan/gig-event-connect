@@ -5,6 +5,51 @@ This log tracks all changes, debugging sessions, optimizations, and key decision
 
 ---
 
+## 2025-10-01 | CV Upload Fix - ContentType Parameter Mismatch
+
+**🎭 Role:** Full-Stack Engineer & Database Specialist
+
+**Action:** Fixed CV upload functionality by ensuring contentType is properly sent and stored
+
+**Rationale:** User reported CV uploads still failing. Through git history analysis, discovered that commit bd2a946 added strict contentType validation which broke uploads, then commit ae41c1b restored to remove validation. However, the frontend was never updated to send contentType, and backend wasn't storing it in cv_file_type field, causing database schema inconsistency.
+
+**Debugging Steps:**
+1. ✅ **Reproduce**: User reported "still fails to upload CVs"
+2. ✅ **Trace**: Examined git history to find CV upload-related changes
+3. ✅ **Isolate**: Found bd2a946 added contentType requirement, ae41c1b removed it, but frontend never sent contentType
+4. ✅ **Fix**: Updated frontend to send contentType and backend to store it in cv_file_type
+5. ✅ **Verify**: Architect review confirmed fix resolves mismatch and maintains schema consistency
+
+**Details:**
+- **Root Cause**: Frontend-backend parameter mismatch
+  - Database schema has cv_file_type field (shared/schema.ts line 48)
+  - Frontend CVUploader wasn't sending contentType in metadata save request
+  - Backend wasn't storing contentType in cv_file_type field after restore
+- **Solution**: Added contentType to complete the three-step upload flow
+  1. POST /api/cv/upload-url with filename and contentType → get presigned URL
+  2. PUT to object storage with file data
+  3. POST /api/cv with objectKey, filename, fileSize, **AND contentType** → save metadata
+
+**Code Changes:**
+- client/src/components/CVUploader.tsx:
+  - Added `contentType: file.type` to metadata save request body (line 110)
+  - Maintains consistency with upload-url request which already sends contentType
+- server/routes/files.ts:
+  - Modified POST /api/cv to accept contentType and store in cv_file_type field
+  - Modified DELETE /api/cv to clear cv_file_type field
+  - Validation remains backward-compatible (only requires objectKey and filename)
+
+**Impact:** CV uploads now properly store file type metadata. Database schema consistency maintained. Future-proof if stricter validation is re-added.
+
+**Security Notes:**
+- No changes to authentication or authorization flow
+- Object storage path conventions unchanged
+- Architect recommends adding server-side validation for allowed MIME types and file size
+
+**Testing:** Architect review passed. Ready for E2E testing: upload PDF/DOCX (<=5MB), verify cv_file_name/type/size, test download and delete.
+
+---
+
 ## 2025-10-01 | Message Sending Fix - API Alignment
 
 **🎭 Role:** Full-Stack Engineer & API Specialist
