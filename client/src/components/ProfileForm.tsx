@@ -529,12 +529,14 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   }
 
   const handleUploadComplete = async () => {
+    console.log('🔄 CV upload/delete complete - refetching profile for user:', user.id);
     toast({
       title: "Success",
-      description: "Your CV has been uploaded successfully!",
+      description: "Your CV has been updated successfully!",
     });
     // Force an immediate refetch of the profile data to show the updated CV
     await queryClient.refetchQueries({ queryKey: ['/api/freelancer/profile', user.id] });
+    console.log('✅ Profile refetch complete');
   };
 
   // Prepare current CV data for CVUploader
