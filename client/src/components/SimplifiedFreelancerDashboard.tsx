@@ -136,10 +136,13 @@ export default function SimplifiedFreelancerDashboard() {
                 });
                 console.log('✅ Profile saved successfully:', savedProfile);
                 
-                // ✅ CRITICAL FIX: Invalidate ALL profile queries 
+                // Invalidate profile query with exact key match
                 console.log('🔄 Invalidating cache for user:', user?.id);
-                await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile'] });
-                await queryClient.invalidateQueries({ queryKey: ['/api/freelancer', user?.id] });
+                await queryClient.invalidateQueries({ 
+                  queryKey: ['/api/freelancer/profile', user?.id], 
+                  exact: true,
+                  refetchType: 'active'
+                });
                 console.log('🔄 Cache invalidated completely!');
                 
                 // Show success message with toast
