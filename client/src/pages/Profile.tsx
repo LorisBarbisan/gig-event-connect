@@ -97,12 +97,14 @@ export default function Profile() {
       // Get JWT token from localStorage for authentication
       const token = localStorage.getItem('auth_token');
       
+      // Get the presigned download URL from the backend
       const response = await fetch(
-        `/api/cv/download/${profile.user_id}?userId=${user.id}`,
+        `/api/cv/download/${profile.user_id}`,
         {
           method: 'GET',
           credentials: 'include',
           headers: {
+            'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` }),
           },
         }
@@ -110,34 +112,23 @@ export default function Profile() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        // Handle contact info response for CV access
-        if (errorData.reason === "direct_contact_required") {
-          const contactDetails = errorData.contact_details;
-          toast({
-            title: "Contact Required for CV",
-            description: `${contactDetails.message} Email: ${contactDetails.email}`,
-            variant: "default"
-          });
-          return;
-        }
-        throw new Error(errorData.error || 'Failed to download CV');
+        throw new Error(errorData.error || 'Failed to get download URL');
       }
 
-      // Create blob and download file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const { downloadUrl, fileName } = await response.json();
+      
+      // Create a temporary link and trigger download
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = url;
-      a.download = profile.cv_file_name || `${profile.first_name}_${profile.last_name}_CV.pdf`;
+      a.href = downloadUrl;
+      a.download = fileName || profile.cv_file_name || `${profile.first_name}_${profile.last_name}_CV.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       toast({
         title: "Success",
-        description: "CV downloaded successfully",
+        description: "CV download started",
       });
     } catch (error) {
       console.error('Error downloading CV:', error);

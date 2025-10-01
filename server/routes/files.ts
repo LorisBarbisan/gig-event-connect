@@ -130,8 +130,11 @@ export function registerFileRoutes(app: Express) {
         // Get presigned download URL
         const downloadUrl = await ObjectStorageService.getDownloadUrl(profile.cv_file_url);
         
-        // Redirect to the download URL
-        res.redirect(downloadUrl);
+        // Return the download URL as JSON so frontend can handle the download
+        res.json({ 
+          downloadUrl,
+          fileName: profile.cv_file_name || 'CV.pdf'
+        });
       } catch (objectError) {
         if (objectError instanceof ObjectNotFoundError) {
           return res.status(404).json({ error: "CV file not found in storage" });
