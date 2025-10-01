@@ -160,6 +160,9 @@ export function MessagingInterface() {
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations'],
+    refetchOnMount: 'always', // Always refetch when component mounts to show new conversations
+    refetchOnWindowFocus: true, // Refetch when window gains focus to show new messages
+    refetchOnReconnect: true, // Refetch when network reconnects
   });
 
   // Fetch messages for selected conversation

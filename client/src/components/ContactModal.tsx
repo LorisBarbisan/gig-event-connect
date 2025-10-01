@@ -54,8 +54,8 @@ export function ContactModal({ isOpen, onClose, freelancer, currentUser }: Conta
       setMessage("");
       onClose();
       
-      // Invalidate conversations and unread count
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      // Refetch conversations immediately (including inactive queries)
+      queryClient.refetchQueries({ queryKey: ['/api/conversations'], type: 'all' });
       queryClient.invalidateQueries({ queryKey: ['/api/messages/unread-count'] });
     },
     onError: (error) => {
