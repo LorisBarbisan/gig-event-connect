@@ -141,7 +141,11 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
           linkedin_url: data.linkedin_url || '',
           website_url: data.website_url || '',
           availability_status: data.availability_status || 'available',
-          profile_photo_url: data.profile_photo_url || ''
+          profile_photo_url: data.profile_photo_url || '',
+          cv_file_name: data.cv_file_name,
+          cv_file_type: data.cv_file_type,
+          cv_file_size: data.cv_file_size,
+          cv_file_url: data.cv_file_url
         });
         setHasProfile(true);
       }
