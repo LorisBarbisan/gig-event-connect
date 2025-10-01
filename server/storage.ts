@@ -585,6 +585,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(freelancer_profiles.user_id, userId))
       .returning();
     
+    // Clear cache after update to ensure fresh data is returned
+    const cacheKey = `freelancer_profile:${userId}`;
+    cache.delete(cacheKey);
+    
     // If no existing profile found, create one
     if (result.length === 0) {
       const newProfile = {
