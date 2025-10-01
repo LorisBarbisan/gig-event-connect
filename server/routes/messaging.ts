@@ -107,11 +107,37 @@ export function registerMessagingRoutes(app: Express) {
       
       // Create notification for recipient (only if not deleted)
       if (!await storage.isUserDeleted(userTwoId)) {
+        // Get sender's display name (company name for recruiters, name for freelancers)
+        let senderDisplayName = req.user.email; // fallback
+        console.log(`📨 Getting display name for ${req.user.role} user ${req.user.id}`);
+        
+        try {
+          if (req.user.role === 'recruiter') {
+            const recruiterProfile = await storage.getRecruiterProfile(req.user.id);
+            console.log('Recruiter profile:', recruiterProfile);
+            senderDisplayName = recruiterProfile?.company_name || req.user.email;
+            console.log(`✅ Recruiter display name: ${senderDisplayName}`);
+          } else if (req.user.role === 'freelancer') {
+            const freelancerProfile = await storage.getFreelancerProfile(req.user.id);
+            console.log('Freelancer profile:', freelancerProfile);
+            if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+              const firstName = freelancerProfile.first_name || '';
+              const lastName = freelancerProfile.last_name || '';
+              senderDisplayName = `${firstName} ${lastName}`.trim() || req.user.email;
+            }
+            console.log(`✅ Freelancer display name: ${senderDisplayName}`);
+          }
+        } catch (profileError) {
+          console.error("❌ Error fetching sender profile for notification:", profileError);
+          // Keep fallback to email
+        }
+        
+        console.log(`📬 Creating notification with sender name: ${senderDisplayName}`);
         await storage.createNotification({
           user_id: userTwoId,
           type: 'new_message',
           title: 'New Message',
-          message: `You have a new message from ${req.user.email}`,
+          message: `You have a new message from ${senderDisplayName}`,
           related_entity_type: 'message',
           related_entity_id: newMessage.id,
           action_url: '/dashboard?tab=messages',
