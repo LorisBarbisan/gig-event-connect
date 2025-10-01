@@ -161,7 +161,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
 
     // Navigate to action URL if provided
     if (notification.action_url) {
-      window.open(notification.action_url, '_blank');
+      window.location.href = notification.action_url;
     }
   };
 

@@ -114,6 +114,7 @@ export function registerMessagingRoutes(app: Express) {
           message: `You have a new message from ${req.user.email}`,
           related_entity_type: 'message',
           related_entity_id: newMessage.id,
+          action_url: '/dashboard?tab=messages',
           metadata: JSON.stringify({ sender_id: req.user.id })
         });
         
@@ -216,6 +217,7 @@ export function registerMessagingRoutes(app: Express) {
           message: `You have a new message from ${senderDisplayName}`,
           related_entity_type: 'message',
           related_entity_id: message.id,
+          action_url: '/dashboard?tab=messages',
           metadata: JSON.stringify({ sender_id: req.user.id })
         });
       }
