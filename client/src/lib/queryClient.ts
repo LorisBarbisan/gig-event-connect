@@ -15,6 +15,10 @@ export class AuthError extends Error {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      queryFn: async ({ queryKey }) => {
+        const url = queryKey[0] as string;
+        return apiRequest(url);
+      },
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 30, // 30 minutes
       retry: (failureCount, error: any) => {
