@@ -536,18 +536,12 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   };
 
   // Prepare current CV data for CVUploader
-  console.log('CVUploadSection - profile:', profile);
-  console.log('CVUploadSection - cv_file_url:', profile?.cv_file_url);
-  console.log('CVUploadSection - cv_file_name:', profile?.cv_file_name);
-  
   const currentCV = profile && profile.cv_file_url ? {
     fileName: profile.cv_file_name,
     fileType: profile.cv_file_type,
     fileSize: profile.cv_file_size,
     fileUrl: profile.cv_file_url
   } : undefined;
-
-  console.log('CVUploadSection - currentCV prepared:', currentCV);
 
   return (
     <SimplifiedCVUploader 

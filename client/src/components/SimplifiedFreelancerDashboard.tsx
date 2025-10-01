@@ -111,10 +111,13 @@ export default function SimplifiedFreelancerDashboard() {
 
         {/* Profile Tab */}
         <TabsContent value="profile">
-          <ProfileForm
-            profile={profile}
-            userType="freelancer"
-            onSave={async (formData) => {
+          {profileLoading ? (
+            <div className="flex justify-center p-8">Loading profile...</div>
+          ) : (
+            <ProfileForm
+              profile={profile}
+              userType="freelancer"
+              onSave={async (formData) => {
               try {
                 console.log('🚀 SAVE CLICKED! Saving freelancer profile data:', formData);
                 
@@ -158,6 +161,7 @@ export default function SimplifiedFreelancerDashboard() {
             }}
             isSaving={false}
           />
+          )}
         </TabsContent>
 
         {/* Jobs/Applications Tab */}
