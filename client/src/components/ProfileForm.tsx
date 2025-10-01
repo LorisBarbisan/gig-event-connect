@@ -533,8 +533,8 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
       title: "Success",
       description: "Your CV has been uploaded successfully!",
     });
-    // Invalidate the profile query to refetch updated CV data
-    await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/profile', user.id] });
+    // Force an immediate refetch of the profile data to show the updated CV
+    await queryClient.refetchQueries({ queryKey: ['/api/freelancer/profile', user.id] });
   };
 
   // Prepare current CV data for CVUploader
