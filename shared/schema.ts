@@ -73,6 +73,7 @@ export const jobs = pgTable("jobs", {
   company: text("company").notNull(),
   location: text("location").notNull(),
   type: text("type").notNull().$type<'full-time' | 'part-time' | 'contract' | 'temporary' | 'gig' | 'external'>(),
+  contract_type: text("contract_type"), // Specific contract type when type is 'contract'
   rate: text("rate").notNull(),
   description: text("description").notNull(),
   event_date: text("event_date").notNull(), // Date when the event/job takes place
