@@ -44,7 +44,7 @@ export function registerFileRoutes(app: Express) {
         return res.status(403).json({ error: "Only freelancers can save CV metadata" });
       }
 
-      const { objectKey, filename, fileSize } = req.body;
+      const { objectKey, filename, fileSize, contentType } = req.body;
 
       if (!objectKey || !filename) {
         return res.status(400).json({ error: "Object key and filename are required" });
@@ -59,7 +59,8 @@ export function registerFileRoutes(app: Express) {
       const updatedProfile = await storage.updateFreelancerProfile(req.user.id, {
         cv_file_url: objectKey,
         cv_file_name: filename,
-        cv_file_size: fileSize || null
+        cv_file_size: fileSize || null,
+        cv_file_type: contentType || null
       });
 
       res.json({
@@ -96,7 +97,8 @@ export function registerFileRoutes(app: Express) {
       const updatedProfile = await storage.updateFreelancerProfile(req.user.id, {
         cv_file_url: null,
         cv_file_name: null,
-        cv_file_size: null
+        cv_file_size: null,
+        cv_file_type: null
       });
 
       res.json({

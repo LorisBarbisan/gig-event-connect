@@ -104,6 +104,7 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
           objectKey,
           filename: file.name,
           fileSize: file.size,
+          contentType: file.type,
         }),
       });
 
