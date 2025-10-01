@@ -529,17 +529,18 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   }
 
   const handleUploadComplete = async () => {
-    console.log('🔄 CV upload/delete complete - invalidating cache for user:', user.id);
+    console.log('🔄 CV upload/delete complete - forcing refetch for user:', user.id);
     toast({
       title: "Success",
       description: "Your CV has been updated successfully!",
     });
-    // Invalidate and force refetch - removed refetchType to ensure all queries refetch
-    await queryClient.invalidateQueries({ 
+    // Force immediate refetch to update UI
+    await queryClient.refetchQueries({ 
       queryKey: ['/api/freelancer/profile', user.id], 
-      exact: true
+      exact: true,
+      type: 'active'
     });
-    console.log('✅ Profile cache invalidated and refetched');
+    console.log('✅ Profile refetched with fresh data');
   };
 
   // Prepare current CV data for CVUploader
