@@ -137,16 +137,9 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
   const handleDeleteCV = async () => {
     try {
-      const response = await fetch('/api/cv', {
+      await apiRequest('/api/cv', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userId }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete CV');
-      }
 
       toast({
         title: "Success",
