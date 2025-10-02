@@ -247,10 +247,11 @@ export default function SimplifiedRecruiterDashboard() {
     if (editingJob) {
       updateJobMutation.mutate({ ...jobData, id: editingJob.id });
     } else {
-      if (!user?.id || !(profile as any)?.company_name) {
+      const companyName = (profile as any)?.company_name?.trim();
+      if (!user?.id || !companyName) {
         toast({
           title: 'Error',
-          description: 'Please complete your company profile first.',
+          description: 'Please complete your company profile first. Make sure to add your company name.',
           variant: 'destructive',
         });
         return;
