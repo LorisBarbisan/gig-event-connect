@@ -139,6 +139,8 @@ export default function SimplifiedRecruiterDashboard() {
       // Remove empty duration fields
       if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
       if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      // Remove empty contract_type
+      if (!processedData.contract_type || processedData.contract_type === '') delete processedData.contract_type;
       
       const requestPayload = {
         recruiter_id: user?.id,
@@ -200,6 +202,8 @@ export default function SimplifiedRecruiterDashboard() {
       // Remove empty duration fields
       if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
       if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      // Remove empty contract_type
+      if (!processedData.contract_type || processedData.contract_type === '') delete processedData.contract_type;
       
       return await apiRequest(`/api/jobs/${jobData.id}`, {
         method: 'PUT',
