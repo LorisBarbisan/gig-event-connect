@@ -29,8 +29,14 @@ export function registerApplicationRoutes(app: Express) {
     try {
       const jobId = parseInt(req.params.jobId);
       
-      if (!req.user || req.user.role !== 'freelancer') {
-        return res.status(403).json({ error: "Only freelancers can apply to jobs" });
+      if (!req.user) {
+        return res.status(401).json({ error: "Please log in to apply for jobs" });
+      }
+      
+      if (req.user.role !== 'freelancer') {
+        return res.status(403).json({ 
+          error: `You are logged in as a ${req.user.role}. Only freelancers can apply to jobs. Please log in with a freelancer account.`
+        });
       }
 
       // Check if job exists
