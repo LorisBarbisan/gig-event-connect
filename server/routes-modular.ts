@@ -177,8 +177,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📊 Found ${regularJobs.length} regular jobs and ${externalJobs.length} external jobs`);
       
-      // Combine and return all jobs
-      const allJobs = [...regularJobs, ...externalJobs];
+      // Sort regular jobs by created_at (most recent first)
+      const sortedRegularJobs = regularJobs.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      // Sort external jobs by posted_date or created_at (most recent first)
+      const sortedExternalJobs = externalJobs.sort((a, b) => {
+        const dateA = a.posted_date ? new Date(a.posted_date) : new Date(a.created_at);
+        const dateB = b.posted_date ? new Date(b.posted_date) : new Date(b.created_at);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      // Platform jobs first, then external jobs
+      const allJobs = [...sortedRegularJobs, ...sortedExternalJobs];
       res.json(allJobs);
     } catch (error) {
       console.error("Get all jobs error:", error);
