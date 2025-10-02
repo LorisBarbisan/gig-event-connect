@@ -158,13 +158,13 @@ export default function SimplifiedRecruiterDashboard() {
       });
     },
     onSuccess: () => {
-      console.log('🎯 Job created successfully! Refetching all job lists...');
+      console.log('🎯 Job created successfully! Invalidating all job caches...');
       
-      // Force immediate refetch of both job lists
-      queryClient.refetchQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
-      queryClient.refetchQueries({ queryKey: ['/api/jobs'] });
+      // Invalidate queries to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       
-      console.log('✅ Jobs refetch initiated');
+      console.log('✅ Jobs cache invalidated');
       
       toast({
         title: 'Job posted',
@@ -212,9 +212,9 @@ export default function SimplifiedRecruiterDashboard() {
       });
     },
     onSuccess: () => {
-      // Force immediate refetch of both job lists for updates too
-      queryClient.refetchQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
-      queryClient.refetchQueries({ queryKey: ['/api/jobs'] });
+      // Invalidate queries to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       setEditingJob(null);
       toast({
         title: 'Success',
