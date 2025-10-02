@@ -123,13 +123,30 @@ export default function SimplifiedRecruiterDashboard() {
   // Create job mutation
   const createJobMutation = useMutation({
     mutationFn: async (jobData: JobFormData) => {
+      // Convert string numbers to integers for days and hours
+      // Remove empty string fields to prevent validation errors
+      const processedData: any = { ...jobData };
+      if (jobData.days && jobData.days !== '') {
+        processedData.days = parseInt(jobData.days);
+      } else {
+        delete processedData.days;
+      }
+      if (jobData.hours && jobData.hours !== '') {
+        processedData.hours = parseInt(jobData.hours);
+      } else {
+        delete processedData.hours;
+      }
+      // Remove empty duration fields
+      if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
+      if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      
       return await apiRequest('/api/jobs', {
         method: 'POST',
         body: JSON.stringify({
           recruiter_id: user?.id,
           company: (profile as any)?.company_name || 'Company',
           status: 'active',
-          ...jobData
+          ...processedData
         }),
         headers: { 'Content-Type': 'application/json' },
       });
@@ -149,10 +166,12 @@ export default function SimplifiedRecruiterDashboard() {
       });
       setShowJobForm(false);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('❌ Job creation error:', error);
+      const errorMessage = error?.message || error?.error || 'Failed to post job.';
       toast({
         title: 'Error',
-        description: 'Failed to post job.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -161,9 +180,26 @@ export default function SimplifiedRecruiterDashboard() {
   // Update job mutation
   const updateJobMutation = useMutation({
     mutationFn: async (jobData: JobFormData & { id: number }) => {
+      // Convert string numbers to integers for days and hours
+      // Remove empty string fields to prevent validation errors
+      const processedData: any = { ...jobData };
+      if (jobData.days && jobData.days !== '') {
+        processedData.days = parseInt(jobData.days);
+      } else {
+        delete processedData.days;
+      }
+      if (jobData.hours && jobData.hours !== '') {
+        processedData.hours = parseInt(jobData.hours);
+      } else {
+        delete processedData.hours;
+      }
+      // Remove empty duration fields
+      if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
+      if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      
       return await apiRequest(`/api/jobs/${jobData.id}`, {
         method: 'PUT',
-        body: JSON.stringify(jobData),
+        body: JSON.stringify(processedData),
         headers: { 'Content-Type': 'application/json' },
       });
     },
@@ -177,10 +213,12 @@ export default function SimplifiedRecruiterDashboard() {
         description: 'Job updated successfully!',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('❌ Job update error:', error);
+      const errorMessage = error?.message || error?.error || 'Failed to update job. Please try again.';
       toast({
         title: 'Error',
-        description: 'Failed to update job. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
