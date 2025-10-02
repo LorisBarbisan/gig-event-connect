@@ -101,16 +101,18 @@ export function JobCard({
                 <Coins className="w-4 h-4" />
                 {job.rate}
               </div>
+              {job.event_date && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Event: {new Date(job.event_date).toLocaleDateString()}
+                </div>
+              )}
               {formatDuration(job) && (
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   {formatDuration(job)}
                 </div>
               )}
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Posted {new Date(job.created_at).toLocaleDateString()}
-              </div>
             </div>
             
             <p className="text-sm text-muted-foreground mb-2">{job.description}</p>

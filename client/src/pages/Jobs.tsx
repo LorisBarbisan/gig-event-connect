@@ -66,8 +66,8 @@ export default function Jobs() {
       console.log('🔄 Fetching jobs from /api/jobs...');
       return apiRequest('/api/jobs');
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnMount: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false
   });
 
