@@ -36,9 +36,10 @@ export function registerApplicationRoutes(app: Express) {
         userRole: req.user?.role,
         sessionID: req.sessionID,
         isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : 'no method',
-        cookies: req.headers.cookie,
-        session: req.session,
-        authorization: req.headers.authorization
+        hasCookies: !!req.headers.cookie,
+        hasAuth: !!req.headers.authorization,
+        sessionData: req.session,
+        passportUser: req.session?.passport
       });
       
       if (!req.user) {
