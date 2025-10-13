@@ -15,12 +15,9 @@ export function initializePassport() {
   // Deserialize user from session
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log('🔓 Deserializing user from session, ID:', id);
       const user = await storage.getUser(id);
-      console.log('✅ User deserialized:', user ? { id: user.id, email: user.email, role: user.role } : 'NOT FOUND');
       done(null, user);
     } catch (error) {
-      console.error('❌ Deserialize error:', error);
       done(error, null);
     }
   });

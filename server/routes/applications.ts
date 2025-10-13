@@ -32,26 +32,11 @@ export function registerApplicationRoutes(app: Express) {
       const jobIdStr = req.params.jobId;
       const jobId = parseInt(jobIdStr.replace(/^real-/, ''));
       
-      console.log('🔍 Job Application Request:', {
-        jobId,
-        hasUser: !!req.user,
-        userId: req.user?.id,
-        userRole: req.user?.role,
-        sessionID: req.sessionID,
-        isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : 'no method',
-        hasCookies: !!req.headers.cookie,
-        hasAuth: !!req.headers.authorization,
-        sessionData: req.session,
-        passportUser: req.session?.passport
-      });
-      
       if (!req.user) {
-        console.error('❌ No user found in session');
         return res.status(401).json({ error: "Please log in to apply for jobs" });
       }
       
       if (req.user.role !== 'freelancer') {
-        console.log('⚠️ User has wrong role:', req.user.role);
         return res.status(403).json({ 
           error: `You are logged in as a ${req.user.role}. Only freelancers can apply to jobs. Please log in with a freelancer account.`
         });
