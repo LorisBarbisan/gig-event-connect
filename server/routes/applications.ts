@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { insertJobApplicationSchema } from "@shared/schema";
+import { authenticateJWT } from "./auth";
 
 export function registerApplicationRoutes(app: Express) {
   // Get freelancer bookings (accepted applications)
@@ -25,7 +26,7 @@ export function registerApplicationRoutes(app: Express) {
   });
 
   // Apply to job
-  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+  app.post("/api/jobs/:jobId/apply", authenticateJWT, async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
       
