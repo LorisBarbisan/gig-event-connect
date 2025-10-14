@@ -76,11 +76,12 @@ export const jobs = pgTable("jobs", {
   contract_type: text("contract_type"), // Specific contract type when type is 'contract'
   rate: text("rate").notNull(),
   description: text("description").notNull(),
-  event_date: text("event_date").notNull(), // Date when the event/job takes place
+  event_date: text("event_date").notNull(), // Start date of the event/job
+  end_date: text("end_date"), // Optional end date of the event/job
   // Job duration fields - user can choose one of three options
   duration_type: text("duration_type").$type<'time' | 'days' | 'hours' | null>(), // Which duration option was selected
-  start_time: text("start_time"), // Start time if duration_type = 'time' (e.g., "09:00")
-  end_time: text("end_time"), // End time if duration_type = 'time' (e.g., "17:00")
+  start_time: text("start_time"), // Optional start time (e.g., "09:00")
+  end_time: text("end_time"), // Optional end time (e.g., "17:00")
   days: integer("days"), // Number of days if duration_type = 'days'
   hours: integer("hours"), // Number of hours if duration_type = 'hours'
   status: text("status").default('active').$type<'active' | 'paused' | 'closed'>(),

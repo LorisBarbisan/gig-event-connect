@@ -70,6 +70,7 @@ export interface Job {
   rate: string;
   description: string;
   event_date: string;
+  end_date?: string;
   // Job duration fields
   duration_type?: 'time' | 'days' | 'hours' | null;
   start_time?: string;
@@ -145,15 +146,11 @@ export interface RecruiterFormData {
 export interface JobFormData {
   title: string;
   type: string;
-  contract_type?: string;
   location: string;
   rate: string;
   description: string;
-  event_date: string;
-  // Job duration fields
-  duration_type: 'time' | 'days' | 'hours' | '';
-  start_time: string;
-  end_time: string;
-  days: string;
-  hours: string;
+  event_date: string; // Start date (mandatory)
+  end_date?: string; // End date (optional)
+  start_time?: string; // Start time (optional)
+  end_time?: string; // End time (optional)
 }
