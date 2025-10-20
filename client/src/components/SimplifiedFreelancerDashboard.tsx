@@ -220,7 +220,7 @@ export default function SimplifiedFreelancerDashboard() {
                       <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div className="text-2xl font-bold">
-                      {jobApplications.filter((app: JobApplication) => app.status === 'pending').length}
+                      {jobApplications.filter((app: JobApplication) => app.status === 'applied').length}
                     </div>
                     <div className="text-sm text-muted-foreground">Pending</div>
                   </div>
