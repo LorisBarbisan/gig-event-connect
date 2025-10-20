@@ -141,10 +141,8 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['/api/notifications', userId], refetchType: 'active' });
-      await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', userId], refetchType: 'active' });
-      await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+      await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId], type: 'active' });
+      await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId], type: 'active' });
     },
     onError: () => {
       toast({
