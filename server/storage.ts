@@ -871,9 +871,26 @@ export class DatabaseStorage implements IStorage {
       recruiter_deleted: job_applications.recruiter_deleted,
       job_title: jobs.title,
       job_company: jobs.company,
+      freelancer_profile: {
+        id: freelancer_profiles.id,
+        user_id: freelancer_profiles.user_id,
+        first_name: freelancer_profiles.first_name,
+        last_name: freelancer_profiles.last_name,
+        title: freelancer_profiles.title,
+        bio: freelancer_profiles.bio,
+        location: freelancer_profiles.location,
+        experience_years: freelancer_profiles.experience_years,
+        skills: freelancer_profiles.skills,
+        portfolio_url: freelancer_profiles.portfolio_url,
+        linkedin_url: freelancer_profiles.linkedin_url,
+        website_url: freelancer_profiles.website_url,
+        availability_status: freelancer_profiles.availability_status,
+        profile_photo_url: freelancer_profiles.profile_photo_url,
+      },
     })
     .from(job_applications)
     .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
+    .leftJoin(freelancer_profiles, eq(freelancer_profiles.user_id, job_applications.freelancer_id))
     .where(
       and(
         eq(jobs.recruiter_id, recruiterId),
