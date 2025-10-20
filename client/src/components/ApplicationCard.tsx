@@ -96,12 +96,14 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
         method: 'DELETE',
       });
     },
-    onSuccess: () => {
-      if (userType === 'freelancer') {
-        queryClient.invalidateQueries({ queryKey: ['/api/freelancer/applications', currentUserId] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
-      }
+    onSuccess: async () => {
+      const queryKey = userType === 'freelancer' 
+        ? ['/api/freelancer/applications', currentUserId]
+        : ['/api/recruiter', currentUserId, 'applications'];
+      
+      await queryClient.invalidateQueries({ queryKey, refetchType: 'active' });
+      await queryClient.refetchQueries({ queryKey });
+      
       setShowDeleteConfirm(false);
       toast({
         title: userType === 'freelancer' ? 'Application removed' : 'Application hidden',
