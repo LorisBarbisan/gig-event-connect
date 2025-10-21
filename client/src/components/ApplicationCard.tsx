@@ -99,11 +99,11 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
     onSuccess: async () => {
       setShowDeleteConfirm(false);
       
-      // Invalidate queries - this automatically triggers a refetch in React Query v5
+      // Invalidate and refetch queries to ensure UI updates
       if (userType === 'freelancer') {
-        await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/applications', currentUserId] });
+        await queryClient.refetchQueries({ queryKey: ['/api/freelancer/applications', currentUserId] });
       } else {
-        await queryClient.invalidateQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
+        await queryClient.refetchQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
       }
       
       toast({
