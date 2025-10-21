@@ -109,6 +109,32 @@ export function registerJobRoutes(app: Express) {
         return res.status(404).json({ error: "Job not found" });
       }
 
+      // Notify only active applicants about the job update (not rejected or hired)
+      const jobApplications = await storage.getJobApplications(jobId);
+      const activeApplications = jobApplications.filter(app => 
+        app.status === 'applied' || app.status === 'reviewed' || app.status === 'shortlisted'
+      );
+      
+      // Parallelize notification creation for performance
+      await Promise.all(activeApplications.map(application =>
+        storage.createNotification({
+          user_id: application.freelancer_id,
+          type: 'job_update',
+          title: 'Job Updated',
+          message: `The job "${updatedJob.title}" at ${updatedJob.company} that you applied for has been updated. Please review the changes.`,
+          priority: 'normal',
+          related_entity_type: 'job',
+          related_entity_id: jobId,
+          action_url: `/jobs/${jobId}`,
+          metadata: JSON.stringify({ 
+            job_id: jobId,
+            application_id: application.id,
+            job_title: updatedJob.title,
+            company: updatedJob.company
+          })
+        })
+      ));
+
       res.json(updatedJob);
     } catch (error) {
       console.error("Update job error:", error);
