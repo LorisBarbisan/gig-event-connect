@@ -98,6 +98,7 @@ export interface JobApplication {
   freelancer_profile?: FreelancerProfile;
   job_title?: string;
   job_company?: string;
+  recruiter_id?: number | null;
 }
 
 export interface Message {
