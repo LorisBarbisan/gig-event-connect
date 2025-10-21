@@ -251,28 +251,16 @@ export default function SimplifiedFreelancerDashboard() {
                 </p>
               </CardContent>
             </Card>
-          ) : jobApplications.filter((app: JobApplication) => app.status !== 'hired').length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <CheckCircle className="w-12 h-12 mx-auto text-green-600 dark:text-green-400 mb-4" />
-                <h3 className="text-lg font-medium mb-2">All Applications Processed!</h3>
-                <p className="text-muted-foreground">
-                  Great! All your applications have been processed. Check the Bookings tab to see your confirmed jobs.
-                </p>
-              </CardContent>
-            </Card>
           ) : (
             <div className="space-y-4">
-              {jobApplications
-                .filter((application: JobApplication) => application.status !== 'hired')
-                .map((application: JobApplication) => (
-                  <ApplicationCard
-                    key={application.id}
-                    application={application}
-                    userType="freelancer"
-                    currentUserId={user.id}
-                  />
-                ))}
+              {jobApplications.map((application: JobApplication) => (
+                <ApplicationCard
+                  key={application.id}
+                  application={application}
+                  userType="freelancer"
+                  currentUserId={user.id}
+                />
+              ))}
             </div>
           )}
         </TabsContent>
