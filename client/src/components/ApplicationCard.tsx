@@ -101,7 +101,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
       
       // Invalidate queries - this automatically triggers a refetch in React Query v5
       if (userType === 'freelancer') {
-        await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/applications'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/freelancer/applications', currentUserId] });
       } else {
         await queryClient.invalidateQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
       }
