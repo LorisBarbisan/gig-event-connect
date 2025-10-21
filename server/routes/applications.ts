@@ -74,12 +74,14 @@ export function registerApplicationRoutes(app: Express) {
       if (job.recruiter_id) {
         await storage.createNotification({
           user_id: job.recruiter_id,
-          type: 'application_received',
+          type: 'application_update',
           title: 'New Job Application',
           message: `A freelancer has applied to your job: ${job.title}`,
-          related_entity_type: 'job',
-          related_entity_id: jobId,
-          metadata: JSON.stringify({ application_id: application.id })
+          priority: 'high',
+          related_entity_type: 'application',
+          related_entity_id: application.id,
+          action_url: '/dashboard?tab=applications',
+          metadata: JSON.stringify({ application_id: application.id, job_id: jobId })
         });
       }
 
@@ -180,12 +182,14 @@ export function registerApplicationRoutes(app: Express) {
       // Create notification for freelancer
       await storage.createNotification({
         user_id: application.freelancer_id,
-        type: 'application_accepted',
+        type: 'application_update',
         title: 'Application Accepted!',
-        message: `Your application for "${job.title}" has been accepted!`,
-        related_entity_type: 'job',
-        related_entity_id: job.id,
-        metadata: JSON.stringify({ application_id: applicationId })
+        message: `Congratulations! Your application for "${job.title}" at ${job.company} has been accepted. The recruiter will contact you soon.`,
+        priority: 'high',
+        related_entity_type: 'application',
+        related_entity_id: applicationId,
+        action_url: '/dashboard?tab=jobs',
+        metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'hired' })
       });
 
       // Broadcast live notification to freelancer if connected
@@ -228,17 +232,19 @@ export function registerApplicationRoutes(app: Express) {
         return res.status(403).json({ error: "Not authorized to reject this application" });
       }
 
-      await storage.updateApplicationStatus(applicationId, 'rejected');
+      await storage.updateApplicationStatus(applicationId, 'rejected', req.body.message);
       
       // Create notification for freelancer
       await storage.createNotification({
         user_id: application.freelancer_id,
-        type: 'application_rejected',
+        type: 'application_update',
         title: 'Application Update',
-        message: `Your application for "${job.title}" was not selected this time.`,
-        related_entity_type: 'job',
-        related_entity_id: job.id,
-        metadata: JSON.stringify({ application_id: applicationId })
+        message: `Your application for "${job.title}" at ${job.company} was not selected this time. ${req.body.message ? 'The recruiter left you feedback.' : ''}`,
+        priority: 'normal',
+        related_entity_type: 'application',
+        related_entity_id: applicationId,
+        action_url: '/dashboard?tab=jobs',
+        metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'rejected', has_feedback: !!req.body.message })
       });
 
       // Broadcast live notification to freelancer if connected
