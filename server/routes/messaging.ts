@@ -49,6 +49,35 @@ export function registerMessagingRoutes(app: Express) {
     }
   });
 
+  // Get or create a conversation with a specific user (without sending a message)
+  app.post("/api/conversations/create", authenticateJWT, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { recipientId } = req.body;
+
+      if (!recipientId) {
+        return res.status(400).json({ error: "Recipient ID is required" });
+      }
+
+      // Check if recipient exists
+      const recipient = await storage.getUser(recipientId);
+      if (!recipient) {
+        return res.status(404).json({ error: "Recipient not found" });
+      }
+
+      // Get or create conversation
+      const conversation = await storage.getOrCreateConversation(req.user.id, recipientId);
+      
+      res.status(200).json({ id: conversation.id });
+    } catch (error) {
+      console.error("Create conversation error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Start a new conversation
   app.post("/api/conversations", authenticateJWT, async (req, res) => {
     try {

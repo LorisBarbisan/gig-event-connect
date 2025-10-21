@@ -32,6 +32,16 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
   const [showJobDetailsDialog, setShowJobDetailsDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Handler to open messages with the other party
+  const handleOpenMessage = () => {
+    const recipientId = userType === 'recruiter' 
+      ? application.freelancer_id 
+      : application.job_id; // Will need to get recruiter ID from job
+    
+    // Navigate to messages tab with recipient query parameter
+    window.location.href = `/dashboard?tab=messages&recipientId=${recipientId}`;
+  };
+
   // Fetch full job details when dialog opens
   const { data: jobDetails, isLoading: jobDetailsLoading } = useQuery<Job>({
     queryKey: [`/api/jobs/${application.job_id}`],
@@ -296,6 +306,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                 <Button 
                   variant="outline" 
                   size="sm"
+                  onClick={() => window.location.href = `/dashboard?tab=messages&recipientId=${application.freelancer_id}`}
                   data-testid={`button-message-${application.freelancer_profile.user_id}`}
                 >
                   <MessageCircle className="w-4 h-4 mr-1" />

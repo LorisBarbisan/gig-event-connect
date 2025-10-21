@@ -164,6 +164,55 @@ export function MessagingInterface() {
     refetchOnWindowFocus: true, // Refetch when window gains focus to show new messages
     refetchOnReconnect: true, // Refetch when network reconnects
   });
+  
+  // Function to create conversation with a specific user
+  const createConversationWithUser = async (recipientId: number) => {
+    try {
+      const response = await apiRequest('/api/conversations/create', {
+        method: 'POST',
+        body: JSON.stringify({ recipientId }),
+      });
+      
+      if (response.id) {
+        await refetchConversations();
+        setSelectedConversation(response.id);
+        // Clear the query param
+        const newUrl = window.location.pathname + '?tab=messages';
+        window.history.replaceState({}, '', newUrl);
+      }
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      toast({
+        title: "Failed to start conversation",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Check for recipientId in URL query params to auto-open conversation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const recipientId = params.get('recipientId');
+    
+    if (recipientId && conversations.length > 0) {
+      const recipientIdNum = parseInt(recipientId);
+      // Find existing conversation with this recipient
+      const existingConversation = conversations.find(conv => 
+        conv.otherUser.id === recipientIdNum
+      );
+      
+      if (existingConversation) {
+        setSelectedConversation(existingConversation.id);
+        // Clear the query param
+        const newUrl = window.location.pathname + '?tab=messages';
+        window.history.replaceState({}, '', newUrl);
+      } else {
+        // Create a new conversation with this recipient
+        createConversationWithUser(recipientIdNum);
+      }
+    }
+  }, [conversations]);
 
   // Fetch messages for selected conversation
   const { data: messages = [], refetch: refetchMessages } = useQuery<Message[]>({
