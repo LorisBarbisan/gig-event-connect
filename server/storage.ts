@@ -807,6 +807,7 @@ export class DatabaseStorage implements IStorage {
       recruiter_deleted: job_applications.recruiter_deleted,
       job_title: jobs.title,
       job_company: jobs.company,
+      recruiter_id: jobs.recruiter_id,
     })
     .from(job_applications)
     .innerJoin(jobs, eq(jobs.id, job_applications.job_id))

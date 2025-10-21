@@ -499,6 +499,19 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
                     </Button>
                   </DialogTrigger>
 
+                  {/* Message button for freelancers */}
+                  {application.recruiter_id && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.location.href = `/dashboard?tab=messages&recipientId=${application.recruiter_id}`}
+                      data-testid={`button-message-recruiter-${application.id}`}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-1" />
+                      Message Recruiter
+                    </Button>
+                  )}
+
                   {/* Delete button for freelancers - visible and accessible */}
                   <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                     <AlertDialogTrigger asChild>
