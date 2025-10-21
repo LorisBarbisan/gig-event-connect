@@ -99,11 +99,19 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
     onSuccess: async () => {
       setShowDeleteConfirm(false);
       
-      // Invalidate and refetch queries to ensure UI updates
+      // Immediately update cache to remove the deleted application
       if (userType === 'freelancer') {
-        await queryClient.refetchQueries({ queryKey: ['/api/freelancer/applications', currentUserId] });
+        const queryKey = ['/api/freelancer/applications', currentUserId];
+        queryClient.setQueryData(queryKey, (oldData: JobApplication[] | undefined) => {
+          if (!oldData) return [];
+          return oldData.filter(app => app.id !== application.id);
+        });
       } else {
-        await queryClient.refetchQueries({ queryKey: ['/api/recruiter', currentUserId, 'applications'] });
+        const queryKey = ['/api/recruiter', currentUserId, 'applications'];
+        queryClient.setQueryData(queryKey, (oldData: JobApplication[] | undefined) => {
+          if (!oldData) return [];
+          return oldData.filter(app => app.id !== application.id);
+        });
       }
       
       toast({
