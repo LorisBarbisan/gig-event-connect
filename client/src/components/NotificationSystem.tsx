@@ -153,11 +153,22 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     },
   });
 
-  const handleNotificationClick = (notification: Notification) => {
-    // Mark as read if unread
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read if unread and wait for completion
     if (!notification.is_read) {
-      markAsReadMutation.mutate(notification.id);
+      try {
+        await apiRequest(`/api/notifications/${notification.id}/read`, {
+          method: 'PATCH',
+        });
+        // Immediately update the UI to clear the badge
+        await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
     }
+
+    // Close the dropdown
+    setIsOpen(false);
 
     // Navigate to action URL if provided
     if (notification.action_url) {

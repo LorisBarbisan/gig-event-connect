@@ -169,8 +169,8 @@ export function registerMessagingRoutes(app: Express) {
           message: `You have a new message from ${senderDisplayName}`,
           related_entity_type: 'message',
           related_entity_id: newMessage.id,
-          action_url: '/dashboard?tab=messages',
-          metadata: JSON.stringify({ sender_id: req.user.id })
+          action_url: `/dashboard?tab=messages&recipientId=${req.user.id}`,
+          metadata: JSON.stringify({ sender_id: req.user.id, conversation_id: conversation.id })
         });
         
         if (process.env.NODE_ENV !== 'production') {
@@ -279,8 +279,8 @@ export function registerMessagingRoutes(app: Express) {
           message: `You have a new message from ${senderDisplayName}`,
           related_entity_type: 'message',
           related_entity_id: message.id,
-          action_url: '/dashboard?tab=messages',
-          metadata: JSON.stringify({ sender_id: req.user.id })
+          action_url: `/dashboard?tab=messages&recipientId=${req.user.id}`,
+          metadata: JSON.stringify({ sender_id: req.user.id, conversation_id: conversation_id })
         });
       }
 
