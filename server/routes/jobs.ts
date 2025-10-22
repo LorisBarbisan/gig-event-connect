@@ -6,7 +6,27 @@ import { authenticateJWT } from "./auth";
 export function registerJobRoutes(app: Express) {
   // Get all jobs endpoint implemented in main routes.ts
 
-  // Job by ID endpoint implemented in main routes.ts
+  // Get job by ID
+  app.get("/api/jobs/:id", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      
+      if (Number.isNaN(jobId)) {
+        return res.status(400).json({ error: "Invalid job ID" });
+      }
+      
+      const job = await storage.getJobById(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      
+      res.json(job);
+    } catch (error) {
+      console.error("Get job by ID error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // External job sync endpoint implemented in main routes.ts
 
