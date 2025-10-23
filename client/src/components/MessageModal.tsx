@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { MessageCircle, Send, Paperclip, X } from 'lucide-react';
 
@@ -21,6 +22,7 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSendMessage = async () => {
     if (!message.trim() && !attachedFile) {
@@ -117,6 +119,10 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
         title: 'Message sent',
         description: `Your message has been sent to ${recipientName}.`,
       });
+
+      // Invalidate conversations cache to refresh the messages list
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${response.id}/messages`] });
 
       setMessage('');
       setAttachedFile(null);
