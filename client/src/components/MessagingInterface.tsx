@@ -157,12 +157,21 @@ export function MessagingInterface() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  console.log('🔵 MessagingInterface mounted');
+
   // Fetch conversations
-  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
+  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations, error: conversationsError } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations'],
     refetchOnMount: 'always', // Always refetch when component mounts to show new conversations
     refetchOnWindowFocus: true, // Refetch when window gains focus to show new messages
     refetchOnReconnect: true, // Refetch when network reconnects
+  });
+  
+  console.log('🔵 Conversations query state:', { 
+    conversationsCount: conversations?.length, 
+    isLoading: conversationsLoading,
+    hasError: !!conversationsError,
+    error: conversationsError
   });
   
   // Function to create conversation with a specific user
