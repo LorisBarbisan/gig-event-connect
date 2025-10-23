@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 // Removed unused imports: UserCheck, Building2
 import { FaGoogle, FaFacebook, FaLinkedin } from 'react-icons/fa';
+import { Mail, CheckCircle } from 'lucide-react';
 
 export default function Auth() {
   const { user, signUp, signIn, updateUser, loading: authLoading } = useOptimizedAuth();
@@ -20,6 +21,8 @@ export default function Auth() {
   const [showResendOption, setShowResendOption] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [showDirectLink, setShowDirectLink] = useState<string | null>(null);
+  const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState('');
   
   // Force signup tab when tab=signup in URL
   const [activeTab, setActiveTab] = useState(() => {
@@ -222,12 +225,9 @@ export default function Auth() {
           variant: "destructive"
         });
       } else {
-        toast({
-          title: "Registration Successful!",
-          description: message || "Please check your email and spam folder to verify your account before signing in."
-        });
-        // Set up resend verification option
-        setShowResendOption(true);
+        // Show centered verification success message instead of toast
+        setVerificationMessage(message || "Please check your email and spam folder to verify your account before signing in.");
+        setShowVerificationSuccess(true);
         setPendingVerificationEmail(signUpData.email);
         // Clear the form after successful signup
         setSignUpData({
@@ -339,6 +339,87 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  // Show verification success message if signup was successful
+  if (showVerificationSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl">
+          <Card className="border-border/50 shadow-2xl">
+            <CardContent className="p-12">
+              <div className="text-center space-y-6">
+                {/* Success Icon */}
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-500" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                      <Mail className="w-7 h-7 text-blue-600 dark:text-blue-500" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Success Title */}
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                    Registration Successful!
+                  </h2>
+                  <p className="text-lg text-muted-foreground">
+                    We've sent a verification email to
+                  </p>
+                  <p className="text-lg font-semibold text-primary mt-1">
+                    {pendingVerificationEmail}
+                  </p>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 space-y-3">
+                  <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {verificationMessage}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Check your <strong>inbox</strong> and <strong>spam folder</strong> for the verification link.
+                  </p>
+                </div>
+
+                {/* Resend Button */}
+                <div className="pt-4">
+                  <Button
+                    onClick={handleResendVerification}
+                    variant="outline"
+                    disabled={loading}
+                    className="w-full sm:w-auto px-8"
+                    data-testid="button-resend-verification"
+                  >
+                    {loading ? 'Sending...' : 'Resend Verification Email'}
+                  </Button>
+                </div>
+
+                {/* Back to Sign In */}
+                <div className="pt-6 border-t border-border">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Already verified your email?
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setShowVerificationSuccess(false);
+                      setActiveTab('signin');
+                    }}
+                    variant="default"
+                    className="bg-gradient-primary hover:bg-primary-hover text-white"
+                    data-testid="button-go-to-signin"
+                  >
+                    Go to Sign In
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
