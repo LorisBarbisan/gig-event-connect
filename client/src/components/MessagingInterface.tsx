@@ -227,6 +227,9 @@ export function MessagingInterface() {
   const { data: messages = [], refetch: refetchMessages } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${selectedConversation}/messages`],
     enabled: selectedConversation !== null,
+    refetchInterval: 3000, // Poll every 3 seconds to show new messages
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   // Create message mutation
