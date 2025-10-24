@@ -11,6 +11,7 @@ import { Send, MessageCircle, Clock, User, Trash2, Paperclip, Download, FileText
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FileUploader } from "./FileUploader";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 interface User {
   id: number;
@@ -148,6 +149,7 @@ const handleFileDownload = async (attachment: MessageAttachment) => {
 };
 
 export function MessagingInterface() {
+  const { user } = useOptimizedAuth();
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -447,12 +449,20 @@ export function MessagingInterface() {
                         <p className="text-sm text-muted-foreground">Start the conversation!</p>
                       </div>
                     ) : (
-                      messages.map((message) => (
-                        <div key={message.id} className={`flex ${message.sender_id === null ? 'justify-start' : 'justify-end'}`}>
+                      messages.map((message) => {
+                        const isMyMessage = message.sender_id === user?.id;
+                        const isSystemMessage = message.sender_id === null;
+                        
+                        return (
+                        <div key={message.id} className={`flex ${
+                          isSystemMessage ? 'justify-center' : isMyMessage ? 'justify-end' : 'justify-start'
+                        }`}>
                           <div className={`max-w-[70%] p-3 rounded-lg ${
-                            message.sender_id === null 
-                              ? 'bg-muted text-muted-foreground' 
-                              : 'bg-primary text-primary-foreground'
+                            isSystemMessage 
+                              ? 'bg-muted text-muted-foreground text-center text-sm' 
+                              : isMyMessage
+                              ? 'bg-gradient-primary text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-foreground'
                           }`}>
                             {message.content && <p className="break-words">{message.content}</p>}
                             
@@ -463,20 +473,22 @@ export function MessagingInterface() {
                                   <div 
                                     key={attachment.id} 
                                     className={`flex items-center gap-2 p-2 rounded border ${
-                                      message.sender_id === null 
+                                      isSystemMessage 
                                         ? 'bg-background border-border' 
-                                        : 'bg-primary-foreground/10 border-primary-foreground/20'
+                                        : isMyMessage
+                                        ? 'bg-white/10 border-white/20'
+                                        : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
                                     }`}
                                   >
                                     {getFileIcon(attachment.file_type)}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-medium truncate ${
-                                        message.sender_id === null ? 'text-foreground' : 'text-primary-foreground'
+                                        isSystemMessage ? 'text-foreground' : isMyMessage ? 'text-white' : 'text-foreground'
                                       }`}>
                                         {attachment.original_filename}
                                       </p>
                                       <p className={`text-xs ${
-                                        message.sender_id === null ? 'text-muted-foreground' : 'text-primary-foreground/70'
+                                        isSystemMessage ? 'text-muted-foreground' : isMyMessage ? 'text-white/70' : 'text-muted-foreground'
                                       }`}>
                                         {formatFileSize(attachment.file_size)}
                                         {attachment.scan_status === 'safe' && attachment.moderation_status === 'approved' && (
@@ -496,9 +508,11 @@ export function MessagingInterface() {
                                         variant="ghost"
                                         onClick={() => handleFileDownload(attachment)}
                                         className={`h-8 w-8 p-0 ${
-                                          message.sender_id === null 
+                                          isSystemMessage 
                                             ? 'hover:bg-muted' 
-                                            : 'hover:bg-primary-foreground/20 text-primary-foreground'
+                                            : isMyMessage
+                                            ? 'hover:bg-white/20 text-white'
+                                            : 'hover:bg-gray-300 dark:hover:bg-gray-600'
                                         }`}
                                       >
                                         <Download className="h-4 w-4" />
@@ -510,16 +524,19 @@ export function MessagingInterface() {
                             )}
                             
                             <div className={`flex items-center gap-1 mt-1 text-xs ${
-                              message.sender_id === null 
-                                ? 'text-muted-foreground' 
-                                : 'text-primary-foreground/70'
+                              isSystemMessage 
+                                ? 'text-muted-foreground justify-center' 
+                                : isMyMessage
+                                ? 'text-white/70'
+                                : 'text-muted-foreground'
                             }`}>
                               <Clock className="h-3 w-3" />
                               {formatDate(message.created_at)}
                             </div>
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                     <div ref={messagesEndRef} />
                   </div>
