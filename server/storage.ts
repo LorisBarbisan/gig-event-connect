@@ -1096,39 +1096,47 @@ export class DatabaseStorage implements IStorage {
     .where(eq(messages.conversation_id, conversationId))
     .orderBy(messages.created_at);
 
-    // Return all messages for admin view
-    return result.map(row => ({
-      id: row.id,
-      conversation_id: row.conversation_id,
-      sender_id: row.sender_id,
-      content: row.content,
-      is_read: row.is_read,
-      is_system_message: row.is_system_message,
-      created_at: row.created_at,
-      sender: {
-        id: row.sender_id || 0, // Use 0 for system messages with null sender_id
-        email: row.senderEmail || '',
-        role: row.senderRole || 'freelancer',
-        password: '',
-        first_name: null,
-        last_name: null,
-        email_verified: false,
-        email_verification_token: null,
-        email_verification_expires: null,
-        password_reset_token: null,
-        password_reset_expires: null,
-        auth_provider: 'email',
-        google_id: null,
-        facebook_id: null,
-        linkedin_id: null,
-        profile_photo_url: null,
-        last_login_method: null,
-        last_login_at: null,
-        deleted_at: null,
-        created_at: new Date(),
-        updated_at: new Date()
-      }
-    }));
+    // Load attachments for each message
+    const messagesWithAttachments = await Promise.all(
+      result.map(async (row) => {
+        const attachments = await this.getMessageAttachments(row.id);
+        return {
+          id: row.id,
+          conversation_id: row.conversation_id,
+          sender_id: row.sender_id,
+          content: row.content,
+          is_read: row.is_read,
+          is_system_message: row.is_system_message,
+          created_at: row.created_at,
+          sender: {
+            id: row.sender_id || 0, // Use 0 for system messages with null sender_id
+            email: row.senderEmail || '',
+            role: row.senderRole || 'freelancer',
+            password: '',
+            first_name: null,
+            last_name: null,
+            email_verified: false,
+            email_verification_token: null,
+            email_verification_expires: null,
+            password_reset_token: null,
+            password_reset_expires: null,
+            auth_provider: 'email',
+            google_id: null,
+            facebook_id: null,
+            linkedin_id: null,
+            profile_photo_url: null,
+            last_login_method: null,
+            last_login_at: null,
+            deleted_at: null,
+            created_at: new Date(),
+            updated_at: new Date()
+          },
+          attachments: attachments.length > 0 ? attachments : undefined
+        };
+      })
+    );
+
+    return messagesWithAttachments;
   }
 
 
