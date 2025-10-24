@@ -163,8 +163,10 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         await apiRequest(`/api/notifications/${notification.id}/read`, {
           method: 'PATCH',
         });
-        // Immediately update the UI to clear the badge
+        // Immediately update the UI to clear the badge counts
         await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+        await queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] });
+        await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
       } catch (error) {
         console.error('Failed to mark notification as read:', error);
       }
