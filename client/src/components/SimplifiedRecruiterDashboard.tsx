@@ -35,22 +35,25 @@ export default function SimplifiedRecruiterDashboard() {
     refetchInterval: activeTab === 'messages' ? 10000 : 15000, // Poll faster when on messages tab
   });
 
-  // Handle URL parameters for direct navigation to job posting
+  // Handle URL parameters for direct navigation to job posting and messages
   useEffect(() => {
     const handleSearchParams = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
       const actionParam = urlParams.get('action');
       
-      if (tabParam === 'jobs') {
-        setActiveTab('jobs');
-        if (actionParam === 'post') {
-          setShowJobForm(true);
-          // Clear the action parameter to prevent repeated triggers
-          urlParams.delete('action');
-          const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
-          window.history.replaceState({}, '', newUrl);
-        }
+      // Switch to tab specified in URL (e.g., from notifications)
+      if (tabParam && ['profile', 'jobs', 'applications', 'messages'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+      
+      // Handle job posting action
+      if (tabParam === 'jobs' && actionParam === 'post') {
+        setShowJobForm(true);
+        // Clear the action parameter to prevent repeated triggers
+        urlParams.delete('action');
+        const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
+        window.history.replaceState({}, '', newUrl);
       }
     };
 
