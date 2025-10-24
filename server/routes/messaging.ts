@@ -47,6 +47,20 @@ export function registerMessagingRoutes(app: Express) {
       // Mark messages as read
       await storage.markMessagesAsRead(conversationId, req.user.id);
       
+      // Send WebSocket update for badge counts
+      try {
+        const counts = await storage.getCategoryUnreadCounts(req.user.id);
+        const broadcastToUser = (global as any).broadcastToUser;
+        if (broadcastToUser) {
+          broadcastToUser(req.user.id, {
+            type: 'badge_counts_update',
+            counts: counts
+          });
+        }
+      } catch (error) {
+        console.error('Failed to broadcast badge counts after marking messages as read:', error);
+      }
+      
       res.json(messages);
     } catch (error) {
       console.error("Get conversation messages error:", error);
