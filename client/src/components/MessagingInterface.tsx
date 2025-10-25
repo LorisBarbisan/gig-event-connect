@@ -234,39 +234,15 @@ export function MessagingInterface() {
       });
       return result;
     },
-    onMutate: async (variables) => {
-      // Optimistically add message to UI immediately
-      const tempMessage: Message = {
-        id: Date.now(),
-        conversation_id: variables.conversation_id,
-        sender_id: user?.id || 0,
-        content: variables.content,
-        is_read: false,
-        is_system_message: false,
-        created_at: new Date().toISOString(),
-        sender: user as any,
-        attachments: []
-      };
-      
-      queryClient.setQueryData<Message[]>(
-        [`/api/conversations/${selectedConversation}/messages`],
-        (old = []) => [...old, tempMessage]
-      );
-      
-      return { tempMessage };
-    },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
+      // Immediately refetch messages using the conversation_id from the variables
+      await queryClient.invalidateQueries({ 
+        queryKey: [`/api/conversations/${variables.conversation_id}/messages`]
+      });
       setNewMessage("");
       setPendingAttachment(null);
     },
-    onError: (error, variables, context: any) => {
-      // Remove optimistic message on error
-      if (context?.tempMessage) {
-        queryClient.setQueryData<Message[]>(
-          [`/api/conversations/${selectedConversation}/messages`],
-          (old = []) => old.filter(m => m.id !== context.tempMessage.id)
-        );
-      }
+    onError: (error) => {
       toast({
         title: "Failed to send message",
         description: "Please try again",
