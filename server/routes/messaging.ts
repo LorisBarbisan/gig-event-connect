@@ -27,6 +27,7 @@ export function registerMessagingRoutes(app: Express) {
       }
 
       const conversationId = parseInt(req.params.id);
+      console.log(`📨 GET /api/conversations/${conversationId}/messages for user ${req.user.id}`);
       
       // First verify that the user is a participant in this conversation
       const userConversations = await storage.getConversationsByUserId(req.user.id);
@@ -38,6 +39,11 @@ export function registerMessagingRoutes(app: Express) {
       
       // Get messages for this conversation
       const messages = await storage.getConversationMessages(conversationId);
+      console.log(`✅ Returning ${messages.length} messages for conversation ${conversationId}`);
+      if (messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        console.log(`  Last message ID: ${lastMessage.id}, content: "${lastMessage.content?.substring(0, 20)}..."`);
+      }
       
       // Mark messages as read
       await storage.markMessagesAsRead(conversationId, req.user.id);

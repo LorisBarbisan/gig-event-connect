@@ -260,14 +260,13 @@ export function MessagingInterface() {
       return { optimisticMessage };
     },
     onSuccess: async (serverMessage, variables, context) => {
-      console.log('📥 Mutation onSuccess, refetching messages');
+      console.log('📥 Mutation onSuccess, message saved on server');
       setNewMessage("");
       setPendingAttachment(null);
       
-      // Don't replace optimistic message - just refetch to get complete data from server
-      // The server response doesn't include the sender object, so we'll let the refetch handle it
-      await refetchMessages();
-      await refetchConversations();
+      // Don't refetch immediately - let the optimistic message stay
+      // The automatic polling (refetchInterval: 3000) will pick up the real message from server
+      // and replace the optimistic one naturally
     },
     onError: (error, variables, context) => {
       console.error('❌ Message send failed, rolling back optimistic update');
