@@ -236,16 +236,56 @@ export function MessagingInterface() {
       console.log('✅ Message sent successfully:', result);
       return result;
     },
-    onSuccess: async (data) => {
-      console.log('📥 Mutation onSuccess, clearing input and refetching messages');
+    onMutate: async (newMessageData) => {
+      // Optimistically add the message to the UI
+      console.log('🚀 Optimistically adding message to UI');
+      const optimisticMessage: Message = {
+        id: Date.now(), // Temporary ID
+        conversation_id: newMessageData.conversation_id,
+        sender_id: user?.id || 0,
+        content: newMessageData.content,
+        is_read: false,
+        is_system_message: false,
+        created_at: new Date().toISOString(),
+        sender: user as User, // Use current user as sender
+        attachments: []
+      };
+      
+      // Update the query cache optimistically
+      queryClient.setQueryData<Message[]>(
+        [`/api/conversations/${selectedConversation}/messages`],
+        (old = []) => [...old, optimisticMessage]
+      );
+      
+      return { optimisticMessage };
+    },
+    onSuccess: async (serverMessage, variables, context) => {
+      console.log('📥 Mutation onSuccess, updating with server response');
       setNewMessage("");
       setPendingAttachment(null);
-      // Manually refetch messages to ensure they appear immediately
-      await refetchMessages();
-      await refetchConversations();
+      
+      // Replace optimistic message with real server message
+      queryClient.setQueryData<Message[]>(
+        [`/api/conversations/${selectedConversation}/messages`],
+        (old = []) => {
+          const filtered = old.filter(m => m.id !== context?.optimisticMessage.id);
+          return [...filtered, serverMessage];
+        }
+      );
+      
+      // Also refetch to ensure we have the latest data
+      refetchMessages();
+      refetchConversations();
     },
-    onError: (error) => {
-      console.error('❌ Message send failed:', error);
+    onError: (error, variables, context) => {
+      console.error('❌ Message send failed, rolling back optimistic update');
+      // Remove the optimistic message on error
+      if (context?.optimisticMessage) {
+        queryClient.setQueryData<Message[]>(
+          [`/api/conversations/${selectedConversation}/messages`],
+          (old = []) => old.filter(m => m.id !== context.optimisticMessage.id)
+        );
+      }
       toast({
         title: "Failed to send message",
         description: "Please try again",
