@@ -235,16 +235,17 @@ export function MessagingInterface() {
       return result;
     },
     onSuccess: async (serverMessage) => {
-      console.log('✅ Message sent, invalidating cache for conversation:', selectedConversation);
+      console.log('✅ Message sent, forcing refetch for conversation:', selectedConversation);
       setNewMessage("");
       setPendingAttachment(null);
       
       // Force an immediate refetch to show the new message
-      // This ensures the message appears right away and stays in sync with the server
-      await queryClient.invalidateQueries({ 
-        queryKey: [`/api/conversations/${selectedConversation}/messages`]
+      // refetchQueries forces an active refetch, unlike invalidateQueries which only marks as stale
+      await queryClient.refetchQueries({ 
+        queryKey: [`/api/conversations/${selectedConversation}/messages`],
+        type: 'active'
       });
-      console.log('🔄 Cache invalidated, refetch should trigger automatically');
+      console.log('🔄 Refetch completed');
     },
     onError: (error) => {
       toast({
