@@ -234,20 +234,10 @@ export function MessagingInterface() {
       });
       return result;
     },
-    onSuccess: async (serverMessage) => {
+    onSuccess: () => {
       setNewMessage("");
       setPendingAttachment(null);
-      
-      // Invalidate the query cache first, then force a refetch
-      // This ensures the polling continues working properly
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/conversations/${selectedConversation}/messages`]
-      });
-      
-      // Then immediately refetch to show the new message
-      if (selectedConversation) {
-        refetchMessages();
-      }
+      // Let WebSocket handle the message display update
     },
     onError: (error) => {
       toast({
