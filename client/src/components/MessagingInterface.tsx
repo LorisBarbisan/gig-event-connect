@@ -234,46 +234,22 @@ export function MessagingInterface() {
       });
       return result;
     },
-    onMutate: async (newMessageData) => {
-      // Optimistically add the message to the UI immediately
-      const optimisticMessage: Message = {
-        id: Date.now(), // Temporary ID
-        conversation_id: newMessageData.conversation_id,
-        sender_id: user?.id || 0,
-        content: newMessageData.content,
-        is_read: false,
-        is_system_message: false,
-        created_at: new Date().toISOString(),
-        sender: user as User,
-        attachments: []
-      };
-      
-      // Update the query cache optimistically
-      queryClient.setQueryData<Message[]>(
-        [`/api/conversations/${selectedConversation}/messages`],
-        (old = []) => [...old, optimisticMessage]
-      );
-      
-      return { optimisticMessage };
-    },
-    onSuccess: async (serverMessage, variables, context) => {
+    onSuccess: async (serverMessage) => {
       setNewMessage("");
       setPendingAttachment(null);
       
-      // Invalidate and refetch to replace optimistic message with real server data
-      // invalidateQueries forces a fresh fetch from the server
-      await queryClient.invalidateQueries({ 
-        queryKey: [`/api/conversations/${selectedConversation}/messages`]
-      });
+      // Add the server's message directly to the cache
+      queryClient.setQueryData<Message[]>(
+        [`/api/conversations/${selectedConversation}/messages`],
+        (old = []) => {
+          // Check if message already exists (avoid duplicates)
+          const exists = old.some(m => m.id === serverMessage.id);
+          if (exists) return old;
+          return [...old, serverMessage];
+        }
+      );
     },
-    onError: (error, variables, context) => {
-      // Remove the optimistic message on error
-      if (context?.optimisticMessage) {
-        queryClient.setQueryData<Message[]>(
-          [`/api/conversations/${selectedConversation}/messages`],
-          (old = []) => old.filter(m => m.id !== context.optimisticMessage.id)
-        );
-      }
+    onError: (error) => {
       toast({
         title: "Failed to send message",
         description: "Please try again",
