@@ -50,7 +50,11 @@ export function LiveNotificationPopups({ enabled = true }: LiveNotificationPopup
               // Update conversation list for sender when they send a message
               queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
               if (data.conversation_id) {
-                queryClient.invalidateQueries({ queryKey: [`/api/conversations/${data.conversation_id}/messages`] });
+                // Force immediate refetch to show the message right away
+                queryClient.refetchQueries({ 
+                  queryKey: [`/api/conversations/${data.conversation_id}/messages`],
+                  type: 'active'
+                });
               }
               break;
             case 'application_update':

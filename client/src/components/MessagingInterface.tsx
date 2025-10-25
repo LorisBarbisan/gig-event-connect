@@ -238,8 +238,16 @@ export function MessagingInterface() {
       setNewMessage("");
       setPendingAttachment(null);
       
-      // Call the query's refetch function directly for immediate update
-      await refetchMessages();
+      // Invalidate the query cache first, then force a refetch
+      // This ensures the polling continues working properly
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/conversations/${selectedConversation}/messages`]
+      });
+      
+      // Then immediately refetch to show the new message
+      if (selectedConversation) {
+        refetchMessages();
+      }
     },
     onError: (error) => {
       toast({
