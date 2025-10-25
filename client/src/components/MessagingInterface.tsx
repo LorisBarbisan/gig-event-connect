@@ -235,17 +235,11 @@ export function MessagingInterface() {
       return result;
     },
     onSuccess: async (serverMessage) => {
-      console.log('✅ Message sent, forcing refetch for conversation:', selectedConversation);
       setNewMessage("");
       setPendingAttachment(null);
       
-      // Force an immediate refetch to show the new message
-      // refetchQueries forces an active refetch, unlike invalidateQueries which only marks as stale
-      await queryClient.refetchQueries({ 
-        queryKey: [`/api/conversations/${selectedConversation}/messages`],
-        type: 'active'
-      });
-      console.log('🔄 Refetch completed');
+      // Call the query's refetch function directly for immediate update
+      await refetchMessages();
     },
     onError: (error) => {
       toast({
