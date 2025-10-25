@@ -211,8 +211,10 @@ export function registerMessagingRoutes(app: Express) {
       }
 
       const { conversation_id, content, attachment } = req.body;
+      console.log(`📬 POST /api/messages from user ${req.user.id}, conversation ${conversation_id}, content length: ${content?.length || 0}`);
 
       if (!conversation_id || (!content && !attachment)) {
+        console.log('❌ Missing conversation_id or content');
         return res.status(400).json({ error: "Conversation ID and either content or attachment are required" });
       }
 
@@ -312,6 +314,7 @@ export function registerMessagingRoutes(app: Express) {
         console.error('Failed to broadcast conversation update to sender:', error);
       }
 
+      console.log(`✅ Message ${message.id} sent successfully, returning to client`);
       res.status(201).json(message);
     } catch (error) {
       console.error("Send message error:", error);

@@ -228,18 +228,23 @@ export function MessagingInterface() {
   // Create message mutation
   const createMessageMutation = useMutation({
     mutationFn: async (data: { conversation_id: number; content: string; attachment?: {path: string, name: string, size: number, type: string} }) => {
-      return apiRequest(`/api/messages`, {
+      console.log('📤 Sending message:', data);
+      const result = await apiRequest(`/api/messages`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      console.log('✅ Message sent successfully:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('📥 Mutation onSuccess, clearing input and invalidating queries');
       setNewMessage("");
       setPendingAttachment(null);
       queryClient.invalidateQueries({ queryKey: [`/api/conversations/${selectedConversation}/messages`] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
     },
     onError: (error) => {
+      console.error('❌ Message send failed:', error);
       toast({
         title: "Failed to send message",
         description: "Please try again",
