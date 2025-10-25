@@ -235,12 +235,13 @@ export function MessagingInterface() {
       return result;
     },
     onSuccess: async (data, variables) => {
-      // Immediately refetch messages using the conversation_id from the variables
-      await queryClient.invalidateQueries({ 
-        queryKey: [`/api/conversations/${variables.conversation_id}/messages`]
-      });
       setNewMessage("");
       setPendingAttachment(null);
+      // Force immediate refetch using the conversation_id from the variables
+      await queryClient.refetchQueries({ 
+        queryKey: [`/api/conversations/${variables.conversation_id}/messages`],
+        type: 'active'
+      });
     },
     onError: (error) => {
       toast({
