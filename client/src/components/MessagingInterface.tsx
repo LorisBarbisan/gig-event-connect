@@ -444,14 +444,14 @@ export function MessagingInterface() {
                         
                         return (
                         <div key={message.id} className={`flex ${
-                          isSystemMessage ? 'justify-center' : isMyMessage ? 'justify-end' : 'justify-start'
+                          isSystemMessage ? 'justify-center' : isMyMessage ? 'justify-start' : 'justify-end'
                         }`}>
                           <div className={`max-w-[70%] p-3 rounded-lg ${
                             isSystemMessage 
                               ? 'bg-muted text-muted-foreground text-center text-sm' 
                               : isMyMessage
-                              ? 'bg-gradient-primary text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-foreground'
+                              ? 'bg-gray-100 dark:bg-gray-800 text-foreground'
+                              : 'bg-gradient-primary text-white'
                           }`}>
                             {message.content && <p className="break-words">{message.content}</p>}
                             
@@ -465,19 +465,19 @@ export function MessagingInterface() {
                                       isSystemMessage 
                                         ? 'bg-background border-border' 
                                         : isMyMessage
-                                        ? 'bg-white/10 border-white/20'
-                                        : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                                        ? 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                                        : 'bg-white/10 border-white/20'
                                     }`}
                                   >
                                     {getFileIcon(attachment.file_type)}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-medium truncate ${
-                                        isSystemMessage ? 'text-foreground' : isMyMessage ? 'text-white' : 'text-foreground'
+                                        isSystemMessage ? 'text-foreground' : isMyMessage ? 'text-foreground' : 'text-white'
                                       }`}>
                                         {attachment.original_filename}
                                       </p>
                                       <p className={`text-xs ${
-                                        isSystemMessage ? 'text-muted-foreground' : isMyMessage ? 'text-white/70' : 'text-muted-foreground'
+                                        isSystemMessage ? 'text-muted-foreground' : isMyMessage ? 'text-muted-foreground' : 'text-white/70'
                                       }`}>
                                         {formatFileSize(attachment.file_size)}
                                         {attachment.scan_status === 'safe' && attachment.moderation_status === 'approved' && (
@@ -500,8 +500,8 @@ export function MessagingInterface() {
                                           isSystemMessage 
                                             ? 'hover:bg-muted' 
                                             : isMyMessage
-                                            ? 'hover:bg-white/20 text-white'
-                                            : 'hover:bg-gray-300 dark:hover:bg-gray-600'
+                                            ? 'hover:bg-gray-300 dark:hover:bg-gray-600'
+                                            : 'hover:bg-white/20 text-white'
                                         }`}
                                       >
                                         <Download className="h-4 w-4" />
@@ -516,8 +516,8 @@ export function MessagingInterface() {
                               isSystemMessage 
                                 ? 'text-muted-foreground justify-center' 
                                 : isMyMessage
-                                ? 'text-white/70'
-                                : 'text-muted-foreground'
+                                ? 'text-muted-foreground'
+                                : 'text-white/70'
                             }`}>
                               <Clock className="h-3 w-3" />
                               {formatDate(message.created_at)}
