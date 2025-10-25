@@ -157,6 +157,7 @@ export function MessagingInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const lastMessageSentRef = useRef<number>(0);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations, error: conversationsError } = useQuery<Conversation[]>({
@@ -219,7 +220,11 @@ export function MessagingInterface() {
   const { data: messages = [], refetch: refetchMessages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${selectedConversation}/messages`],
     enabled: selectedConversation !== null,
-    refetchInterval: 3000, // Poll every 3 seconds to show new messages
+    refetchInterval: () => {
+      // Pause polling for 5 seconds after sending a message to avoid race condition
+      const timeSinceLastSent = Date.now() - lastMessageSentRef.current;
+      return timeSinceLastSent > 5000 ? 3000 : false;
+    },
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
   });
@@ -237,11 +242,19 @@ export function MessagingInterface() {
     onSuccess: async (serverMessage, variables) => {
       setNewMessage("");
       setPendingAttachment(null);
+      // Track when we sent this message to pause polling
+      lastMessageSentRef.current = Date.now();
       // Add the server message directly to the cache
       queryClient.setQueryData<Message[]>(
         [`/api/conversations/${variables.conversation_id}/messages`],
         (old = []) => [...old, serverMessage]
       );
+      // Resume polling after 5 seconds by invalidating the query
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/conversations/${variables.conversation_id}/messages`] 
+        });
+      }, 5000);
     },
     onError: (error) => {
       toast({
