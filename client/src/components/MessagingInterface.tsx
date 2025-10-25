@@ -264,9 +264,15 @@ export function MessagingInterface() {
       setNewMessage("");
       setPendingAttachment(null);
       
-      // Don't refetch immediately - let the optimistic message stay
-      // The automatic polling (refetchInterval: 3000) will pick up the real message from server
-      // and replace the optimistic one naturally
+      // Trigger a delayed refetch to replace optimistic message with real server data
+      // Small delay to ensure the optimistic message stays visible briefly
+      setTimeout(async () => {
+        console.log('🔄 Refetching messages after mutation success');
+        await queryClient.refetchQueries({ 
+          queryKey: [`/api/conversations/${selectedConversation}/messages`],
+          type: 'active'
+        });
+      }, 100);
     },
     onError: (error, variables, context) => {
       console.error('❌ Message send failed, rolling back optimistic update');
