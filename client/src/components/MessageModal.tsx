@@ -25,10 +25,10 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
   const queryClient = useQueryClient();
 
   const handleSendMessage = async () => {
-    if (!message.trim() && !attachedFile) {
+    if (!message.trim()) {
       toast({
         title: 'Error',
-        description: 'Please enter a message or attach a file.',
+        description: 'Please enter a message.',
         variant: 'destructive',
       });
       return;
@@ -218,57 +218,6 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
             </p>
           </div>
 
-          {/* File Attachment Section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Attachment</Label>
-              {!attachedFile && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAttachFile}
-                  data-testid="button-attach-file"
-                >
-                  <Paperclip className="w-4 h-4 mr-2" />
-                  Attach File
-                </Button>
-              )}
-            </div>
-
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.docx"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-              data-testid="file-input"
-            />
-
-            {attachedFile && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center space-x-2">
-                  <Paperclip className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-sm font-medium">{attachedFile.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {(attachedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemoveFile}
-                  data-testid="button-remove-attachment"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          </div>
         </div>
 
         <DialogFooter>
@@ -277,7 +226,7 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
           </Button>
           <Button 
             onClick={handleSendMessage} 
-            disabled={isSending || (!message.trim() && !attachedFile)}
+            disabled={isSending || !message.trim()}
             data-testid="button-send-message"
           >
             {isSending ? (
