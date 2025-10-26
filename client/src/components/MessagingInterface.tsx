@@ -274,7 +274,7 @@ export function MessagingInterface() {
 
   // Handle sending messages with optimistic UI update
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation || !user) return;
     
     const messageData = {
       conversation_id: selectedConversation,
@@ -283,16 +283,32 @@ export function MessagingInterface() {
     };
     
     // Create optimistic message for immediate UI update
-    const optimisticMessage = {
+    const optimisticMessage: Message = {
       id: Date.now(), // Temporary ID
       conversation_id: selectedConversation,
-      sender_id: currentUser?.id,
+      sender_id: user.id,
       content: messageData.content,
       is_read: false,
       is_system_message: false,
       created_at: new Date().toISOString(),
-      sender: currentUser as any,
-      attachments: pendingAttachment ? [{ id: Date.now(), message_id: Date.now(), file_url: pendingAttachment.file_url, file_name: pendingAttachment.file_name, file_size: pendingAttachment.file_size, file_type: pendingAttachment.file_type, uploaded_at: new Date() }] : undefined
+      sender: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        first_name: user.first_name || null,
+        last_name: user.last_name || null,
+        company_name: user.company_name || null,
+        deleted_at: null
+      },
+      attachments: pendingAttachment ? [{
+        id: Date.now(),
+        object_path: pendingAttachment.path,
+        original_filename: pendingAttachment.name,
+        file_type: pendingAttachment.type,
+        file_size: pendingAttachment.size,
+        scan_status: 'pending' as const,
+        moderation_status: 'pending' as const
+      }] : undefined
     };
     
     try {
@@ -316,7 +332,7 @@ export function MessagingInterface() {
       
       // Replace optimistic message with real one
       setMessages(prev => prev.map(msg => 
-        msg.id === optimisticMessage.id ? { ...response, sender: currentUser as any } : msg
+        msg.id === optimisticMessage.id ? { ...response, sender: optimisticMessage.sender } : msg
       ));
       console.log('✅ Replaced optimistic message with real message');
       
