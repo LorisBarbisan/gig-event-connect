@@ -297,6 +297,9 @@ export function MessagingInterface() {
       setPendingAttachment(null);
       console.log('🧹 Inputs cleared');
       
+      // Small delay to ensure database transaction commits
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Reload messages to show the new one
       console.log('🔄 Reloading messages for conversation:', selectedConversation);
       await loadMessages(selectedConversation);
