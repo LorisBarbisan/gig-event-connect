@@ -11,7 +11,6 @@ import { Send, MessageCircle, Clock, User, Trash2, Paperclip, Download, FileText
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FileUploader } from "./FileUploader";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 interface User {
   id: number;
@@ -149,167 +148,51 @@ const handleFileDownload = async (attachment: MessageAttachment) => {
 };
 
 export function MessagingInterface() {
-  const { user } = useOptimizedAuth();
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
-  const selectedConversationRef = useRef<number | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [showFileUploader, setShowFileUploader] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{path: string, name: string, size: number, type: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  // Keep ref in sync with state
-  useEffect(() => {
-    selectedConversationRef.current = selectedConversation;
-  }, [selectedConversation]);
 
   // Fetch conversations
-  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations, error: conversationsError } = useQuery<Conversation[]>({
+  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations'],
     refetchOnMount: 'always', // Always refetch when component mounts to show new conversations
     refetchOnWindowFocus: true, // Refetch when window gains focus to show new messages
     refetchOnReconnect: true, // Refetch when network reconnects
   });
-  
-  // Function to create conversation with a specific user
-  const createConversationWithUser = async (recipientId: number) => {
-    try {
-      const response = await apiRequest('/api/conversations/create', {
+
+  // Fetch messages for selected conversation
+  const { data: messages = [], refetch: refetchMessages } = useQuery<Message[]>({
+    queryKey: [`/api/conversations/${selectedConversation}/messages`],
+    enabled: selectedConversation !== null,
+  });
+
+  // Create message mutation
+  const createMessageMutation = useMutation({
+    mutationFn: async (data: { conversation_id: number; content: string; attachment?: {path: string, name: string, size: number, type: string} }) => {
+      return apiRequest(`/api/messages`, {
         method: 'POST',
-        body: JSON.stringify({ recipientId }),
+        body: JSON.stringify(data),
       });
-      
-      if (response.id) {
-        await refetchConversations();
-        setSelectedConversation(response.id);
-        // Clear the query param
-        const newUrl = window.location.pathname + '?tab=messages';
-        window.history.replaceState({}, '', newUrl);
-      }
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
+    },
+    onSuccess: () => {
+      setNewMessage("");
+      setPendingAttachment(null);
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${selectedConversation}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    },
+    onError: (error) => {
       toast({
-        title: "Failed to start conversation",
+        title: "Failed to send message",
         description: "Please try again",
         variant: "destructive",
       });
     }
-  };
-  
-  // Check for recipientId in URL query params to auto-open conversation
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const recipientId = params.get('recipientId');
-    
-    if (recipientId && conversations.length > 0) {
-      const recipientIdNum = parseInt(recipientId);
-      // Find existing conversation with this recipient
-      const existingConversation = conversations.find(conv => 
-        conv.otherUser.id === recipientIdNum
-      );
-      
-      if (existingConversation) {
-        setSelectedConversation(existingConversation.id);
-        // Clear the query param
-        const newUrl = window.location.pathname + '?tab=messages';
-        window.history.replaceState({}, '', newUrl);
-      } else {
-        // Create a new conversation with this recipient
-        createConversationWithUser(recipientIdNum);
-      }
-    }
-  }, [conversations]);
-
-  // Simple function to load messages - guards against race conditions using ref
-  const loadMessages = async (conversationId: number) => {
-    if (!conversationId) return;
-    
-    try {
-      setMessagesLoading(true);
-      const data = await apiRequest(`/api/conversations/${conversationId}/messages`);
-      
-      // Guard: only update state if this conversation is still selected (check ref, not stale closure)
-      if (selectedConversationRef.current === conversationId) {
-        setMessages(data as Message[]);
-      }
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      // Only show toast if conversation is still selected
-      if (selectedConversationRef.current === conversationId) {
-        toast({
-          title: "Failed to load messages",
-          description: "Please try again",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      // Only clear loading flag if conversation is still selected
-      if (selectedConversationRef.current === conversationId) {
-        setMessagesLoading(false);
-      }
-    }
-  };
-
-  // Load messages when conversation changes
-  useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation);
-    } else {
-      setMessages([]);
-    }
-  }, [selectedConversation]);
-
-  // Optional: Listen for WebSocket events to reload messages when new ones arrive
-  useEffect(() => {
-    if (!user || !selectedConversation) return;
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
-    try {
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'authenticate', userId: user.id }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          // Reload messages when conversation is updated
-          if (data.type === 'conversation_update' && data.conversation_id === selectedConversation) {
-            loadMessages(selectedConversation);
-          }
-        } catch (error) {
-          // Ignore parse errors
-        }
-      };
-
-      return () => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-      };
-    } catch (error) {
-      console.error('Error creating MessagingInterface WebSocket:', error);
-    }
-  }, [user, selectedConversation]);
-
-  // Invalidate badge counts when viewing messages (server marks them as read)
-  useEffect(() => {
-    if (!selectedConversation || !user || messagesLoading) return;
-    
-    // After messages are loaded (which triggers server-side mark-as-read),
-    // invalidate notification counts to ensure badges update
-    queryClient.invalidateQueries({ queryKey: ['/api/notifications/category-counts', user.id] });
-    queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', user.id] });
-  }, [selectedConversation, messages.length, user, messagesLoading, queryClient]);
-
-  // Simple send message function - no React Query mutation
-  const [isSending, setIsSending] = useState(false);
+  });
 
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
@@ -318,14 +201,12 @@ export function MessagingInterface() {
         method: 'DELETE',
       });
     },
-    onSuccess: async (_, conversationId) => {
+    onSuccess: () => {
       setSelectedConversation(null);
-      await queryClient.cancelQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
-      // Invalidate queries - this automatically triggers a refetch in React Query v5
-      await queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       toast({
         title: "Conversation deleted",
-        description: "The conversation has been removed from your view",
+        description: "The conversation has been permanently removed",
       });
     },
     onError: (error) => {
@@ -355,9 +236,9 @@ export function MessagingInterface() {
     });
   };
 
-  // Handle sending messages - simple approach
+  // Handle sending messages
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation || isSending) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation) return;
     
     const messageData = {
       conversation_id: selectedConversation,
@@ -365,33 +246,8 @@ export function MessagingInterface() {
       ...(pendingAttachment && { attachment: pendingAttachment })
     };
     
-    try {
-      setIsSending(true);
-      // Send the message to the server
-      await apiRequest(`/api/messages`, {
-        method: 'POST',
-        body: JSON.stringify(messageData),
-      });
-      
-      // Clear input immediately
-      setNewMessage("");
-      setPendingAttachment(null);
-      
-      // Reload messages to show the new one
-      await loadMessages(selectedConversation);
-      
-      // Update conversations list
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      toast({
-        title: "Failed to send message",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSending(false);
-    }
+    createMessageMutation.mutate(messageData);
+    setPendingAttachment(null);
   };
 
   // Handle key press in input
@@ -526,20 +382,12 @@ export function MessagingInterface() {
                         <p className="text-sm text-muted-foreground">Start the conversation!</p>
                       </div>
                     ) : (
-                      messages.map((message) => {
-                        const isMyMessage = message.sender_id === user?.id;
-                        const isSystemMessage = message.sender_id === null;
-                        
-                        return (
-                        <div key={message.id} className={`flex ${
-                          isSystemMessage ? 'justify-center' : isMyMessage ? 'justify-start' : 'justify-end'
-                        }`}>
+                      messages.map((message) => (
+                        <div key={message.id} className={`flex ${message.sender_id === null ? 'justify-start' : 'justify-end'}`}>
                           <div className={`max-w-[70%] p-3 rounded-lg ${
-                            isSystemMessage 
-                              ? 'bg-muted text-muted-foreground text-center text-sm' 
-                              : isMyMessage
-                              ? 'bg-gray-100 dark:bg-gray-800 text-foreground'
-                              : 'bg-gradient-primary text-white'
+                            message.sender_id === null 
+                              ? 'bg-muted text-muted-foreground' 
+                              : 'bg-primary text-primary-foreground'
                           }`}>
                             {message.content && <p className="break-words">{message.content}</p>}
                             
@@ -550,22 +398,20 @@ export function MessagingInterface() {
                                   <div 
                                     key={attachment.id} 
                                     className={`flex items-center gap-2 p-2 rounded border ${
-                                      isSystemMessage 
+                                      message.sender_id === null 
                                         ? 'bg-background border-border' 
-                                        : isMyMessage
-                                        ? 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                                        : 'bg-white/10 border-white/20'
+                                        : 'bg-primary-foreground/10 border-primary-foreground/20'
                                     }`}
                                   >
                                     {getFileIcon(attachment.file_type)}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-medium truncate ${
-                                        isSystemMessage ? 'text-foreground' : isMyMessage ? 'text-foreground' : 'text-white'
+                                        message.sender_id === null ? 'text-foreground' : 'text-primary-foreground'
                                       }`}>
                                         {attachment.original_filename}
                                       </p>
                                       <p className={`text-xs ${
-                                        isSystemMessage ? 'text-muted-foreground' : isMyMessage ? 'text-muted-foreground' : 'text-white/70'
+                                        message.sender_id === null ? 'text-muted-foreground' : 'text-primary-foreground/70'
                                       }`}>
                                         {formatFileSize(attachment.file_size)}
                                         {attachment.scan_status === 'safe' && attachment.moderation_status === 'approved' && (
@@ -585,11 +431,9 @@ export function MessagingInterface() {
                                         variant="ghost"
                                         onClick={() => handleFileDownload(attachment)}
                                         className={`h-8 w-8 p-0 ${
-                                          isSystemMessage 
+                                          message.sender_id === null 
                                             ? 'hover:bg-muted' 
-                                            : isMyMessage
-                                            ? 'hover:bg-gray-300 dark:hover:bg-gray-600'
-                                            : 'hover:bg-white/20 text-white'
+                                            : 'hover:bg-primary-foreground/20 text-primary-foreground'
                                         }`}
                                       >
                                         <Download className="h-4 w-4" />
@@ -601,23 +445,58 @@ export function MessagingInterface() {
                             )}
                             
                             <div className={`flex items-center gap-1 mt-1 text-xs ${
-                              isSystemMessage 
-                                ? 'text-muted-foreground justify-center' 
-                                : isMyMessage
-                                ? 'text-muted-foreground'
-                                : 'text-white/70'
+                              message.sender_id === null 
+                                ? 'text-muted-foreground' 
+                                : 'text-primary-foreground/70'
                             }`}>
                               <Clock className="h-3 w-3" />
                               {formatDate(message.created_at)}
                             </div>
                           </div>
                         </div>
-                        );
-                      })
+                      ))
                     )}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
+
+                {/* File Uploader */}
+                {showFileUploader && (
+                  <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                    <FileUploader
+                      onUploadComplete={handleFileUploadComplete}
+                      onUploadError={handleFileUploadError}
+                      disabled={isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser)}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowFileUploader(false)}
+                      className="mt-2"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Pending Attachment Preview */}
+                {pendingAttachment && (
+                  <div className="mb-2 p-2 border rounded bg-blue-50 dark:bg-blue-900/20">
+                    <div className="flex items-center gap-2">
+                      {getFileIcon(pendingAttachment.type)}
+                      <span className="text-sm font-medium">{pendingAttachment.name}</span>
+                      <span className="text-xs text-muted-foreground">({formatFileSize(pendingAttachment.size)})</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setPendingAttachment(null)}
+                        className="h-6 w-6 p-0 ml-auto"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Message Input */}
                 <div className="flex gap-2">
@@ -630,9 +509,18 @@ export function MessagingInterface() {
                     data-testid="input-message"
                     disabled={isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser)}
                   />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowFileUploader(!showFileUploader)}
+                    disabled={isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser)}
+                    data-testid="button-attach-file"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
                   <Button 
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || isSending || isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser)}
+                    disabled={(!newMessage.trim() && !pendingAttachment) || createMessageMutation.isPending || isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser)}
                     data-testid="button-send"
                   >
                     <Send className="h-4 w-4" />

@@ -1111,7 +1111,7 @@ export class DatabaseStorage implements IStorage {
           sender: {
             id: row.sender_id || 0, // Use 0 for system messages with null sender_id
             email: row.senderEmail || '',
-            role: row.senderRole || 'freelancer',
+            role: row.senderRole || ('freelancer' as const),
             password: '',
             first_name: null,
             last_name: null,
@@ -1120,7 +1120,7 @@ export class DatabaseStorage implements IStorage {
             email_verification_expires: null,
             password_reset_token: null,
             password_reset_expires: null,
-            auth_provider: 'email',
+            auth_provider: 'email' as const,
             google_id: null,
             facebook_id: null,
             linkedin_id: null,
