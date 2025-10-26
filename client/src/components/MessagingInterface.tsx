@@ -168,17 +168,27 @@ export function MessagingInterface() {
 
   // Direct fetch function for messages
   const loadMessages = async (conversationId: number) => {
-    if (!conversationId) return;
+    console.log('📥 loadMessages called for conversation:', conversationId);
+    if (!conversationId) {
+      console.log('⚠️ No conversation ID, skipping load');
+      return;
+    }
     
     setMessagesLoading(true);
+    console.log('⏳ Loading messages...');
     try {
       const response = await apiRequest(`/api/conversations/${conversationId}/messages`);
+      console.log(`✅ Received ${response?.length || 0} messages from API`);
       
       // Only update if this is still the selected conversation
       if (selectedConversationRef.current === conversationId) {
         setMessages(response || []);
+        console.log('✅ Messages state updated');
+      } else {
+        console.log('⚠️ Conversation changed, skipping state update');
       }
     } catch (error) {
+      console.error('❌ Error loading messages:', error);
       // Only show error if this is still the selected conversation
       if (selectedConversationRef.current === conversationId) {
         toast({
@@ -192,6 +202,7 @@ export function MessagingInterface() {
       // Only update loading state if this is still the selected conversation
       if (selectedConversationRef.current === conversationId) {
         setMessagesLoading(false);
+        console.log('✅ Loading complete');
       }
     }
   };
@@ -266,23 +277,31 @@ export function MessagingInterface() {
     };
     
     try {
+      console.log('🚀 Sending message:', messageData);
+      
       // POST the message
-      await apiRequest(`/api/messages`, {
+      const response = await apiRequest(`/api/messages`, {
         method: 'POST',
         body: JSON.stringify(messageData),
       });
+      console.log('✅ Message sent, response:', response);
       
       // Clear inputs immediately
       setNewMessage("");
       setPendingAttachment(null);
+      console.log('🧹 Inputs cleared');
       
       // Reload messages to show the new one
+      console.log('🔄 Reloading messages for conversation:', selectedConversation);
       await loadMessages(selectedConversation);
+      console.log('✅ Messages reloaded');
       
       // Invalidate conversations to update last message
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      console.log('✅ Conversations cache invalidated');
       
     } catch (error) {
+      console.error('❌ Error sending message:', error);
       toast({
         title: "Failed to send message",
         description: "Please try again",
