@@ -349,7 +349,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
   }));
 
   // Get bookings (hired jobs) for the freelancer
-  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ['/api/freelancer', freelancerProfile?.user_id, 'bookings'],
     enabled: !!freelancerProfile?.user_id,
   });
@@ -676,9 +676,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 <p className="text-muted-foreground">Communicate with recruiters and potential employers</p>
               </div>
             </div>
-            <MessagingInterface 
-              currentUser={{ id: parseInt(profile.id), email: profile.email, role: 'freelancer' }}
-            />
+            <MessagingInterface />
           </TabsContent>
 
           {/* Jobs Tab */}
