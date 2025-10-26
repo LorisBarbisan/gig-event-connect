@@ -298,7 +298,7 @@ export function MessagingInterface() {
       console.log('🧹 Inputs cleared');
       
       // Small delay to ensure database transaction commits
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 250));
       
       // Reload messages to show the new one
       console.log('🔄 Reloading messages for conversation:', selectedConversation);
