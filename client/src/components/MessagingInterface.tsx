@@ -151,6 +151,7 @@ const handleFileDownload = async (attachment: MessageAttachment) => {
 export function MessagingInterface() {
   const { user } = useOptimizedAuth();
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
+  const selectedConversationRef = useRef<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -159,6 +160,11 @@ export function MessagingInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations, error: conversationsError } = useQuery<Conversation[]>({
@@ -217,23 +223,33 @@ export function MessagingInterface() {
     }
   }, [conversations]);
 
-  // Simple function to load messages - no React Query complexity
+  // Simple function to load messages - guards against race conditions using ref
   const loadMessages = async (conversationId: number) => {
     if (!conversationId) return;
     
     try {
       setMessagesLoading(true);
       const data = await apiRequest(`/api/conversations/${conversationId}/messages`);
-      setMessages(data as Message[]);
+      
+      // Guard: only update state if this conversation is still selected (check ref, not stale closure)
+      if (selectedConversationRef.current === conversationId) {
+        setMessages(data as Message[]);
+      }
     } catch (error) {
       console.error('Failed to load messages:', error);
-      toast({
-        title: "Failed to load messages",
-        description: "Please try again",
-        variant: "destructive",
-      });
+      // Only show toast if conversation is still selected
+      if (selectedConversationRef.current === conversationId) {
+        toast({
+          title: "Failed to load messages",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setMessagesLoading(false);
+      // Only clear loading flag if conversation is still selected
+      if (selectedConversationRef.current === conversationId) {
+        setMessagesLoading(false);
+      }
     }
   };
 
