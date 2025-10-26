@@ -676,9 +676,7 @@ export function FreelancerDashboardTabs({ profile }: FreelancerDashboardTabsProp
                 <p className="text-muted-foreground">Communicate with recruiters and potential employers</p>
               </div>
             </div>
-            <MessagingInterface 
-              currentUser={{ id: parseInt(profile.id), email: profile.email, role: 'freelancer' }}
-            />
+            <MessagingInterface userId={parseInt(profile.id)} />
           </TabsContent>
 
           {/* Jobs Tab */}

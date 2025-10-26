@@ -11,7 +11,6 @@ import { Send, MessageCircle, Clock, User, Trash2, Paperclip, Download, FileText
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FileUploader } from "./FileUploader";
-import { useAuth } from "@/hooks/useAuth";
 
 interface User {
   id: number;
@@ -148,8 +147,11 @@ const handleFileDownload = async (attachment: MessageAttachment) => {
   }
 };
 
-export function MessagingInterface() {
-  const { user } = useAuth();
+interface MessagingInterfaceProps {
+  userId: number;
+}
+
+export function MessagingInterface({ userId }: MessagingInterfaceProps) {
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -440,7 +442,7 @@ export function MessagingInterface() {
                       </div>
                     ) : (
                       messages.map((message) => {
-                        const isMyMessage = message.sender_id === user?.id;
+                        const isMyMessage = message.sender_id === userId;
                         const isSystemMessage = message.sender_id === null;
                         
                         return (
