@@ -272,7 +272,7 @@ export function MessagingInterface() {
     });
   };
 
-  // Handle sending messages with direct fetch
+  // Handle sending messages with optimistic UI update
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation) return;
     
@@ -282,8 +282,30 @@ export function MessagingInterface() {
       ...(pendingAttachment && { attachment: pendingAttachment })
     };
     
+    // Create optimistic message for immediate UI update
+    const optimisticMessage = {
+      id: Date.now(), // Temporary ID
+      conversation_id: selectedConversation,
+      sender_id: currentUser?.id,
+      content: messageData.content,
+      is_read: false,
+      is_system_message: false,
+      created_at: new Date().toISOString(),
+      sender: currentUser as any,
+      attachments: pendingAttachment ? [{ id: Date.now(), message_id: Date.now(), file_url: pendingAttachment.file_url, file_name: pendingAttachment.file_name, file_size: pendingAttachment.file_size, file_type: pendingAttachment.file_type, uploaded_at: new Date() }] : undefined
+    };
+    
     try {
       console.log('🚀 Sending message:', messageData);
+      
+      // Optimistically add message to UI immediately
+      setMessages(prev => [...prev, optimisticMessage]);
+      console.log('✅ Optimistic message added to UI');
+      
+      // Clear inputs immediately
+      setNewMessage("");
+      setPendingAttachment(null);
+      console.log('🧹 Inputs cleared');
       
       // POST the message
       const response = await apiRequest(`/api/messages`, {
@@ -292,18 +314,11 @@ export function MessagingInterface() {
       });
       console.log('✅ Message sent, response:', response);
       
-      // Clear inputs immediately
-      setNewMessage("");
-      setPendingAttachment(null);
-      console.log('🧹 Inputs cleared');
-      
-      // Small delay to ensure database transaction commits
-      await new Promise(resolve => setTimeout(resolve, 250));
-      
-      // Reload messages to show the new one
-      console.log('🔄 Reloading messages for conversation:', selectedConversation);
-      await loadMessages(selectedConversation);
-      console.log('✅ Messages reloaded');
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id ? { ...response, sender: currentUser as any } : msg
+      ));
+      console.log('✅ Replaced optimistic message with real message');
       
       // Invalidate conversations to update last message
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
@@ -311,6 +326,11 @@ export function MessagingInterface() {
       
     } catch (error) {
       console.error('❌ Error sending message:', error);
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+      console.log('❌ Removed optimistic message due to error');
+      
       toast({
         title: "Failed to send message",
         description: "Please try again",
