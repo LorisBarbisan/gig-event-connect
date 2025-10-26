@@ -100,6 +100,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications', userId] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/category-counts', userId] });
     },
     onError: () => {
       toast({
@@ -120,6 +121,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications', userId] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/category-counts', userId] });
       toast({
         title: 'Success',
         description: 'All notifications marked as read',

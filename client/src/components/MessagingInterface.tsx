@@ -226,7 +226,7 @@ export function MessagingInterface() {
 
   // Listen for WebSocket events to refetch messages when new ones arrive
   useEffect(() => {
-    if (!selectedConversation) return;
+    if (!selectedConversation || !user) return;
 
     const handleWebSocketMessage = (event: MessageEvent) => {
       try {
@@ -246,7 +246,17 @@ export function MessagingInterface() {
       ws.addEventListener('message', handleWebSocketMessage);
       return () => ws.removeEventListener('message', handleWebSocketMessage);
     }
-  }, [selectedConversation, refetchMessages]);
+  }, [selectedConversation, refetchMessages, user]);
+
+  // Invalidate badge counts when viewing messages (server marks them as read)
+  useEffect(() => {
+    if (!selectedConversation || !user || messagesLoading) return;
+    
+    // After messages are loaded (which triggers server-side mark-as-read),
+    // invalidate notification counts to ensure badges update
+    queryClient.invalidateQueries({ queryKey: ['/api/notifications/category-counts', user.id] });
+    queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count', user.id] });
+  }, [selectedConversation, messages.length, user, messagesLoading, queryClient]);
 
   // Create message mutation
   const createMessageMutation = useMutation({

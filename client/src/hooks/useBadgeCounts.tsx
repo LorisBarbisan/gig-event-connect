@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { useEffect, useRef } from 'react';
@@ -18,6 +18,7 @@ interface UseBadgeCountsProps {
 
 export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseBadgeCountsProps = {}) {
   const { user } = useOptimizedAuth();
+  const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
 
   // Fetch badge counts from API
@@ -58,10 +59,12 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
         try {
           const data = JSON.parse(event.data);
           
-          if (data.type === 'badge_counts_update') {
-            console.log('Received badge counts update:', data.counts);
-            // Refetch badge counts when we receive real-time updates
-            refetch();
+          if (data.type === 'badge_counts_update' && data.counts) {
+            // Directly update the cache with the counts from the WebSocket message
+            queryClient.setQueryData<BadgeCounts>(
+              ['/api/notifications/category-counts', user.id],
+              data.counts
+            );
           }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
