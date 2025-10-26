@@ -222,31 +222,48 @@ export function MessagingInterface() {
     enabled: selectedConversation !== null,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Lightweight fallback polling every 30s in case WebSocket fails
   });
 
   // Listen for WebSocket events to refetch messages when new ones arrive
   useEffect(() => {
-    if (!selectedConversation || !user) return;
+    if (!user) return;
 
-    const handleWebSocketMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        // Refetch messages when conversation is updated
-        if (data.type === 'conversation_update' && data.conversation_id === selectedConversation) {
-          refetchMessages();
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'authenticate', userId: user.id }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          // Refetch messages when conversation is updated
+          if (selectedConversation && data.type === 'conversation_update' && data.conversation_id === selectedConversation) {
+            refetchMessages();
+          }
+        } catch (error) {
+          // Ignore parse errors
         }
-      } catch (error) {
-        // Ignore parse errors
-      }
-    };
+      };
 
-    // Try to find existing WebSocket connection
-    const ws = (window as any).ws;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.addEventListener('message', handleWebSocketMessage);
-      return () => ws.removeEventListener('message', handleWebSocketMessage);
+      ws.onerror = (error) => {
+        console.error('MessagingInterface WebSocket error:', error);
+      };
+
+      return () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      };
+    } catch (error) {
+      console.error('Error creating MessagingInterface WebSocket:', error);
     }
-  }, [selectedConversation, refetchMessages, user]);
+  }, [user, selectedConversation, refetchMessages]);
 
   // Invalidate badge counts when viewing messages (server marks them as read)
   useEffect(() => {
