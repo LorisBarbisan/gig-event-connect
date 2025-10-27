@@ -162,6 +162,7 @@ export function MessagingInterface() {
   // Fetch messages using React Query (enabled only when a conversation is selected)
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ['/api/conversations', selectedConversation, 'messages'],
+    queryFn: () => apiRequest(`/api/conversations/${selectedConversation}/messages`),
     enabled: selectedConversation !== null,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
