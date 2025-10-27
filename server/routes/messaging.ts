@@ -39,12 +39,6 @@ export function registerMessagingRoutes(app: Express) {
       // Get messages for this conversation
       const messages = await storage.getConversationMessages(conversationId);
       
-      // DEBUG: Log for production debugging
-      console.log(`📬 Fetching messages for conversation ${conversationId}: found ${messages.length} messages`);
-      if (messages.length > 0) {
-        console.log(`📬 Latest message ID: ${messages[messages.length - 1].id}, content: "${messages[messages.length - 1].content}"`);
-      }
-      
       // Mark messages as read
       await storage.markMessagesAsRead(conversationId, req.user.id);
       
@@ -224,9 +218,6 @@ export function registerMessagingRoutes(app: Express) {
       }
 
       const message = await storage.sendMessage(result.data);
-      
-      // DEBUG: Log message creation
-      console.log(`📤 Message created - ID: ${message.id}, conversation: ${conversation_id}, content: "${content}"`);
       
       // Create file attachment if provided
       if (attachment) {
