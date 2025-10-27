@@ -961,7 +961,7 @@ export class DatabaseStorage implements IStorage {
 
   // Messaging methods
   async getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation> {
-    // First try to find existing conversation
+    // First try to find existing conversation (including soft-deleted ones)
     const existing = await db.select().from(conversations)
       .where(
         or(
@@ -972,6 +972,23 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
 
     if (existing[0]) {
+      // Un-delete the conversation for both participants if it was deleted
+      // This ensures that sending a new message restores the conversation
+      if (existing[0].participant_one_deleted || existing[0].participant_two_deleted) {
+        await db.update(conversations)
+          .set({
+            participant_one_deleted: false,
+            participant_two_deleted: false
+          })
+          .where(eq(conversations.id, existing[0].id));
+        
+        // Return updated conversation
+        return {
+          ...existing[0],
+          participant_one_deleted: false,
+          participant_two_deleted: false
+        };
+      }
       return existing[0];
     }
 

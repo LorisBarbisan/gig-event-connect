@@ -132,6 +132,18 @@ Created comprehensive system optimization with significantly improved efficiency
   - **Result**: Messages now appear instantly for sender and recipient, stay visible, and sync perfectly
   - **Production Ready**: All debug logging removed, clean production-grade code
 
+- ✅ **SOFT-DELETE CONVERSATION BUG FIX**: Fixed critical bug where messages couldn't be retrieved in soft-deleted conversations
+  - **Root Cause**: Soft-delete filter blocking message access
+    - `getConversationsByUserId` was filtering out soft-deleted conversations (correct for UI)
+    - GET /api/conversations/:id/messages used this filtered list for permission check
+    - When conversation was soft-deleted, permission check failed → 403 Forbidden → blank conversation pane
+    - `getOrCreateConversation` found existing soft-deleted conversations but didn't un-delete them
+  - **Solution**: Auto-restore deleted conversations when messages are sent
+    - Modified `getOrCreateConversation` to un-delete conversations for both participants when new message is sent
+    - Ensures conversation appears in both users' lists and messages are accessible
+  - **Result**: Messaging now works correctly even with previously deleted conversations
+  - **Impact**: Fixes recruiter → freelancer messaging where conversation pane remained blank
+
 ## Authentication System
 - **Production**: Custom session management with aggressive cache clearing, email verification required
 - **Email Service**: SendGrid integration for verification emails
