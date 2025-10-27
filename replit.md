@@ -132,17 +132,34 @@ Created comprehensive system optimization with significantly improved efficiency
   - **Result**: Messages now appear instantly for sender and recipient, stay visible, and sync perfectly
   - **Production Ready**: All debug logging removed, clean production-grade code
 
-- ✅ **SOFT-DELETE CONVERSATION BUG FIX**: Fixed critical bug where messages couldn't be retrieved in soft-deleted conversations
-  - **Root Cause**: Soft-delete filter blocking message access
-    - `getConversationsByUserId` was filtering out soft-deleted conversations (correct for UI)
-    - GET /api/conversations/:id/messages used this filtered list for permission check
-    - When conversation was soft-deleted, permission check failed → 403 Forbidden → blank conversation pane
-    - `getOrCreateConversation` found existing soft-deleted conversations but didn't un-delete them
-  - **Solution**: Auto-restore deleted conversations when messages are sent
-    - Modified `getOrCreateConversation` to un-delete conversations for both participants when new message is sent
-    - Ensures conversation appears in both users' lists and messages are accessible
-  - **Result**: Messaging now works correctly even with previously deleted conversations
-  - **Impact**: Fixes recruiter → freelancer messaging where conversation pane remained blank
+- ✅ **MESSAGING SYSTEM COMPLETE REFACTOR (Production-Ready)**: Eliminated all race conditions with industry-standard fetch-first pattern
+  - **Root Cause Analysis**: Previous optimistic UI approach caused multiple race conditions
+    - Mixed useState with React Query causing cache inconsistencies
+    - Optimistic updates interfered with WebSocket broadcasts
+    - Soft-delete conversations blocked message retrieval
+    - Cross-conversation state leakage when switching threads while sending
+  - **Architect-Approved Solution**: Fetch-first pattern with React Query
+    1. **Frontend Refactor** (`MessagingInterface.tsx`):
+       - Replaced useState with React Query's useQuery for messages (conversation-scoped keys)
+       - Removed all optimistic UI logic - server persists first, then refetch
+       - Created sendMessageMutation with smart input handling:
+         - Clears inputs immediately for instant feedback
+         - Restores ONLY if still empty on error (prevents overwriting new user input)
+       - Uses mutation variables for cache invalidation (no closure race conditions)
+       - WebSocket simplified to trigger invalidation only (no data manipulation)
+    2. **Backend Hardening** (`server/storage.ts`):
+       - Wrapped sendMessage in database transaction ensuring atomic operations:
+         - Insert message
+         - Update conversation last_message_at
+         - Restore soft-deleted conversation (set both participant flags to false)
+       - Single source of truth guarantees consistency
+    3. **Race Conditions Eliminated**:
+       - ✅ Cross-conversation cache invalidation (uses variables.conversation_id)
+       - ✅ Input clearing data loss (conditional restoration in onError)
+       - ✅ Stale draft overwrite (only restores if empty)
+       - ✅ Soft-delete conversation blocking (transaction restores on send)
+  - **Result**: Production-ready messaging system following standard industry patterns
+  - **Impact**: Messages persist correctly, appear instantly for both users, work across page refreshes
 
 ## Authentication System
 - **Production**: Custom session management with aggressive cache clearing, email verification required
