@@ -51,7 +51,6 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('Badge counts WebSocket connected');
         ws.send(JSON.stringify({ type: 'authenticate', userId: user.id }));
       };
 
@@ -72,7 +71,7 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
       };
 
       ws.onclose = () => {
-        console.log('Badge counts WebSocket disconnected');
+        // WebSocket disconnected
       };
 
       ws.onerror = (error) => {
@@ -123,7 +122,6 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
       
       // Refetch badge counts after marking as read
       refetch();
-      console.log(`${category} notifications marked as read`);
     } catch (error) {
       console.error(`Error marking ${category} notifications as read:`, error);
     }
