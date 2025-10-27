@@ -349,9 +349,20 @@ export function MessagingInterface() {
     }
   }, [messages]);
 
-  // WebSocket listener for real-time message updates
+  // WebSocket connection for real-time message updates
   useEffect(() => {
-    const handleWebSocketMessage = (event: MessageEvent) => {
+    if (!user?.id) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'authenticate', userId: user.id }));
+    };
+
+    ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         
@@ -359,14 +370,26 @@ export function MessagingInterface() {
         if (data.type === 'NEW_MESSAGE' && data.conversation_id === selectedConversation && selectedConversation !== null) {
           loadMessages(selectedConversation);
         }
+        
+        // Also refresh conversations list to update last message preview
+        if (data.type === 'NEW_MESSAGE') {
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        }
       } catch (error) {
         // Ignore invalid WebSocket messages
       }
     };
 
-    window.addEventListener('message', handleWebSocketMessage);
-    return () => window.removeEventListener('message', handleWebSocketMessage);
-  }, [selectedConversation]);
+    ws.onerror = (error) => {
+      console.error('Messaging WebSocket error:', error);
+    };
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [selectedConversation, user?.id]);
 
   return (
     <div className="space-y-6">
