@@ -183,12 +183,6 @@ export function MessagingInterface() {
     try {
       const response = await apiRequest(`/api/conversations/${conversationId}/messages`);
       
-      // DEBUG: Log what we received
-      console.log(`🔍 FRONTEND DEBUG: Loaded ${response?.length || 0} messages for conversation ${conversationId}`);
-      if (response && response.length > 0) {
-        console.log(`🔍 FRONTEND DEBUG: Latest message ID: ${response[response.length - 1].id}`);
-      }
-      
       // Only update if this is still the selected conversation
       if (selectedConversationRef.current === conversationId) {
         setMessages(response || []);

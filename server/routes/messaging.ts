@@ -39,13 +39,6 @@ export function registerMessagingRoutes(app: Express) {
       // Get messages for this conversation
       const messages = await storage.getConversationMessages(conversationId);
       
-      // DEBUG: Log message fetch details
-      console.log(`🔍 DEBUG: User ${req.user.id} (${req.user.role}) fetching messages for conversation ${conversationId}`);
-      console.log(`🔍 DEBUG: Found ${messages.length} messages`);
-      if (messages.length > 0) {
-        console.log(`🔍 DEBUG: Latest message ID: ${messages[messages.length - 1].id}, created: ${messages[messages.length - 1].created_at}`);
-      }
-      
       // Mark messages as read
       await storage.markMessagesAsRead(conversationId, req.user.id);
       
