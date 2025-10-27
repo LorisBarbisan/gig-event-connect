@@ -159,6 +159,7 @@ export function MessagingInterface() {
   const [pendingAttachment, setPendingAttachment] = useState<{path: string, name: string, size: number, type: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedConversationRef = useRef<number | null>(null);
+  const isSendingRef = useRef(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -170,6 +171,12 @@ export function MessagingInterface() {
   // Direct fetch function for messages
   const loadMessages = async (conversationId: number) => {
     if (!conversationId) {
+      return;
+    }
+    
+    // Don't reload messages while a message is being sent (to avoid race condition)
+    if (isSendingRef.current) {
+      console.log('loadMessages blocked - message send in progress');
       return;
     }
     
@@ -266,6 +273,9 @@ export function MessagingInterface() {
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation || !user) return;
     
+    // Block loadMessages from running during send
+    isSendingRef.current = true;
+    
     const messageData = {
       conversation_id: selectedConversation,
       content: newMessage.trim() || (pendingAttachment ? 'File attachment' : ''),
@@ -344,6 +354,9 @@ export function MessagingInterface() {
         description: "Please try again",
         variant: "destructive",
       });
+    } finally {
+      // Allow loadMessages to run again
+      isSendingRef.current = false;
     }
   };
 
