@@ -153,62 +153,19 @@ export function MessagingInterface() {
   
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(false);
   const [showFileUploader, setShowFileUploader] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{path: string, name: string, size: number, type: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const selectedConversationRef = useRef<number | null>(null);
-  const isSendingRef = useRef(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Update ref when selectedConversation changes
-  useEffect(() => {
-    selectedConversationRef.current = selectedConversation;
-  }, [selectedConversation]);
-
-  // Direct fetch function for messages
-  const loadMessages = async (conversationId: number) => {
-    if (!conversationId) {
-      return;
-    }
-    
-    setMessagesLoading(true);
-    try {
-      const response = await apiRequest(`/api/conversations/${conversationId}/messages`);
-      
-      // Only update if this is still the selected conversation
-      if (selectedConversationRef.current === conversationId) {
-        setMessages(response || []);
-      }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      // Only show error if this is still the selected conversation
-      if (selectedConversationRef.current === conversationId) {
-        toast({
-          title: "Failed to load messages",
-          description: "Please try again",
-          variant: "destructive",
-        });
-        setMessages([]);
-      }
-    } finally {
-      // Only update loading state if this is still the selected conversation
-      if (selectedConversationRef.current === conversationId) {
-        setMessagesLoading(false);
-      }
-    }
-  };
-
-  // Load messages when conversation selection changes
-  useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation);
-    } else {
-      setMessages([]);
-    }
-  }, [selectedConversation]);
+  // Fetch messages using React Query (enabled only when a conversation is selected)
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
+    queryKey: ['/api/conversations', selectedConversation, 'messages'],
+    enabled: selectedConversation !== null,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+  });
 
   // Fetch conversations (still using React Query)
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
@@ -242,6 +199,33 @@ export function MessagingInterface() {
     }
   });
 
+  // Send message mutation - simple fetch-first approach
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: { conversation_id: number; content: string; attachment?: any }) => {
+      return apiRequest(`/api/messages`, {
+        method: 'POST',
+        body: JSON.stringify(messageData),
+      });
+    },
+    onSuccess: (_data, variables) => {
+      // Use variables.conversation_id instead of selectedConversation to avoid race conditions
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', variables.conversation_id, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    },
+    onError: (_error, variables) => {
+      // Only restore user input if fields are still empty
+      // (prevents overwriting new content user typed while mutation was in flight)
+      setNewMessage(prev => prev === "" ? variables.content : prev);
+      setPendingAttachment(prev => prev === null && variables.attachment ? variables.attachment : prev);
+      
+      toast({
+        title: "Failed to send message",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle file upload completion
   const handleFileUploadComplete = (filePath: string, fileName: string, fileSize: number, fileType: string) => {
     setPendingAttachment({ path: filePath, name: fileName, size: fileSize, type: fileType });
@@ -260,9 +244,9 @@ export function MessagingInterface() {
     });
   };
 
-  // Handle sending messages with optimistic UI update
-  const handleSendMessage = async () => {
-    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation || !user) return;
+  // Handle sending messages
+  const handleSendMessage = () => {
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedConversation) return;
     
     const messageData = {
       conversation_id: selectedConversation,
@@ -270,69 +254,12 @@ export function MessagingInterface() {
       ...(pendingAttachment && { attachment: pendingAttachment })
     };
     
-    // Create optimistic message for immediate UI update
-    const optimisticMessage: Message = {
-      id: Date.now(), // Temporary ID
-      conversation_id: selectedConversation,
-      sender_id: user.id,
-      content: messageData.content,
-      is_read: false,
-      is_system_message: false,
-      created_at: new Date().toISOString(),
-      sender: {
-        id: user.id,
-        email: user.email,
-        role: user.role as 'freelancer' | 'recruiter',
-        first_name: user.first_name || null,
-        last_name: user.last_name || null,
-        company_name: null,
-        deleted_at: null
-      },
-      attachments: pendingAttachment ? [{
-        id: Date.now(),
-        object_path: pendingAttachment.path,
-        original_filename: pendingAttachment.name,
-        file_type: pendingAttachment.type,
-        file_size: pendingAttachment.size,
-        scan_status: 'pending' as const,
-        moderation_status: 'pending' as const
-      }] : undefined
-    };
+    // Clear inputs immediately BEFORE mutation to prevent race condition
+    // if user switches conversations while mutation is in flight
+    setNewMessage("");
+    setPendingAttachment(null);
     
-    try {
-      // Optimistically add message to UI immediately
-      setMessages(prev => [...prev, optimisticMessage]);
-      
-      // Clear inputs immediately
-      setNewMessage("");
-      setPendingAttachment(null);
-      
-      // POST the message
-      const response = await apiRequest(`/api/messages`, {
-        method: 'POST',
-        body: JSON.stringify(messageData),
-      });
-      
-      // Replace optimistic message with real one
-      setMessages(prev => prev.map(msg => 
-        msg.id === optimisticMessage.id ? { ...response, sender: optimisticMessage.sender } : msg
-      ));
-      
-      // Invalidate conversations to update last message
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-      
-    } catch (error) {
-      console.error('Error sending message:', error);
-      
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
-      
-      toast({
-        title: "Failed to send message",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    }
+    sendMessageMutation.mutate(messageData);
   };
 
   // Handle key press in input
@@ -367,13 +294,13 @@ export function MessagingInterface() {
       try {
         const data = JSON.parse(event.data);
         
-        // If a new message arrives for the selected conversation, reload
-        if (data.type === 'NEW_MESSAGE' && data.conversation_id === selectedConversation && selectedConversation !== null) {
-          loadMessages(selectedConversation);
-        }
-        
-        // Also refresh conversations list to update last message preview
+        // WebSocket just triggers refetches - no data manipulation
         if (data.type === 'NEW_MESSAGE') {
+          // Refetch messages for the active conversation
+          if (data.conversation_id === selectedConversation) {
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation, 'messages'] });
+          }
+          // Always refresh conversations list
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
         }
       } catch (error) {
@@ -390,7 +317,7 @@ export function MessagingInterface() {
         ws.close();
       }
     };
-  }, [selectedConversation, user?.id]);
+  }, [selectedConversation, user?.id, queryClient]);
 
   return (
     <div className="space-y-6">

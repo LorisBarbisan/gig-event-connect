@@ -961,7 +961,7 @@ export class DatabaseStorage implements IStorage {
 
   // Messaging methods
   async getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation> {
-    // First try to find existing conversation (including soft-deleted ones)
+    // Find existing conversation (including soft-deleted ones)
     const existing = await db.select().from(conversations)
       .where(
         or(
@@ -972,23 +972,6 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
 
     if (existing[0]) {
-      // Un-delete the conversation for both participants if it was deleted
-      // This ensures that sending a new message restores the conversation
-      if (existing[0].participant_one_deleted || existing[0].participant_two_deleted) {
-        await db.update(conversations)
-          .set({
-            participant_one_deleted: false,
-            participant_two_deleted: false
-          })
-          .where(eq(conversations.id, existing[0].id));
-        
-        // Return updated conversation
-        return {
-          ...existing[0],
-          participant_one_deleted: false,
-          participant_two_deleted: false
-        };
-      }
       return existing[0];
     }
 
@@ -1101,14 +1084,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async sendMessage(message: InsertMessage): Promise<Message> {
-    const result = await db.insert(messages).values(message).returning();
-    
-    // Update conversation last_message_at
-    await db.update(conversations)
-      .set({ last_message_at: new Date() })
-      .where(eq(conversations.id, message.conversation_id));
+    // Use transaction to ensure atomic operations:
+    // 1. Insert message
+    // 2. Update conversation last_message_at
+    // 3. Restore soft-deleted conversation for both participants
+    return await db.transaction(async (tx) => {
+      // Insert the message
+      const result = await tx.insert(messages).values(message).returning();
+      
+      // Update conversation: set last_message_at and restore if soft-deleted
+      await tx.update(conversations)
+        .set({ 
+          last_message_at: new Date(),
+          participant_one_deleted: false,
+          participant_two_deleted: false
+        })
+        .where(eq(conversations.id, message.conversation_id));
 
-    return result[0];
+      return result[0];
+    });
   }
 
   async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
