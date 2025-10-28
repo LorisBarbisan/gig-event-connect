@@ -122,7 +122,7 @@ export function registerAdminRoutes(app: Express) {
       // Send reply email
       try {
         await sendEmail({
-          from: 'admin@eventlink.one',
+          from: 'EventLink@eventlink.one', // Use verified SendGrid sender
           to: message.email,
           subject: `Re: ${message.subject}`,
           text: `Hello ${message.name},\n\nThank you for contacting EventLink. Here's our response to your message:\n\n${reply}\n\nBest regards,\nEventLink Team`,
