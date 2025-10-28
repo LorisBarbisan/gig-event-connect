@@ -162,16 +162,11 @@ export function MessagingInterface() {
   // Fetch messages using React Query (enabled only when a conversation is selected)
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ['/api/conversations', selectedConversation, 'messages'],
-    queryFn: async () => {
-      console.log('🔄 Fetching messages for conversation:', selectedConversation);
-      const result = await apiRequest(`/api/conversations/${selectedConversation}/messages`);
-      console.log('📬 Received messages:', result?.length, 'messages');
-      console.log('📬 Messages data:', result);
-      return result;
-    },
+    queryFn: () => apiRequest(`/api/conversations/${selectedConversation}/messages`),
     enabled: selectedConversation !== null,
     refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Don't refetch on focus to preserve optimistic updates
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
   // Fetch conversations (still using React Query)
@@ -225,6 +220,12 @@ export function MessagingInterface() {
         ['/api/conversations', variables.conversation_id, 'messages'], 
         (old = []) => {
           console.log('📝 Adding message to cache optimistically');
+          // Check if message already exists (avoid duplicates)
+          if (old.some(msg => msg.id === data.id)) {
+            console.log('⚠️ Message already in cache, skipping');
+            return old;
+          }
+          
           // Create the full message object with sender info
           const newMessage: Message & { sender: any; attachments?: any[] } = {
             id: data.id,
@@ -259,12 +260,25 @@ export function MessagingInterface() {
             },
             attachments: data.attachments || undefined
           };
+          console.log('✅ Message added to cache, new total:', old.length + 1);
           return [...old, newMessage];
         }
       );
       
-      // Also refetch in background for accuracy
-      queryClient.refetchQueries({ queryKey: ['/api/conversations'] });
+      // Update conversations list last_message_at without refetching
+      queryClient.setQueryData<Conversation[]>(
+        ['/api/conversations'],
+        (old = []) => {
+          return old.map(conv => 
+            conv.id === variables.conversation_id
+              ? { ...conv, last_message_at: new Date().toISOString() }
+              : conv
+          );
+        }
+      );
+      
+      // DO NOT refetch - it overwrites the optimistic update before DB is ready
+      // WebSocket will handle updates for the recipient
     },
     onError: (error, variables) => {
       console.error('❌ Message send failed:', error);
