@@ -217,10 +217,53 @@ export function MessagingInterface() {
       console.log('✅ Message sent successfully:', result);
       return result;
     },
-    onSuccess: (_data, variables) => {
-      console.log('✅ onSuccess triggered, refetching queries for conversation:', variables.conversation_id);
-      // Use refetchQueries to force immediate refetch (invalidateQueries only marks as stale)
-      queryClient.refetchQueries({ queryKey: ['/api/conversations', variables.conversation_id, 'messages'] });
+    onSuccess: (data, variables) => {
+      console.log('✅ onSuccess triggered, data:', data);
+      
+      // OPTIMISTIC UPDATE: Immediately add message to cache for instant UI update
+      queryClient.setQueryData<Message[]>(
+        ['/api/conversations', variables.conversation_id, 'messages'], 
+        (old = []) => {
+          console.log('📝 Adding message to cache optimistically');
+          // Create the full message object with sender info
+          const newMessage: Message & { sender: any; attachments?: any[] } = {
+            id: data.id,
+            conversation_id: data.conversation_id,
+            sender_id: data.sender_id,
+            content: data.content,
+            is_read: data.is_read || false,
+            is_system_message: data.is_system_message || false,
+            created_at: data.created_at || new Date(),
+            sender: {
+              id: data.sender_id,
+              email: user?.email || '',
+              role: user?.role || 'freelancer',
+              password: '',
+              first_name: null,
+              last_name: null,
+              email_verified: false,
+              email_verification_token: null,
+              email_verification_expires: null,
+              password_reset_token: null,
+              password_reset_expires: null,
+              auth_provider: 'email' as const,
+              google_id: null,
+              facebook_id: null,
+              linkedin_id: null,
+              profile_photo_url: null,
+              last_login_method: null,
+              last_login_at: null,
+              deleted_at: null,
+              created_at: new Date(),
+              updated_at: new Date()
+            },
+            attachments: data.attachments || undefined
+          };
+          return [...old, newMessage];
+        }
+      );
+      
+      // Also refetch in background for accuracy
       queryClient.refetchQueries({ queryKey: ['/api/conversations'] });
     },
     onError: (error, variables) => {

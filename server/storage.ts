@@ -1088,7 +1088,7 @@ export class DatabaseStorage implements IStorage {
     // 1. Insert message
     // 2. Update conversation last_message_at
     // 3. Restore soft-deleted conversation for both participants
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       // Insert the message
       const result = await tx.insert(messages).values(message).returning();
       
@@ -1103,6 +1103,26 @@ export class DatabaseStorage implements IStorage {
 
       return result[0];
     });
+
+    // Clear caches immediately after message is sent
+    // Get conversation to find both participants
+    const conversation = await db.select()
+      .from(conversations)
+      .where(eq(conversations.id, message.conversation_id))
+      .limit(1);
+    
+    if (conversation.length > 0) {
+      const conv = conversation[0];
+      // Clear message cache for this conversation
+      cache.clearPattern(`conversation_messages:${message.conversation_id}`);
+      // Clear conversations cache for both participants
+      cache.delete(`conversations:${conv.participant_one_id}`);
+      cache.delete(`conversations:${conv.participant_two_id}`);
+      
+      console.log(`✅ Cache cleared for conversation ${message.conversation_id} and users ${conv.participant_one_id}, ${conv.participant_two_id}`);
+    }
+
+    return result;
   }
 
   async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
