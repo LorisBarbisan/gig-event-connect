@@ -170,16 +170,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       }
     }
     
-    // Development fallback: If in development and SendGrid fails, simulate successful email delivery
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📧 Development mode: Simulating successful email delivery to ${params.to}`);
-      console.log(`📧 Email subject: ${params.subject}`);
-      console.log(`📧 From: ${params.from}`);
-      console.log(`📧 Deliverability Score: ${deliverability.score}/100`);
-      return true; // Return true to simulate successful delivery
-    }
-    
-    return false;
+    // Re-throw the error so calling code can handle it
+    throw error;
   }
 }
 
