@@ -89,6 +89,17 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  // Get all contact messages (admin only)
+  app.get("/api/admin/contact-messages", requireAdminAuth, async (req, res) => {
+    try {
+      const messages = await storage.getAllContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Get contact messages error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Get all users (admin only)
   app.get("/api/admin/users", requireAdminAuth, async (req, res) => {
     try {

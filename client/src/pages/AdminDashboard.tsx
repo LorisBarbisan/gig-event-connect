@@ -22,7 +22,8 @@ import {
   FileText,
   Calendar,
   ChevronRight,
-  Shield
+  Shield,
+  Mail
 } from 'lucide-react';
 import { AdminGuard } from '@/components/AdminGuard';
 import { Layout } from '@/components/Layout';
@@ -47,6 +48,18 @@ interface FeedbackItem {
     first_name?: string;
     last_name?: string;
   };
+}
+
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'pending' | 'responded';
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
 }
 
 interface User {
@@ -139,6 +152,13 @@ function AdminDashboardContent() {
   const { data: adminUsers, isLoading: adminUsersLoading, refetch: refetchAdminUsers } = useQuery({
     queryKey: ['/api/admin/users/admins'],
     queryFn: () => apiRequest('/api/admin/users/admins'),
+    retry: 1,
+  });
+
+  // Contact messages query
+  const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery<ContactMessage[]>({
+    queryKey: ['/api/admin/contact-messages'],
+    queryFn: () => apiRequest('/api/admin/contact-messages'),
     retry: 1,
   });
 
@@ -261,7 +281,7 @@ function AdminDashboardContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Overview
@@ -269,6 +289,10 @@ function AdminDashboardContent() {
           <TabsTrigger value="feedback" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Feedback
+          </TabsTrigger>
+          <TabsTrigger value="contact" className="flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            Contact
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -511,6 +535,72 @@ function AdminDashboardContent() {
                             Page: {item.page_url}
                           </p>
                         )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Contact Messages Tab */}
+        <TabsContent value="contact" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Messages</CardTitle>
+              <p className="text-sm text-muted-foreground">Messages submitted through the Contact Us form</p>
+            </CardHeader>
+            <CardContent>
+              {contactMessagesLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {!contactMessages || contactMessages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No contact messages yet.
+                    </div>
+                  ) : (
+                    contactMessages.map((message: ContactMessage) => (
+                      <div key={message.id} className="border border-border rounded-lg p-4 space-y-3" data-testid={`contact-message-${message.id}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{message.subject}</span>
+                              <Badge className={message.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                                {message.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              From: {message.name} ({message.email}) • 
+                              {new Date(message.created_at).toLocaleDateString()} at {new Date(message.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                        </div>
+                        
+                        {message.ip_address && (
+                          <p className="text-xs text-muted-foreground">
+                            IP: {message.ip_address}
+                          </p>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `mailto:${message.email}?subject=Re: ${encodeURIComponent(message.subject)}`}
+                            data-testid={`button-reply-${message.id}`}
+                          >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Reply via Email
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
