@@ -97,11 +97,13 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         method: 'PATCH',
       });
     },
-    onSuccess: () => {
-      // Use refetchQueries for immediate badge updates
-      queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] });
+    onSuccess: async () => {
+      // AWAIT refetchQueries for immediate, synchronous badge updates
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] }),
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] })
+      ]);
     },
     onError: () => {
       toast({
@@ -119,11 +121,14 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         method: 'PATCH',
       });
     },
-    onSuccess: () => {
-      // Use refetchQueries for immediate badge updates
-      queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] });
+    onSuccess: async () => {
+      // AWAIT refetchQueries for immediate, synchronous badge updates
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] }),
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] })
+      ]);
+      
       toast({
         title: 'Success',
         description: 'All notifications marked as read',
@@ -161,22 +166,25 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const [, setLocation] = useLocation();
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if unread and wait for completion
+    // Mark as read if unread and WAIT for completion
     if (!notification.is_read) {
       try {
         await apiRequest(`/api/notifications/${notification.id}/read`, {
           method: 'PATCH',
         });
-        // Immediately update the UI to clear the badge counts
-        await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
-        await queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] });
-        await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
+        
+        // AWAIT all refetches to complete BEFORE closing dropdown or navigating
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
+          queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] }),
+          queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] })
+        ]);
       } catch (error) {
         console.error('Failed to mark notification as read:', error);
       }
     }
 
-    // Close the dropdown
+    // Close the dropdown AFTER data is refreshed
     setIsOpen(false);
 
     // Navigate to action URL if provided
@@ -223,17 +231,17 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         ws.send(JSON.stringify({ type: 'authenticate', userId: userId }));
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
           
           if (data.type === 'badge_counts_update') {
             console.log('Notification system received badge counts update:', data.counts);
-            // Use refetchQueries for immediate badge updates
-            queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
+            // AWAIT refetchQueries for immediate badge updates
+            await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] });
             // Also refetch notifications list if dropdown is open
             if (isOpen) {
-              queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
+              await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
             }
           }
         } catch (error) {
