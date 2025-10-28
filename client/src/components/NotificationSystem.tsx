@@ -71,12 +71,12 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const queryClient = useQueryClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch notifications - only when dropdown is open
+  // Fetch notifications - always enabled so refetches work
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['/api/notifications', userId],
     queryFn: () => apiRequest('/api/notifications') as Promise<Notification[]>,
     refetchInterval: isOpen ? 10000 : false, // Only poll when dropdown is open
-    enabled: isOpen, // Only fetch when user opens dropdown
+    staleTime: 0, // Always consider data stale so refetches work immediately
   });
 
   // Fetch unread count with smart polling
