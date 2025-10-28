@@ -356,6 +356,33 @@ export function MessagingInterface() {
     }
   }, [messages]);
 
+  // Handle conversation selection from URL parameters (from notifications)
+  useEffect(() => {
+    if (!conversations.length) return; // Wait until conversations are loaded
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const conversationParam = urlParams.get('conversation');
+    
+    if (conversationParam) {
+      const conversationId = parseInt(conversationParam);
+      
+      // Check if this conversation exists in the user's conversations
+      const conversationExists = conversations.some(c => c.id === conversationId);
+      
+      if (conversationExists && conversationId !== selectedConversation) {
+        console.log('📬 Auto-selecting conversation from notification:', conversationId);
+        setSelectedConversation(conversationId);
+      }
+      
+      // Clear the conversation parameter from URL after handling
+      urlParams.delete('conversation');
+      const newUrl = urlParams.toString() 
+        ? `${window.location.pathname}?${urlParams.toString()}` 
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [conversations]); // Only run when conversations change
+
   // WebSocket connection for real-time message updates
   useEffect(() => {
     if (!user?.id) return;
