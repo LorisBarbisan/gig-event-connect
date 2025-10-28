@@ -24,6 +24,7 @@ import { registerNotificationRoutes } from "./routes/notifications";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerFileRoutes } from "./routes/files";
 import { registerRatingsRoutes } from "./routes/ratings";
+import { registerContactRoutes } from "./routes/contact";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
@@ -168,6 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAdminRoutes(app);
   registerFileRoutes(app);
   registerRatingsRoutes(app);
+  registerContactRoutes(app);
 
   // Main jobs endpoint - combines regular and external jobs
   app.get("/api/jobs", async (req, res) => {

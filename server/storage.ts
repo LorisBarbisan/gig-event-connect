@@ -14,6 +14,7 @@ import {
   ratings,
   rating_requests,
   feedback,
+  contact_messages,
   type User, 
   type InsertUser,
   type FreelancerProfile,
@@ -39,7 +40,8 @@ import {
   type RatingRequest,
   type InsertRatingRequest,
   type Feedback,
-  type InsertFeedback
+  type InsertFeedback,
+  type ContactMessage
 } from "@shared/schema";
 import { eq, desc, isNull, and, or, sql, inArray } from "drizzle-orm";
 
@@ -2127,6 +2129,25 @@ export class DatabaseStorage implements IStorage {
     console.log('🧹 Clearing server-side SimpleCache...');
     cache.clear();
     console.log('✅ Server-side cache cleared');
+  }
+
+  // Contact Messages
+  async createContactMessage(data: { name: string; email: string; subject: string; message: string; ip_address?: string; user_agent?: string }): Promise<ContactMessage> {
+    const result = await db.insert(contact_messages)
+      .values(data)
+      .returning();
+    
+    if (!result[0]) {
+      throw new Error('Failed to create contact message');
+    }
+
+    return result[0];
+  }
+
+  async getAllContactMessages(): Promise<ContactMessage[]> {
+    return db.select()
+      .from(contact_messages)
+      .orderBy(desc(contact_messages.created_at));
   }
 }
 

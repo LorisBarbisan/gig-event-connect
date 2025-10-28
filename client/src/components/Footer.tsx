@@ -80,7 +80,7 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-3">Support</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="mailto:support@eventlink.com" className="hover:text-foreground" data-testid="footer-link-contact">Contact Us</a></li>
+              <li><Link to="/contact-us" className="hover:text-foreground" data-testid="footer-link-contact">Contact Us</Link></li>
               <li><Link to="/jobs" className="hover:text-foreground" data-testid="footer-link-support-jobs">Browse Jobs</Link></li>
               <li><Link to="/freelancers" className="hover:text-foreground" data-testid="footer-link-find-professionals">Find Professionals</Link></li>
             </ul>
