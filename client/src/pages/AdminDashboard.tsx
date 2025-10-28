@@ -106,6 +106,11 @@ function AdminDashboardContent() {
     type: 'all'
   });
   
+  // Contact message reply state
+  const [selectedContactMessage, setSelectedContactMessage] = useState<ContactMessage | null>(null);
+  const [contactReply, setContactReply] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  
   // Admin management state
   const [isBootstrapping, setIsBootstrapping] = useState(false);
 
@@ -209,6 +214,36 @@ function AdminDashboardContent() {
         description: 'Failed to add response to feedback.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const submitContactReply = async (id: number) => {
+    if (!contactReply.trim()) return;
+    
+    setIsSendingReply(true);
+    try {
+      await apiRequest(`/api/admin/contact-messages/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reply: contactReply }),
+      });
+      
+      toast({
+        title: 'Reply Sent',
+        description: 'Your reply has been sent via email to the user.',
+      });
+      
+      setContactReply('');
+      setSelectedContactMessage(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/contact-messages'] });
+    } catch (error) {
+      toast({
+        title: 'Reply Failed',
+        description: 'Failed to send reply. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -591,15 +626,69 @@ function AdminDashboardContent() {
                         )}
                         
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.location.href = `mailto:${message.email}?subject=Re: ${encodeURIComponent(message.subject)}`}
-                            data-testid={`button-reply-${message.id}`}
-                          >
-                            <Mail className="w-4 h-4 mr-2" />
-                            Reply via Email
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedContactMessage(message)}
+                                data-testid={`button-reply-${message.id}`}
+                              >
+                                <Mail className="w-4 h-4 mr-2" />
+                                Reply
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Reply to Contact Message</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="p-4 bg-muted rounded-lg">
+                                  <p className="text-sm font-medium mb-2">Original Message:</p>
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    From: {message.name} ({message.email})
+                                  </p>
+                                  <p className="text-sm font-semibold mb-1">{message.subject}</p>
+                                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Your Reply:</label>
+                                  <Textarea
+                                    value={contactReply}
+                                    onChange={(e) => setContactReply(e.target.value)}
+                                    placeholder="Enter your reply message here... This will be sent via email to the user."
+                                    rows={6}
+                                    data-testid="textarea-contact-reply"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    Reply will be sent to: {message.email}
+                                  </p>
+                                </div>
+                                
+                                <div className="flex gap-2 justify-end">
+                                  <Button 
+                                    variant="outline"
+                                    onClick={() => {
+                                      setContactReply('');
+                                      setSelectedContactMessage(null);
+                                    }}
+                                    disabled={isSendingReply}
+                                    data-testid="button-cancel-reply"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button 
+                                    onClick={() => submitContactReply(message.id)}
+                                    disabled={!contactReply.trim() || isSendingReply}
+                                    data-testid="button-send-reply"
+                                  >
+                                    {isSendingReply ? 'Sending...' : 'Send Reply'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
                     ))
