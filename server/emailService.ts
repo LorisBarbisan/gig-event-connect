@@ -64,8 +64,9 @@ function calculateDeliverabilityScore(params: EmailParams): { score: number; war
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   // Validate email address
   if (!validateEmailAddress(params.to)) {
-    console.error(`❌ Invalid email address: ${params.to}`);
-    return false;
+    const error = new Error(`Invalid email address: ${params.to}`);
+    console.error(`❌ ${error.message}`);
+    throw error;
   }
 
   // Check deliverability score
@@ -75,13 +76,14 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     deliverability.warnings.forEach(warning => console.warn(`   - ${warning}`));
   }
 
-  // Graceful fallback if email service is not available
+  // Throw error if email service is not available
   if (!emailServiceEnabled || !mailService) {
-    console.log(`📧 Email service unavailable - simulating email to ${params.to}`);
+    const error = new Error('Email service is not available - SENDGRID_API_KEY not configured');
+    console.error(`❌ ${error.message}`);
+    console.log(`📧 Failed to send email to ${params.to}`);
     console.log(`📧 Subject: ${params.subject}`);
     console.log(`📧 From: ${params.from}`);
-    console.log(`📧 Deliverability Score: ${deliverability.score}/100`);
-    return true; // Return success to prevent blocking app functionality
+    throw error;
   }
 
   try {
