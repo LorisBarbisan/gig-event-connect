@@ -517,7 +517,7 @@ export default function Jobs() {
                     </div>
                     {job.event_date && (
                       <div className="flex items-center gap-2 font-medium text-primary">
-                        <Calendar className="h-4 w-4 text-primary" />
+                        <CalendarIcon className="h-4 w-4 text-primary" />
                         <span>Event: {new Date(job.event_date).toLocaleDateString()}</span>
                       </div>
                     )}
@@ -534,7 +534,7 @@ export default function Jobs() {
                           </div>
                           {job.duration && (
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                               <span>Duration: {job.duration}</span>
                             </div>
                           )}
