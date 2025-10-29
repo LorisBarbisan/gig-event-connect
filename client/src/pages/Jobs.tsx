@@ -7,11 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { UKLocationInput } from '@/components/ui/uk-location-input';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { Search, MapPin, Clock, Coins, Calendar, Filter, RefreshCw, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Clock, Coins, Calendar as CalendarIcon, Filter, RefreshCw, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function Jobs() {
   const { toast } = useToast();
@@ -26,6 +29,8 @@ export default function Jobs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   // Load initial search parameters from URL
   useEffect(() => {
@@ -33,11 +38,15 @@ export default function Jobs() {
     const urlSearch = urlParams.get('search') || '';
     const urlLocation = urlParams.get('location') || '';
     const urlCategory = urlParams.get('category') || '';
+    const urlDateFrom = urlParams.get('date_from') || '';
+    const urlDateTo = urlParams.get('date_to') || '';
     const urlPage = parseInt(urlParams.get('page') || '1');
 
     setSearchQuery(urlSearch);
     setLocationFilter(urlLocation);
     setCategoryFilter(urlCategory);
+    if (urlDateFrom) setDateFrom(new Date(urlDateFrom));
+    if (urlDateTo) setDateTo(new Date(urlDateTo));
     setCurrentPage(urlPage);
   }, []);
 
@@ -48,23 +57,35 @@ export default function Jobs() {
     if (searchQuery) urlParams.set('search', searchQuery);
     if (locationFilter) urlParams.set('location', locationFilter);
     if (categoryFilter && categoryFilter !== 'all') urlParams.set('category', categoryFilter);
+    if (dateFrom) urlParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
+    if (dateTo) urlParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
     if (currentPage > 1) urlParams.set('page', currentPage.toString());
 
     const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
     window.history.replaceState({}, '', newUrl);
-  }, [searchQuery, locationFilter, categoryFilter, currentPage]);
+  }, [searchQuery, locationFilter, categoryFilter, dateFrom, dateTo, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, locationFilter, categoryFilter]);
+  }, [searchQuery, locationFilter, categoryFilter, dateFrom, dateTo]);
 
-  // Fetch real jobs data from API with automatic sync
+  // Fetch real jobs data from API with server-side filtering
   const { data: jobs = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/jobs'],
+    queryKey: ['/api/jobs', searchQuery, locationFilter, dateFrom, dateTo],
     queryFn: () => {
-      console.log('🔄 Fetching jobs from /api/jobs...');
-      return apiRequest('/api/jobs');
+      // Build query parameters for server-side filtering
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('keyword', searchQuery);
+      if (locationFilter) params.set('location', locationFilter);
+      if (dateFrom) params.set('start_date', format(dateFrom, 'yyyy-MM-dd'));
+      if (dateTo) params.set('end_date', format(dateTo, 'yyyy-MM-dd'));
+      
+      const queryString = params.toString();
+      const url = queryString ? `/api/jobs?${queryString}` : '/api/jobs';
+      
+      console.log('🔄 Fetching jobs with filters:', url);
+      return apiRequest(url);
     },
     staleTime: 0, // Always fetch fresh data
     refetchOnMount: 'always',
@@ -229,35 +250,19 @@ export default function Jobs() {
     setExpandedJobId(expandedJobId === jobId ? null : jobId);
   };
 
-  // Transform real jobs to ensure unique IDs and consistent format
-  const transformedRealJobs = jobs.map((job: any) => ({
+  // Transform jobs for consistent format
+  const transformedJobs = jobs.map((job: any) => ({
     ...job,
-    id: `real-${job.id}`,
     posted: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently posted'
   }));
 
-  // Use only real jobs data from the database
-  const displayJobs = isLoading ? [] : transformedRealJobs;
-  
-  const filteredJobs = displayJobs.filter((job: any) => {
-    // Exclude closed jobs (when someone has been hired)
-    const isActive = job.status !== 'closed';
-    
-    // Enhanced keyword search: job title, company name, and skills
-    const searchTerm = searchQuery.toLowerCase();
-    const matchesSearch = !searchTerm || 
-      job.title.toLowerCase().includes(searchTerm) ||
-      job.company.toLowerCase().includes(searchTerm) ||
-      job.description.toLowerCase().includes(searchTerm) ||
-      (job.skills && job.skills.some((skill: string) => skill.toLowerCase().includes(searchTerm)));
-    
-    const matchesLocation = !locationFilter || job.location.toLowerCase().includes(locationFilter.toLowerCase());
-    
-    // Filter by contract type instead of job type
+  // Server-side filtering already handles search, location, and date
+  // Only filter by contract type on client-side
+  const filteredJobs = transformedJobs.filter((job: any) => {
+    // Filter by contract type if selected
+    if (!categoryFilter || categoryFilter === 'all') return true;
     const jobContractType = job.contract_type || job.employmentType || job.type || 'Gig';
-    const matchesCategory = !categoryFilter || categoryFilter === 'all' || jobContractType === categoryFilter;
-    
-    return isActive && matchesSearch && matchesLocation && matchesCategory;
+    return jobContractType === categoryFilter;
   });
 
   return (
@@ -283,7 +288,7 @@ export default function Jobs() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
                   <Input
                     placeholder="Search jobs, companies, or skills..."
@@ -320,8 +325,57 @@ export default function Jobs() {
                 </div>
               </div>
               
+              {/* Date Range Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                        data-testid="button-date-from"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateFrom ? format(dateFrom, 'PPP') : 'Event Date From'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateFrom}
+                        onSelect={setDateFrom}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                        data-testid="button-date-to"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateTo ? format(dateTo, 'PPP') : 'Event Date To'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateTo}
+                        onSelect={setDateTo}
+                        initialFocus
+                        disabled={(date) => dateFrom ? date < dateFrom : false}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
               {/* Clear Filters Button */}
-              {(searchQuery || locationFilter || (categoryFilter && categoryFilter !== 'all')) && (
+              {(searchQuery || locationFilter || (categoryFilter && categoryFilter !== 'all') || dateFrom || dateTo) && (
                 <div className="flex justify-start">
                   <Button
                     variant="outline"
@@ -330,13 +384,15 @@ export default function Jobs() {
                       setSearchQuery('');
                       setLocationFilter('');
                       setCategoryFilter('');
+                      setDateFrom(undefined);
+                      setDateTo(undefined);
                       setCurrentPage(1);
                     }}
                     className="flex items-center gap-2"
                     data-testid="button-clear-filters"
                   >
                     <X className="w-4 h-4" />
-                    Clear Filters
+                    Clear All Filters
                   </Button>
                 </div>
               )}
@@ -407,22 +463,26 @@ export default function Jobs() {
               <>
                 {/* Job Cards */}
                 {currentJobs.map((job: any) => (
-            <Card key={job.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
+            <Card key={job.id} className={`hover:shadow-lg transition-shadow border-l-4 ${!job.external_source ? 'border-l-primary' : 'border-l-muted'}`}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <CardTitle className="text-xl">{job.title}</CardTitle>
                     <p className="text-muted-foreground font-medium">{job.company}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      {job.type}
-                    </Badge>
-                    {job.external_source && (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                        {job.external_source}
+                  <div className="flex flex-col gap-2">
+                    {!job.external_source ? (
+                      <Badge className="bg-gradient-to-r from-[#D8690E] to-[#E97B24] text-white font-semibold">
+                        EventLink Opportunity
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                        External • {job.external_source}
                       </Badge>
                     )}
+                    <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                      {job.type}
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>

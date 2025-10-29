@@ -30,6 +30,7 @@ The EventLink platform utilizes a modern web application stack designed for effi
 - **Job Management**: Simplified job posting form focused on "gig" type jobs, including mandatory start dates and optional end dates/times.
 - **Application Management**: Enhanced display of job applications for both freelancers and recruiters, ensuring all relevant job details are visible.
 - **Email Service Diagnostics**: An internal endpoint `/api/debug/email-connector` is available for troubleshooting SendGrid connectivity.
+- **Job Search & Filtering**: Comprehensive server-side search system with keyword, location, and date range filters. EventLink jobs are prioritized above external jobs, with visual distinction badges ("EventLink Opportunity" vs. "External • [source]").
 
 ## External Dependencies
 - **PostgreSQL**: The primary relational database for all application data.

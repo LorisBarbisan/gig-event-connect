@@ -205,34 +205,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerRatingsRoutes(app);
   registerContactRoutes(app);
 
-  // Main jobs endpoint - combines regular and external jobs
+  // Main jobs endpoint - combines regular and external jobs with search/filtering
   app.get("/api/jobs", async (req, res) => {
     try {
-      console.log('📋 Main jobs endpoint called - fetching all jobs...');
+      // Extract query parameters
+      const keyword = (req.query.keyword as string) || '';
+      const location = (req.query.location as string) || '';
+      const startDate = (req.query.start_date as string) || '';
+      const endDate = (req.query.end_date as string) || '';
       
-      // Get both regular and external jobs
-      const [regularJobs, externalJobs] = await Promise.all([
-        storage.getAllJobs(),
-        storage.getExternalJobs()
-      ]);
+      console.log('📋 Jobs endpoint called with filters:', { keyword, location, startDate, endDate });
       
-      console.log(`📊 Found ${regularJobs.length} regular jobs and ${externalJobs.length} external jobs`);
+      // Get filtered jobs from storage
+      const jobs = await storage.searchJobs({ keyword, location, startDate, endDate });
       
-      // Sort regular jobs by created_at (most recent first)
-      const sortedRegularJobs = regularJobs.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      console.log(`📊 Found ${jobs.length} jobs after filtering`);
       
-      // Sort external jobs by posted_date or created_at (most recent first)
-      const sortedExternalJobs = externalJobs.sort((a, b) => {
-        const dateA = a.posted_date ? new Date(a.posted_date) : new Date(a.created_at);
-        const dateB = b.posted_date ? new Date(b.posted_date) : new Date(b.created_at);
-        return dateB.getTime() - dateA.getTime();
-      });
-      
-      // Platform jobs first, then external jobs
-      const allJobs = [...sortedRegularJobs, ...sortedExternalJobs];
-      res.json(allJobs);
+      res.json(jobs);
     } catch (error) {
       console.error("Get all jobs error:", error);
       res.status(500).json({ error: "Internal server error" });

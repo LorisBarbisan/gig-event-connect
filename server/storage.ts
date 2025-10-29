@@ -144,6 +144,7 @@ export interface IStorage {
   createJob(job: InsertJob): Promise<Job>;
   updateJob(jobId: number, job: Partial<InsertJob>): Promise<Job | undefined>;
   deleteJob(jobId: number): Promise<void>;
+  searchJobs(filters: { keyword?: string; location?: string; startDate?: string; endDate?: string }): Promise<Job[]>;
   
   // External job management
   getJobByExternalId(externalId: string): Promise<Job | undefined>;
@@ -777,6 +778,83 @@ export class DatabaseStorage implements IStorage {
     
     // Clear cached job and application lists
     cache.clear();
+  }
+
+  async searchJobs(filters: { keyword?: string; location?: string; startDate?: string; endDate?: string }): Promise<Job[]> {
+    try {
+      const { keyword, location, startDate, endDate } = filters;
+      
+      // Build conditions array
+      const conditions = [];
+      
+      // Only show active jobs
+      conditions.push(or(eq(jobs.status, 'active'), isNull(jobs.status)));
+      
+      // Keyword search: title, description, or company (case-insensitive)
+      if (keyword && keyword.trim()) {
+        const searchTerm = `%${keyword.toLowerCase()}%`;
+        conditions.push(
+          or(
+            sql`LOWER(${jobs.title}) LIKE ${searchTerm}`,
+            sql`LOWER(${jobs.description}) LIKE ${searchTerm}`,
+            sql`LOWER(${jobs.company}) LIKE ${searchTerm}`
+          )
+        );
+      }
+      
+      // Location filter (case-insensitive partial match)
+      if (location && location.trim()) {
+        const locationTerm = `%${location.toLowerCase()}%`;
+        conditions.push(sql`LOWER(${jobs.location}) LIKE ${locationTerm}`);
+      }
+      
+      // Date range filter on event_date
+      if (startDate || endDate) {
+        if (startDate && endDate) {
+          // Both dates provided - find jobs within range
+          conditions.push(
+            and(
+              sql`${jobs.event_date} >= ${startDate}`,
+              sql`${jobs.event_date} <= ${endDate}`
+            )
+          );
+        } else if (startDate) {
+          // Only start date - find jobs on or after this date
+          conditions.push(sql`${jobs.event_date} >= ${startDate}`);
+        } else if (endDate) {
+          // Only end date - find jobs on or before this date
+          conditions.push(sql`${jobs.event_date} <= ${endDate}`);
+        }
+      }
+      
+      // Fetch ALL jobs (both EventLink and external) with filters
+      const results = await db
+        .select()
+        .from(jobs)
+        .where(and(...conditions));
+      
+      // Sort with EventLink jobs first (external_source IS NULL), then external jobs
+      // Within each group, sort by created_at or posted_date DESC (most recent first)
+      const sortedResults = results.sort((a, b) => {
+        // First priority: EventLink jobs (no external_source) come first
+        const aIsEventLink = !a.external_source;
+        const bIsEventLink = !b.external_source;
+        
+        if (aIsEventLink && !bIsEventLink) return -1;
+        if (!aIsEventLink && bIsEventLink) return 1;
+        
+        // Second priority: sort by date (most recent first)
+        // Use posted_date for external jobs, created_at for EventLink jobs
+        const aDate = a.posted_date ? new Date(a.posted_date) : new Date(a.created_at);
+        const bDate = b.posted_date ? new Date(b.posted_date) : new Date(b.created_at);
+        return bDate.getTime() - aDate.getTime();
+      });
+      
+      return sortedResults;
+    } catch (error) {
+      console.error('Search jobs error:', error);
+      return [];
+    }
   }
 
   async getJobByExternalId(externalId: string): Promise<Job | undefined> {
