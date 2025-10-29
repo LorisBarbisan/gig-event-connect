@@ -66,7 +66,7 @@ export default function FAQ() {
         {
           id: "jobs-3",
           question: "How do I know if my application was viewed?",
-          answer: "You'll receive an email and dashboard notification when a recruiter views your profile."
+          answer: "You'll receive a dashboard notification when a recruiter views your profile."
         },
         {
           id: "jobs-4",
