@@ -148,6 +148,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(healthData);
   });
 
+  // Email connector diagnostic endpoint (development only)
+  if (process.env.NODE_ENV === 'development') {
+    app.get("/api/debug/email-connector", async (req, res) => {
+      try {
+        const { sendVerificationEmail } = await import('./emailService');
+        
+        // Try to send a test email
+        try {
+          await sendVerificationEmail(
+            "test@example.com",
+            "test-token-123",
+            req.protocol + '://' + req.get('host')
+          );
+          res.json({ 
+            status: "success",
+            message: "Test email would be sent (not actually sent to test@example.com)" 
+          });
+        } catch (error: any) {
+          res.json({ 
+            status: "error",
+            error: error.message,
+            stack: error.stack
+          });
+        }
+      } catch (error: any) {
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to test email connector",
+          error: error.message 
+        });
+      }
+    });
+  }
+
   // API root endpoint health check  
   app.get("/api", (req, res) => {
     res.status(200).send("EventLink API is running");
