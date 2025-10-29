@@ -222,11 +222,16 @@ function AdminDashboardContent() {
     
     setIsSendingReply(true);
     try {
-      await apiRequest(`/api/admin/contact-messages/${id}/reply`, {
+      console.log(`📧 Sending reply for message ID: ${id}`);
+      console.log(`📧 Reply content: ${contactReply.substring(0, 50)}...`);
+      
+      const result = await apiRequest(`/api/admin/contact-messages/${id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reply: contactReply }),
       });
+      
+      console.log('✅ Reply sent successfully:', result);
       
       toast({
         title: 'Reply Sent',
@@ -236,10 +241,14 @@ function AdminDashboardContent() {
       setContactReply('');
       setSelectedContactMessage(null);
       queryClient.invalidateQueries({ queryKey: ['/api/admin/contact-messages'] });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Reply error:', error);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      
       toast({
         title: 'Reply Failed',
-        description: 'Failed to send reply. Please try again.',
+        description: error?.message || 'Failed to send reply. Please try again.',
         variant: 'destructive',
       });
     } finally {
