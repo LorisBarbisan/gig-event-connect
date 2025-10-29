@@ -738,7 +738,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFreelancers(filters: { keyword?: string; location?: string; page?: number; limit?: number }): Promise<{ 
-    results: Array<FreelancerProfile & { rating?: number; rating_count?: number }>; 
+    results: Array<FreelancerProfile & { average_rating: number; rating_count: number }>; 
     total: number; 
     page: number; 
     totalPages: number 
@@ -821,8 +821,8 @@ export class DatabaseStorage implements IStorage {
           const ratingStats = await this.getFreelancerAverageRating(profile.user_id);
           return {
             ...profile,
-            rating: ratingStats.average || undefined,
-            rating_count: ratingStats.count || undefined
+            average_rating: ratingStats.average ?? 0,
+            rating_count: ratingStats.count ?? 0
           };
         })
       );
@@ -831,23 +831,23 @@ export class DatabaseStorage implements IStorage {
       const sortedResults = resultsWithRatings.sort((a, b) => {
         if (!keyword) {
           // No keyword - sort by rating only
-          const aRating = a.rating || 0;
-          const bRating = b.rating || 0;
+          const aRating = a.average_rating ?? 0;
+          const bRating = b.average_rating ?? 0;
           return bRating - aRating;
         }
         
-        // Calculate relevance scores
+        // Calculate relevance scores with rating integration
         const searchTerm = keyword.toLowerCase();
-        const aScore = this.calculateRelevanceScore(a, searchTerm);
-        const bScore = this.calculateRelevanceScore(b, searchTerm);
+        const aScore = this.calculateRelevanceScore(a, searchTerm, a.average_rating ?? 0);
+        const bScore = this.calculateRelevanceScore(b, searchTerm, b.average_rating ?? 0);
         
         if (aScore !== bScore) {
           return bScore - aScore; // Higher score first
         }
         
-        // If same relevance, sort by rating
-        const aRating = a.rating || 0;
-        const bRating = b.rating || 0;
+        // If same relevance, sort by rating as tiebreaker
+        const aRating = a.average_rating ?? 0;
+        const bRating = b.average_rating ?? 0;
         return bRating - aRating;
       });
       
@@ -868,35 +868,29 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Helper method to calculate relevance score
-  private calculateRelevanceScore(profile: FreelancerProfile, searchTerm: string): number {
+  // Helper method to calculate relevance score with weighted components
+  // Weighting: 40% title, 30% skills, 20% bio, 10% rating (out of 100)
+  private calculateRelevanceScore(profile: FreelancerProfile, searchTerm: string, rating: number): number {
     let score = 0;
     
-    // Title match (highest weight)
+    // Title match: 40 points (40% weight)
     if (profile.title && profile.title.toLowerCase().includes(searchTerm)) {
-      score += 10;
+      score += 40;
     }
     
-    // Name match (high weight)
-    const fullName = `${profile.first_name} ${profile.last_name}`.toLowerCase();
-    if (fullName.includes(searchTerm)) {
-      score += 8;
-    }
-    
-    // Skills match (medium-high weight)
+    // Skills match: 30 points (30% weight)
     if (profile.skills && profile.skills.some(skill => skill.toLowerCase().includes(searchTerm))) {
-      score += 5;
+      score += 30;
     }
     
-    // Bio match (medium weight)
+    // Bio match: 20 points (20% weight)
     if (profile.bio && profile.bio.toLowerCase().includes(searchTerm)) {
-      score += 3;
+      score += 20;
     }
     
-    // Profile completeness bonus
-    if (profile.bio && profile.title && profile.skills && profile.skills.length > 0) {
-      score += 1;
-    }
+    // Rating contribution: 10 points max (10% weight)
+    // Rating is 0-5 scale, so normalize to 0-10 points
+    score += (rating / 5) * 10;
     
     return score;
   }
