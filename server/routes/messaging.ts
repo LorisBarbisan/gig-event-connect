@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { storage } from "../storage";
 import { insertMessageSchema } from "@shared/schema";
 import { authenticateJWT } from "./auth";
+import { emailService } from "../emailNotificationService";
 
 export function registerMessagingRoutes(app: Express) {
   // Get all conversations for the current user
@@ -168,6 +169,41 @@ export function registerMessagingRoutes(app: Express) {
           action_url: `/dashboard?tab=messages&conversation=${conversation.id}`,
           metadata: JSON.stringify({ sender_id: req.user.id, conversation_id: conversation.id })
         });
+        
+        // Send email notification
+        try {
+          // Get recipient's profile for name
+          let recipientDisplayName = recipient.email; // fallback
+          if (recipient.role === 'recruiter') {
+            const recruiterProfile = await storage.getRecruiterProfile(userTwoId);
+            if (recruiterProfile?.company_name) {
+              recipientDisplayName = recruiterProfile.company_name;
+            }
+          } else if (recipient.role === 'freelancer') {
+            const freelancerProfile = await storage.getFreelancerProfile(userTwoId);
+            if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+              const firstName = freelancerProfile.first_name || '';
+              const lastName = freelancerProfile.last_name || '';
+              recipientDisplayName = `${firstName} ${lastName}`.trim() || recipient.email;
+            }
+          }
+
+          // Send email notification (non-blocking)
+          emailService.sendMessageNotification({
+            recipientId: userTwoId,
+            recipientEmail: recipient.email,
+            recipientName: recipientDisplayName,
+            senderName: senderDisplayName,
+            messagePreview: initialMessage.substring(0, 100),
+            conversationId: conversation.id,
+          }).catch(error => {
+            console.error('Failed to send message notification email:', error);
+            // Don't fail the request if email fails
+          });
+        } catch (error) {
+          console.error('Error preparing message notification email:', error);
+          // Don't fail the request if email preparation fails
+        }
       }
 
       res.status(201).json({ id: conversation.id, message: newMessage });
@@ -264,6 +300,45 @@ export function registerMessagingRoutes(app: Express) {
           action_url: `/dashboard?tab=messages&conversation=${conversation_id}`,
           metadata: JSON.stringify({ sender_id: req.user.id, conversation_id: conversation_id })
         });
+        
+        // Send email notification
+        try {
+          // Get recipient user data
+          const recipient = await storage.getUser(conversation.otherUser.id);
+          if (recipient) {
+            // Get recipient's profile for name
+            let recipientDisplayName = recipient.email; // fallback
+            if (recipient.role === 'recruiter') {
+              const recruiterProfile = await storage.getRecruiterProfile(conversation.otherUser.id);
+              if (recruiterProfile?.company_name) {
+                recipientDisplayName = recruiterProfile.company_name;
+              }
+            } else if (recipient.role === 'freelancer') {
+              const freelancerProfile = await storage.getFreelancerProfile(conversation.otherUser.id);
+              if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+                const firstName = freelancerProfile.first_name || '';
+                const lastName = freelancerProfile.last_name || '';
+                recipientDisplayName = `${firstName} ${lastName}`.trim() || recipient.email;
+              }
+            }
+
+            // Send email notification (non-blocking)
+            emailService.sendMessageNotification({
+              recipientId: conversation.otherUser.id,
+              recipientEmail: recipient.email,
+              recipientName: recipientDisplayName,
+              senderName: senderDisplayName,
+              messagePreview: content ? content.substring(0, 100) : '[Attachment]',
+              conversationId: conversation_id,
+            }).catch(error => {
+              console.error('Failed to send message notification email:', error);
+              // Don't fail the request if email fails
+            });
+          }
+        } catch (error) {
+          console.error('Error preparing message notification email:', error);
+          // Don't fail the request if email preparation fails
+        }
       }
       
       // Broadcast NEW_MESSAGE to recipient only (sender has optimistic UI)

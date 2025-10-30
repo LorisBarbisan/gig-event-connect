@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { storage } from "../storage";
 import { insertJobApplicationSchema, type JobApplication } from "@shared/schema";
 import { authenticateJWT } from "./auth";
+import { emailService } from "../emailNotificationService";
 
 export function registerApplicationRoutes(app: Express) {
   // Get freelancer bookings (accepted applications)
@@ -91,6 +92,46 @@ export function registerApplicationRoutes(app: Express) {
             action_url: '/dashboard?tab=applications',
             metadata: JSON.stringify({ application_id: application.id, job_id: jobId })
           });
+
+          // Send email notification to recruiter
+          try {
+            const recruiter = await storage.getUser(job.recruiter_id);
+            if (recruiter) {
+              let recruiterDisplayName = recruiter.email;
+              const recruiterProfile = await storage.getRecruiterProfile(job.recruiter_id);
+              if (recruiterProfile?.company_name) {
+                recruiterDisplayName = recruiterProfile.company_name;
+              }
+
+              // Get freelancer's display name
+              let freelancerDisplayName = 'A freelancer';
+              let freelancerTitle: string | undefined;
+              const freelancerProfile = await storage.getFreelancerProfile(req.user.id);
+              if (freelancerProfile) {
+                if (freelancerProfile.first_name || freelancerProfile.last_name) {
+                  const firstName = freelancerProfile.first_name || '';
+                  const lastName = freelancerProfile.last_name || '';
+                  freelancerDisplayName = `${firstName} ${lastName}`.trim();
+                }
+                freelancerTitle = freelancerProfile.title || undefined;
+              }
+
+              emailService.sendNewApplicationNotification({
+                recipientId: job.recruiter_id,
+                recipientEmail: recruiter.email,
+                recipientName: recruiterDisplayName,
+                jobTitle: job.title,
+                freelancerName: freelancerDisplayName,
+                freelancerTitle: freelancerTitle,
+                jobId: jobId,
+                applicationId: application.id,
+              }).catch(error => {
+                console.error('Failed to send new application email:', error);
+              });
+            }
+          } catch (emailError) {
+            console.error('Error preparing new application email:', emailError);
+          }
         } catch (notifError) {
           console.error("Failed to create notification (non-critical):", notifError);
           // Don't fail the application if notification fails
@@ -218,6 +259,34 @@ export function registerApplicationRoutes(app: Express) {
         metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'hired' })
       });
 
+      // Send email notification (non-blocking)
+      try {
+        const freelancer = await storage.getUser(application.freelancer_id);
+        if (freelancer) {
+          let freelancerDisplayName = freelancer.email;
+          const freelancerProfile = await storage.getFreelancerProfile(application.freelancer_id);
+          if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+            const firstName = freelancerProfile.first_name || '';
+            const lastName = freelancerProfile.last_name || '';
+            freelancerDisplayName = `${firstName} ${lastName}`.trim() || freelancer.email;
+          }
+
+          emailService.sendApplicationUpdateNotification({
+            recipientId: application.freelancer_id,
+            recipientEmail: freelancer.email,
+            recipientName: freelancerDisplayName,
+            jobTitle: job.title,
+            companyName: job.company,
+            status: 'Accepted',
+            applicationId: applicationId,
+          }).catch(error => {
+            console.error('Failed to send application update email:', error);
+          });
+        }
+      } catch (error) {
+        console.error('Error preparing application update email:', error);
+      }
+
       // Broadcast live notification to freelancer if connected
       if ((global as any).broadcastToUser) {
         (global as any).broadcastToUser(application.freelancer_id, {
@@ -272,6 +341,34 @@ export function registerApplicationRoutes(app: Express) {
         action_url: '/dashboard?tab=jobs',
         metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'rejected', has_feedback: !!req.body.message })
       });
+
+      // Send email notification (non-blocking)
+      try {
+        const freelancer = await storage.getUser(application.freelancer_id);
+        if (freelancer) {
+          let freelancerDisplayName = freelancer.email;
+          const freelancerProfile = await storage.getFreelancerProfile(application.freelancer_id);
+          if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
+            const firstName = freelancerProfile.first_name || '';
+            const lastName = freelancerProfile.last_name || '';
+            freelancerDisplayName = `${firstName} ${lastName}`.trim() || freelancer.email;
+          }
+
+          emailService.sendApplicationUpdateNotification({
+            recipientId: application.freelancer_id,
+            recipientEmail: freelancer.email,
+            recipientName: freelancerDisplayName,
+            jobTitle: job.title,
+            companyName: job.company,
+            status: 'Not Selected',
+            applicationId: applicationId,
+          }).catch(error => {
+            console.error('Failed to send application update email:', error);
+          });
+        }
+      } catch (error) {
+        console.error('Error preparing application update email:', error);
+      }
 
       // Broadcast live notification to freelancer if connected
       if ((global as any).broadcastToUser) {
