@@ -4,10 +4,13 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Mail, Briefcase, MessageSquare, Star } from 'lucide-react';
-import type { User } from '@shared/schema';
+import { Bell, Mail, Briefcase, MessageSquare, Star, Filter, X, Plus } from 'lucide-react';
+import type { User, JobAlertFilter } from '@shared/schema';
 
 interface NotificationSettingsFormProps {
   user: User;
@@ -29,10 +32,26 @@ interface NotificationPreferences {
 export function NotificationSettingsForm({ user }: NotificationSettingsFormProps) {
   const { toast } = useToast();
   const [localPreferences, setLocalPreferences] = useState<NotificationPreferences | null>(null);
+  
+  // Job alert filter state
+  const [skillInput, setSkillInput] = useState('');
+  const [locationInput, setLocationInput] = useState('');
+  const [keywordInput, setKeywordInput] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [filterSkills, setFilterSkills] = useState<string[]>([]);
+  const [filterLocations, setFilterLocations] = useState<string[]>([]);
+  const [filterKeywords, setFilterKeywords] = useState<string[]>([]);
 
   // Fetch notification preferences
   const { data: preferences, isLoading } = useQuery<NotificationPreferences>({
     queryKey: ['/api/notifications/settings'],
+  });
+  
+  // Fetch job alert filters (freelancers only)
+  const { data: jobAlertFilter, isLoading: isLoadingFilters } = useQuery<JobAlertFilter>({
+    queryKey: ['/api/notifications/job-alerts'],
+    enabled: user.role === 'freelancer',
   });
 
   // Update local state when preferences are loaded
@@ -41,6 +60,17 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
       setLocalPreferences(preferences);
     }
   }, [preferences]);
+  
+  // Update filter state when job alert filter is loaded
+  useEffect(() => {
+    if (jobAlertFilter) {
+      setFilterSkills(jobAlertFilter.skills || []);
+      setFilterLocations(jobAlertFilter.locations || []);
+      setFilterKeywords(jobAlertFilter.keywords || []);
+      setDateFrom(jobAlertFilter.date_from || '');
+      setDateTo(jobAlertFilter.date_to || '');
+    }
+  }, [jobAlertFilter]);
 
   // Update preferences mutation
   const updateMutation = useMutation({
@@ -66,12 +96,84 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
     },
   });
 
+  // Update job alert filters mutation
+  const updateFiltersMutation = useMutation({
+    mutationFn: async (filters: Partial<JobAlertFilter>) => {
+      return await apiRequest('/api/notifications/job-alerts', {
+        method: 'POST',
+        body: JSON.stringify(filters),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/job-alerts'] });
+      toast({
+        title: 'Job alerts updated',
+        description: 'Your job alert preferences have been saved.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update job alert preferences.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleToggle = (key: keyof NotificationPreferences, value: boolean) => {
     if (!localPreferences) return;
 
     const newPreferences = { ...localPreferences, [key]: value };
     setLocalPreferences(newPreferences);
     updateMutation.mutate({ [key]: value });
+  };
+  
+  // Job alert filter handlers
+  const handleAddSkill = () => {
+    if (skillInput.trim() && !filterSkills.includes(skillInput.trim())) {
+      const newSkills = [...filterSkills, skillInput.trim()];
+      setFilterSkills(newSkills);
+      setSkillInput('');
+    }
+  };
+  
+  const handleRemoveSkill = (skill: string) => {
+    setFilterSkills(filterSkills.filter(s => s !== skill));
+  };
+  
+  const handleAddLocation = () => {
+    if (locationInput.trim() && !filterLocations.includes(locationInput.trim())) {
+      const newLocations = [...filterLocations, locationInput.trim()];
+      setFilterLocations(newLocations);
+      setLocationInput('');
+    }
+  };
+  
+  const handleRemoveLocation = (location: string) => {
+    setFilterLocations(filterLocations.filter(l => l !== location));
+  };
+  
+  const handleAddKeyword = () => {
+    if (keywordInput.trim() && !filterKeywords.includes(keywordInput.trim())) {
+      const newKeywords = [...filterKeywords, keywordInput.trim()];
+      setFilterKeywords(newKeywords);
+      setKeywordInput('');
+    }
+  };
+  
+  const handleRemoveKeyword = (keyword: string) => {
+    setFilterKeywords(filterKeywords.filter(k => k !== keyword));
+  };
+  
+  const handleSaveFilters = () => {
+    updateFiltersMutation.mutate({
+      skills: filterSkills.length > 0 ? filterSkills : null,
+      locations: filterLocations.length > 0 ? filterLocations : null,
+      keywords: filterKeywords.length > 0 ? filterKeywords : null,
+      date_from: dateFrom || null,
+      date_to: dateTo || null,
+      is_active: true,
+    });
   };
 
   if (isLoading || !localPreferences) {
@@ -271,6 +373,212 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
           </div>
         </CardContent>
       </Card>
+
+      {/* Job Alert Filters (Freelancers only) */}
+      {user.role === 'freelancer' && localPreferences.email_job_alerts && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Job Alert Filters
+            </CardTitle>
+            <CardDescription>
+              Customize which jobs you get notified about
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Skills Filter */}
+            <div className="space-y-3">
+              <Label htmlFor="skill-input" className="text-base font-medium" data-testid="label-skills-filter">
+                Skills
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Get notified about jobs that require specific skills
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="skill-input"
+                  placeholder="e.g., Sound Engineer, Lighting Tech"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                  data-testid="input-skill-filter"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddSkill}
+                  data-testid="button-add-skill"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {filterSkills.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {filterSkills.map((skill) => (
+                    <Badge key={skill} variant="secondary" className="gap-1" data-testid={`badge-skill-${skill}`}>
+                      {skill}
+                      <button
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="ml-1 hover:text-destructive"
+                        data-testid={`button-remove-skill-${skill}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Location Filter */}
+            <div className="space-y-3">
+              <Label htmlFor="location-input" className="text-base font-medium" data-testid="label-locations-filter">
+                Locations
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Get notified about jobs in specific locations
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="location-input"
+                  placeholder="e.g., London, Manchester, Birmingham"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLocation())}
+                  data-testid="input-location-filter"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddLocation}
+                  data-testid="button-add-location"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {filterLocations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {filterLocations.map((location) => (
+                    <Badge key={location} variant="secondary" className="gap-1" data-testid={`badge-location-${location}`}>
+                      {location}
+                      <button
+                        onClick={() => handleRemoveLocation(location)}
+                        className="ml-1 hover:text-destructive"
+                        data-testid={`button-remove-location-${location}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Keywords Filter */}
+            <div className="space-y-3">
+              <Label htmlFor="keyword-input" className="text-base font-medium" data-testid="label-keywords-filter">
+                Keywords
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Get notified about jobs containing specific keywords in the title or description
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="keyword-input"
+                  placeholder="e.g., festival, corporate, live music"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                  data-testid="input-keyword-filter"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddKeyword}
+                  data-testid="button-add-keyword"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {filterKeywords.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {filterKeywords.map((keyword) => (
+                    <Badge key={keyword} variant="secondary" className="gap-1" data-testid={`badge-keyword-${keyword}`}>
+                      {keyword}
+                      <button
+                        onClick={() => handleRemoveKeyword(keyword)}
+                        className="ml-1 hover:text-destructive"
+                        data-testid={`button-remove-keyword-${keyword}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Date Range Filter */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium" data-testid="label-date-range-filter">
+                Date Range
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Only get notified about jobs starting within a specific date range
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date-from" className="text-sm" data-testid="label-date-from">
+                    From
+                  </Label>
+                  <Input
+                    id="date-from"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    data-testid="input-date-from"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date-to" className="text-sm" data-testid="label-date-to">
+                    To
+                  </Label>
+                  <Input
+                    id="date-to"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    data-testid="input-date-to"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveFilters}
+                disabled={updateFiltersMutation.isPending}
+                data-testid="button-save-job-alerts"
+              >
+                {updateFiltersMutation.isPending ? 'Saving...' : 'Save Job Alert Preferences'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
