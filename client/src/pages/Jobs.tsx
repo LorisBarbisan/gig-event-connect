@@ -28,7 +28,6 @@ export default function Jobs() {
   // Initialize search state from URL parameters
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   
@@ -41,14 +40,12 @@ export default function Jobs() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlSearch = urlParams.get('search') || '';
     const urlLocation = urlParams.get('location') || '';
-    const urlCategory = urlParams.get('category') || '';
     const urlDateFrom = urlParams.get('date_from') || '';
     const urlDateTo = urlParams.get('date_to') || '';
     const urlPage = parseInt(urlParams.get('page') || '1');
 
     setSearchQuery(urlSearch);
     setLocationFilter(urlLocation);
-    setCategoryFilter(urlCategory);
     if (urlDateFrom) setDateFrom(new Date(urlDateFrom));
     if (urlDateTo) setDateTo(new Date(urlDateTo));
     setCurrentPage(urlPage);
@@ -60,19 +57,18 @@ export default function Jobs() {
     
     if (searchQuery) urlParams.set('search', searchQuery);
     if (locationFilter) urlParams.set('location', locationFilter);
-    if (categoryFilter && categoryFilter !== 'all') urlParams.set('category', categoryFilter);
     if (dateFrom) urlParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
     if (dateTo) urlParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
     if (currentPage > 1) urlParams.set('page', currentPage.toString());
 
     const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
     window.history.replaceState({}, '', newUrl);
-  }, [searchQuery, locationFilter, categoryFilter, dateFrom, dateTo, currentPage]);
+  }, [searchQuery, locationFilter, dateFrom, dateTo, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, locationFilter, categoryFilter, dateFrom, dateTo]);
+  }, [searchQuery, locationFilter, dateFrom, dateTo]);
 
   // Fetch real jobs data from API with server-side filtering
   const { data: jobs = [], isLoading, refetch } = useQuery({
@@ -260,14 +256,8 @@ export default function Jobs() {
     posted: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently posted'
   }));
 
-  // Server-side filtering already handles search, location, and date
-  // Only filter by contract type on client-side
-  const filteredJobs = transformedJobs.filter((job: any) => {
-    // Filter by contract type if selected
-    if (!categoryFilter || categoryFilter === 'all') return true;
-    const jobContractType = job.contract_type || job.employmentType || job.type || 'Gig';
-    return jobContractType === categoryFilter;
-  });
+  // Server-side filtering handles search, location, and date
+  const filteredJobs = transformedJobs;
 
   return (
     <Layout>
@@ -292,8 +282,8 @@ export default function Jobs() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <Input
                     placeholder="Search jobs, companies, or skills..."
                     value={searchQuery}
@@ -309,23 +299,6 @@ export default function Jobs() {
                     onChange={(value) => setLocationFilter(value)}
                     data-testid="input-location-filter"
                   />
-                </div>
-                <div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger data-testid="select-contract-type">
-                      <SelectValue placeholder="Contract Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Contract Types</SelectItem>
-                      <SelectItem value="Freelance">Freelance</SelectItem>
-                      <SelectItem value="Full-Time">Full-Time</SelectItem>
-                      <SelectItem value="Part-Time">Part-Time</SelectItem>
-                      <SelectItem value="Contract">Contract</SelectItem>
-                      <SelectItem value="Fixed term">Fixed term</SelectItem>
-                      <SelectItem value="Temporary">Temporary</SelectItem>
-                      <SelectItem value="Gig">Gig</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
               
@@ -391,7 +364,7 @@ export default function Jobs() {
               </div>
               
               {/* Clear Filters Button */}
-              {(searchQuery || locationFilter || (categoryFilter && categoryFilter !== 'all') || dateFrom || dateTo) && (
+              {(searchQuery || locationFilter || dateFrom || dateTo) && (
                 <div className="flex justify-start">
                   <Button
                     variant="outline"
@@ -399,7 +372,6 @@ export default function Jobs() {
                     onClick={() => {
                       setSearchQuery('');
                       setLocationFilter('');
-                      setCategoryFilter('');
                       setDateFrom(undefined);
                       setDateTo(undefined);
                       setCurrentPage(1);
@@ -449,13 +421,12 @@ export default function Jobs() {
                 <p className="text-muted-foreground mb-4">
                   Try adjusting your search criteria or removing some filters.
                 </p>
-                {(searchQuery || locationFilter || (categoryFilter && categoryFilter !== 'all')) && (
+                {(searchQuery || locationFilter) && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       setSearchQuery('');
                       setLocationFilter('');
-                      setCategoryFilter('');
                       setCurrentPage(1);
                     }}
                     className="flex items-center gap-2"
