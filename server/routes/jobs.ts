@@ -93,6 +93,16 @@ export function registerJobRoutes(app: Express) {
         ...result.data,
         recruiter_id: req.user.id
       });
+
+      // Send job alert emails to matching freelancers (non-blocking)
+      // Only for EventLink jobs (not external jobs)
+      if (!job.is_external) {
+        const { emailService } = await import('../emailNotificationService');
+        emailService.sendJobAlertToMatchingFreelancers(job).catch(error => {
+          console.error('Failed to send job alert emails:', error);
+        });
+      }
+
       res.status(201).json(job);
     } catch (error) {
       console.error("Create job error:", error);
