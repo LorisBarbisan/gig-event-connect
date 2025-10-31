@@ -241,10 +241,8 @@ export function registerApplicationRoutes(app: Express) {
         return res.status(403).json({ error: "Not authorized to accept this application" });
       }
 
+      // Mark application as hired (this also automatically closes the job)
       await storage.updateApplicationStatus(applicationId, 'hired');
-      
-      // Mark job as filled when hiring
-      await storage.updateJob(job.id, { status: 'filled' });
       
       // Create notification for freelancer
       await storage.createNotification({
