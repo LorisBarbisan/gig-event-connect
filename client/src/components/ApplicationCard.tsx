@@ -50,9 +50,21 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
       });
     },
     onSuccess: async () => {
-      // Refetch recruiter's applications to update UI immediately
+      const queryKey = ['/api/recruiter', currentUserId, 'applications'];
+      
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(queryKey, (oldData: JobApplication[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.map(app => 
+          app.id === application.id 
+            ? { ...app, status: 'rejected' as const, rejection_message: rejectionMessage }
+            : app
+        );
+      });
+      
+      // Then refetch to ensure consistency
       await queryClient.refetchQueries({ 
-        queryKey: ['/api/recruiter', currentUserId, 'applications'],
+        queryKey: queryKey,
         type: 'active'
       });
       
@@ -86,13 +98,25 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
       });
     },
     onSuccess: async () => {
-      // Refetch recruiter's applications to update UI immediately
+      const queryKey = ['/api/recruiter', currentUserId, 'applications'];
+      
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(queryKey, (oldData: JobApplication[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.map(app => 
+          app.id === application.id 
+            ? { ...app, status: 'hired' as const }
+            : app
+        );
+      });
+      
+      // Then refetch to ensure consistency
       await queryClient.refetchQueries({ 
-        queryKey: ['/api/recruiter', currentUserId, 'applications'],
+        queryKey: queryKey,
         type: 'active'
       });
       
-      // Refetch jobs list to show filled status
+      // Refetch jobs list to show closed status
       await queryClient.refetchQueries({ 
         queryKey: ['/api/jobs'],
         type: 'active'
@@ -111,7 +135,7 @@ export function ApplicationCard({ application, userType, currentUserId }: Applic
       setShowHireConfirm(false);
       toast({
         title: 'Applicant hired!',
-        description: 'The applicant has been notified of their successful application. The job has been filled.',
+        description: 'The applicant has been notified of their successful application. The job has been closed.',
       });
     },
     onError: () => {
