@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { UKLocationInput } from '@/components/ui/uk-location-input';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Mail, Briefcase, MessageSquare, Star, Filter, X, Plus } from 'lucide-react';
 import type { User, JobAlertFilter } from '@shared/schema';
@@ -436,26 +437,26 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
 
             {/* Location Filter */}
             <div className="space-y-3">
-              <Label htmlFor="location-input" className="text-base font-medium" data-testid="label-locations-filter">
-                Locations
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Get notified about jobs in specific locations
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  id="location-input"
-                  placeholder="e.g., London, Manchester, Birmingham"
-                  value={locationInput}
-                  onChange={(e) => setLocationInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLocation())}
-                  data-testid="input-location-filter"
-                />
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <UKLocationInput
+                    id="location-input"
+                    label="Locations"
+                    value={locationInput}
+                    onChange={setLocationInput}
+                    placeholder="Start typing a UK location..."
+                    data-testid="input-location-filter"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Get notified about jobs in specific locations
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   onClick={handleAddLocation}
+                  className="mb-1"
                   data-testid="button-add-location"
                 >
                   <Plus className="h-4 w-4" />
