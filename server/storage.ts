@@ -929,7 +929,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getJobsByRecruiterId(recruiterId: number): Promise<Job[]> {
-    return await db.select().from(jobs).where(eq(jobs.recruiter_id, recruiterId));
+    return await db.select().from(jobs).where(eq(jobs.recruiter_id, recruiterId)).orderBy(desc(jobs.created_at));
   }
 
   async getJobById(jobId: number): Promise<Job | undefined> {
@@ -1098,7 +1098,8 @@ export class DatabaseStorage implements IStorage {
         eq(job_applications.freelancer_id, freelancerId),
         eq(job_applications.freelancer_deleted, false)
       )
-    );
+    )
+    .orderBy(desc(job_applications.applied_at));
     return result as JobApplication[];
   }
 
@@ -1188,7 +1189,8 @@ export class DatabaseStorage implements IStorage {
         eq(jobs.recruiter_id, recruiterId),
         eq(job_applications.recruiter_deleted, false)
       )
-    );
+    )
+    .orderBy(desc(job_applications.applied_at));
     return result as JobApplication[];
   }
 
