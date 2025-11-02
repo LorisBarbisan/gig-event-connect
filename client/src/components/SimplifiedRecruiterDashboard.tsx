@@ -317,10 +317,10 @@ export default function SimplifiedRecruiterDashboard() {
   );
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Recruiter Dashboard</h1>
-        <p className="text-muted-foreground">Manage your company profile, job postings, and applications</p>
+    <div className="container mx-auto p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Recruiter Dashboard</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage your company profile, job postings, and applications</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">

@@ -99,10 +99,10 @@ export default function SimplifiedFreelancerDashboard() {
   const hasNewJobUpdates = false;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Freelancer Dashboard</h1>
-        <p className="text-muted-foreground">Manage your profile, applications, and messages</p>
+    <div className="container mx-auto p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Freelancer Dashboard</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage your profile, applications, and messages</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
