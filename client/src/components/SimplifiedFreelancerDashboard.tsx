@@ -106,17 +106,18 @@ export default function SimplifiedFreelancerDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Edit Profile</TabsTrigger>
-          <TabsTrigger value="jobs" className="flex items-center">
-            My Applications
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <TabsTrigger value="profile" className="text-xs sm:text-sm">Edit Profile</TabsTrigger>
+          <TabsTrigger value="jobs" className="flex items-center justify-center text-xs sm:text-sm">
+            <span className="hidden sm:inline">My Applications</span>
+            <span className="sm:hidden">Applications</span>
             <TabBadge count={roleSpecificCounts.applications || 0} />
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center">
+          <TabsTrigger value="messages" className="flex items-center justify-center text-xs sm:text-sm">
             Messages
             <TabBadge count={roleSpecificCounts.messages || 0} />
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center">
+          <TabsTrigger value="bookings" className="flex items-center justify-center text-xs sm:text-sm">
             Ratings
             <TabBadge count={roleSpecificCounts.ratings || 0} />
           </TabsTrigger>

@@ -324,18 +324,23 @@ export default function SimplifiedRecruiterDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Company Profile</TabsTrigger>
-          <TabsTrigger value="jobs" className="flex items-center">
-            My Jobs
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <TabsTrigger value="profile" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Company Profile</span>
+            <span className="sm:hidden">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="jobs" className="flex items-center justify-center text-xs sm:text-sm">
+            <span className="hidden sm:inline">My Jobs</span>
+            <span className="sm:hidden">Jobs</span>
             <TabBadge count={roleSpecificCounts.jobs || 0} />
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center">
+          <TabsTrigger value="messages" className="flex items-center justify-center text-xs sm:text-sm">
             Messages
             <TabBadge count={roleSpecificCounts.messages || 0} />
           </TabsTrigger>
-          <TabsTrigger value="applications" className="flex items-center">
-            Applications
+          <TabsTrigger value="applications" className="flex items-center justify-center text-xs sm:text-sm">
+            <span className="hidden sm:inline">Applications</span>
+            <span className="sm:hidden">Apps</span>
             <TabBadge count={roleSpecificCounts.applications || 0} />
           </TabsTrigger>
         </TabsList>
