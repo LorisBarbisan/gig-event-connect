@@ -21,7 +21,7 @@ The EventLink platform utilizes a modern web application stack designed for effi
 - **Frontend**: React and TypeScript with Wouter for client-side routing.
 - **Backend**: Express.js and TypeScript, providing a comprehensive API layer.
 - **Database**: PostgreSQL with Drizzle ORM. The schema has been optimized to unify profile tables, simplify messaging, streamline job handling, and improve notification efficiency.
-- **Authentication**: Custom session management with `localStorage` persistence, requiring email verification. Robust server-side validation and cache clearing mechanisms are implemented to prevent authentication race conditions and ensure immediate password reset/change efficacy.
+- **Authentication**: Custom session management with `localStorage` persistence, requiring email verification. Robust server-side validation and cache clearing mechanisms are implemented to prevent authentication race conditions and ensure immediate password reset/change efficacy. Social login (Google, Facebook, LinkedIn) UI has been removed from sign-in and sign-up pages - authentication is email/password only.
 - **Messaging System**: Refactored to a production-ready fetch-first pattern using React Query for messages, ensuring atomic operations via database transactions and eliminating race conditions. WebSocket integration provides real-time updates.
 
 ### Feature Specifications
