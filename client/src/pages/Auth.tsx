@@ -480,56 +480,6 @@ export default function Auth() {
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
-
-                  {/* Social Login Divider */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border/50" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                    </div>
-                  </div>
-
-                  {/* Social Login Buttons */}
-                  <div className="space-y-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/google'}
-                      disabled={loading}
-                      data-testid="button-google-signin"
-                    >
-                      <FaGoogle className="text-red-500" />
-                      Continue with Google
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/facebook'}
-                      disabled={loading}
-                      data-testid="button-facebook-signin"
-                    >
-                      <FaFacebook className="text-blue-600" />
-                      Continue with Facebook
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/linkedin'}
-                      disabled={loading}
-                      data-testid="button-linkedin-signin"
-                    >
-                      <FaLinkedin className="text-blue-600" />
-                      Continue with LinkedIn
-                    </Button>
-
-                  </div>
                   
                   <div className="text-center mt-4">
                     <button
@@ -663,56 +613,6 @@ export default function Auth() {
                   >
                     {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>
-
-                  {/* Social Login Divider */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border/50" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                    </div>
-                  </div>
-
-                  {/* Social Login Buttons */}
-                  <div className="space-y-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/google'}
-                      disabled={loading}
-                      data-testid="button-google-signup"
-                    >
-                      <FaGoogle className="text-red-500" />
-                      Continue with Google
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/facebook'}
-                      disabled={loading}
-                      data-testid="button-facebook-signup"
-                    >
-                      <FaFacebook className="text-blue-600" />
-                      Continue with Facebook
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-3 py-2"
-                      onClick={() => window.location.href = '/api/auth/linkedin'}
-                      disabled={loading}
-                      data-testid="button-linkedin-signup"
-                    >
-                      <FaLinkedin className="text-blue-600" />
-                      Continue with LinkedIn
-                    </Button>
-
-                  </div>
                 </form>
               </TabsContent>
             </Tabs>
