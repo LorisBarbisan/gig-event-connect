@@ -13,7 +13,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const { user } = useOptimizedAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header onFeedbackClick={() => setShowFeedback(true)} />
       
       <main className="flex-1">
