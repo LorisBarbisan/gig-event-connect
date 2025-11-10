@@ -1252,6 +1252,34 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
 
     if (existing[0]) {
+      // If conversation exists, restore it for the initiating user (userOneId)
+      // but leave the other user's deleted status unchanged
+      let needsRestore = false;
+      const updates: any = { updated_at: sql`now()` };
+      
+      if (existing[0].participant_one_id === userOneId && existing[0].participant_one_deleted) {
+        updates.participant_one_deleted = false;
+        needsRestore = true;
+      } else if (existing[0].participant_two_id === userOneId && existing[0].participant_two_deleted) {
+        updates.participant_two_deleted = false;
+        needsRestore = true;
+      }
+      
+      if (needsRestore) {
+        await db.update(conversations)
+          .set(updates)
+          .where(eq(conversations.id, existing[0].id));
+        
+        // Update local object to reflect changes
+        Object.assign(existing[0], updates);
+        
+        // Clear targeted caches for both participants
+        cache.clearPattern(`conversations-${userOneId}`);
+        cache.clearPattern(`conversations-${userTwoId}`);
+        cache.clearPattern(`unread-messages-${userOneId}`);
+        cache.clearPattern(`unread-messages-${userTwoId}`);
+      }
+      
       return existing[0];
     }
 
@@ -1260,6 +1288,11 @@ export class DatabaseStorage implements IStorage {
       participant_one_id: userOneId,
       participant_two_id: userTwoId
     }).returning();
+    
+    // Clear caches for both participants
+    cache.clearPattern(`conversations-${userOneId}`);
+    cache.clearPattern(`conversations-${userTwoId}`);
+    
     return result[0];
   }
 
@@ -1367,19 +1400,31 @@ export class DatabaseStorage implements IStorage {
     // Use transaction to ensure atomic operations:
     // 1. Insert message
     // 2. Update conversation last_message_at
-    // 3. Restore soft-deleted conversation for both participants
+    // 3. Restore soft-deleted conversation ONLY for the sender
     const result = await db.transaction(async (tx) => {
       // Insert the message
       const result = await tx.insert(messages).values(message).returning();
       
-      // Update conversation: set last_message_at and restore if soft-deleted
-      await tx.update(conversations)
-        .set({ 
-          last_message_at: new Date(),
-          participant_one_deleted: false,
-          participant_two_deleted: false
-        })
-        .where(eq(conversations.id, message.conversation_id));
+      // Get conversation to determine sender's position
+      const conversation = await tx.select()
+        .from(conversations)
+        .where(eq(conversations.id, message.conversation_id))
+        .limit(1);
+      
+      if (conversation[0] && message.sender_id) {
+        const updates: any = { last_message_at: new Date() };
+        
+        // Only restore the SENDER's deleted flag, leave recipient's untouched
+        if (conversation[0].participant_one_id === message.sender_id) {
+          updates.participant_one_deleted = false;
+        } else if (conversation[0].participant_two_id === message.sender_id) {
+          updates.participant_two_deleted = false;
+        }
+        
+        await tx.update(conversations)
+          .set(updates)
+          .where(eq(conversations.id, message.conversation_id));
+      }
 
       return result[0];
     });
@@ -1395,9 +1440,11 @@ export class DatabaseStorage implements IStorage {
       const conv = conversation[0];
       // Clear message cache for this conversation
       cache.clearPattern(`conversation_messages:${message.conversation_id}`);
-      // Clear conversations cache for both participants
-      cache.delete(`conversations:${conv.participant_one_id}`);
-      cache.delete(`conversations:${conv.participant_two_id}`);
+      // Clear conversations cache for both participants using clearPattern
+      cache.clearPattern(`conversations-${conv.participant_one_id}`);
+      cache.clearPattern(`conversations-${conv.participant_two_id}`);
+      cache.clearPattern(`unread-messages-${conv.participant_one_id}`);
+      cache.clearPattern(`unread-messages-${conv.participant_two_id}`);
       
       console.log(`✅ Cache cleared for conversation ${message.conversation_id} and users ${conv.participant_one_id}, ${conv.participant_two_id}`);
     }
