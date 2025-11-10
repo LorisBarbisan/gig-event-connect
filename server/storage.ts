@@ -52,7 +52,7 @@ import {
   type EmailNotificationLog,
   type InsertEmailNotificationLog
 } from "@shared/schema";
-import { eq, desc, isNull, and, or, sql, inArray } from "drizzle-orm";
+import { eq, desc, isNull, and, or, sql, inArray, gt } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString, {
@@ -1535,7 +1535,7 @@ export class DatabaseStorage implements IStorage {
     
     // If user deleted the conversation, only show messages created AFTER that deletion
     if (deletedAt) {
-      whereConditions.push(sql`${messages.created_at} > ${deletedAt}`);
+      whereConditions.push(gt(messages.created_at, deletedAt));
     }
     
     const result = await db.select({
