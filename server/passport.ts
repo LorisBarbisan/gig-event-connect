@@ -5,6 +5,14 @@ import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 
+// ⚠️ LEGACY CODE WARNING ⚠️
+// OAuth authentication strategies below are LEGACY CODE and not actively used.
+// - UI for social login has been removed from sign-in/sign-up pages (email/password only)
+// - No OAuth users exist in the database (all users use 'email' auth_provider)
+// - KNOWN BUG: All OAuth signups hardcode role='freelancer', which causes incorrect dashboard display
+// - If OAuth is re-enabled in the future, add proper role selection during signup flow
+// - Last checked: 2025-11-10
+
 // Initialize passport
 export function initializePassport() {
   // Serialize user for session storage

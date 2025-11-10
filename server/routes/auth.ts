@@ -27,14 +27,15 @@ const ADMIN_EMAILS = process.env.ADMIN_EMAILS
 export const computeUserRole = (user: any) => {
   if (!user) return user;
   
+  // CRITICAL: If user.role is missing, block authentication to prevent wrong dashboard access
+  // Dashboard shows recruiter view for ANY role that's not 'freelancer', including undefined
+  if (!user.role) {
+    console.error(`❌ CRITICAL: User ${user.id} (${user.email}) has NULL role in database! Blocking authentication.`);
+    throw new Error('User account data is corrupted. Please contact support.');
+  }
+  
   // Check if email is in admin allowlist
   const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase());
-  
-  // CRITICAL: If user.role is missing, this indicates data corruption
-  // Log error but don't crash - we'll fix this in the database migration
-  if (!user.role) {
-    console.error(`❌ CRITICAL: User ${user.id} (${user.email}) has NULL role in database!`);
-  }
   
   // If user should be admin but isn't in database, update the database in background
   if (isAdmin && user.role !== 'admin') {
@@ -48,7 +49,7 @@ export const computeUserRole = (user: any) => {
   
   return {
     ...user,
-    // Admin takes priority, otherwise use database role (don't apply fallback)
+    // Admin takes priority, otherwise use database role
     role: isAdmin ? 'admin' : user.role,
     is_admin: isAdmin // Add admin flag as well
   };

@@ -88,6 +88,24 @@ export default function Dashboard() {
     );
   }
 
+  // CRITICAL: Validate role before rendering dashboard
+  // Don't default to recruiter for invalid/undefined roles
+  if (!profile.role || !['freelancer', 'recruiter', 'admin'].includes(profile.role)) {
+    console.error('❌ Invalid or missing role:', profile.role);
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Account Error</h1>
+            <p className="text-muted-foreground">
+              Your account data is incomplete. Please contact support.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   console.log('Dashboard render - profile data:', profile);
   console.log('Dashboard render - showing:', profile.role === 'freelancer' ? 'FreelancerDashboard' : 'RecruiterDashboard');
 
@@ -96,9 +114,9 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         {profile.role === 'freelancer' ? (
           <SimplifiedFreelancerDashboard />
-        ) : (
+        ) : profile.role === 'recruiter' || profile.role === 'admin' ? (
           <SimplifiedRecruiterDashboard />
-        )}
+        ) : null}
       </div>
     </Layout>
   );
