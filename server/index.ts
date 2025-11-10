@@ -83,7 +83,19 @@ if (process.env.NODE_ENV === 'production') {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:", "https://media.licdn.com", "https://storage.googleapis.com"],
-        connectSrc: ["'self'", "https://api.eventlink.com", "https://api.linkedin.com", "https://storage.googleapis.com", "ws://localhost:*", "wss://localhost:*"],
+        connectSrc: [
+          "'self'", 
+          "https://api.eventlink.com", 
+          "https://api.linkedin.com", 
+          "https://storage.googleapis.com", 
+          "ws://localhost:*", 
+          "wss://localhost:*",
+          "wss://*.replit.dev",  // Replit dev domains
+          "ws://*.replit.dev",   // Replit dev domains (non-SSL)
+          "wss://*.replit.app",  // Replit production domains
+          "wss://eventlink.one", // Custom production domain
+          "ws://eventlink.one"   // Custom production domain (non-SSL fallback)
+        ],
         frameSrc: ["https://accounts.google.com", "https://www.facebook.com", "https://www.linkedin.com"],
       },
     },
