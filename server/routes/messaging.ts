@@ -351,17 +351,33 @@ export function registerMessagingRoutes(app: Express) {
         }
       }
       
-      // Broadcast NEW_MESSAGE to recipient only (sender has optimistic UI)
-      try {
-        const broadcastToUser = (global as any).broadcastToUser;
-        if (broadcastToUser && conversation.otherUser && !await storage.isUserDeleted(conversation.otherUser.id)) {
-          broadcastToUser(conversation.otherUser.id, {
-            type: 'NEW_MESSAGE',
-            conversation_id: conversation_id
-          });
+      // Broadcast real-time updates to recipient (sender has optimistic UI)
+      if (conversation.otherUser && !await storage.isUserDeleted(conversation.otherUser.id)) {
+        try {
+          const { wsService } = await import('../websocketService.js');
+          
+          // 1. Broadcast NEW_MESSAGE event for MessagingInterface to refetch
+          wsService.broadcastNewMessage(conversation.otherUser.id, conversation_id);
+          
+          // 2. Broadcast new_message event with full data for LiveNotificationPopups toast
+          const sender = await storage.getUser(req.user.id);
+          if (sender) {
+            (global as any).broadcastToUser?.(conversation.otherUser.id, {
+              type: 'new_message',
+              message: message,
+              sender: sender
+            });
+          }
+          
+          // 3. Broadcast updated badge counts
+          const recipientCounts = await storage.getCategoryUnreadCounts(conversation.otherUser.id);
+          wsService.broadcastBadgeCounts(conversation.otherUser.id, recipientCounts);
+          
+          console.log(`✅ WebSocket broadcasts sent to user ${conversation.otherUser.id}`);
+        } catch (error) {
+          console.error('Failed to broadcast WebSocket events:', error);
+          // Don't fail the request if WebSocket broadcast fails
         }
-      } catch (error) {
-        console.error('Failed to broadcast NEW_MESSAGE:', error);
       }
 
       res.status(201).json(message);
