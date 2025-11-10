@@ -76,16 +76,13 @@ export function registerNotificationRoutes(app: Express) {
       
       // Send WebSocket update for badge counts
       try {
+        const { wsService } = await import('../websocketService.js');
         const counts = await storage.getCategoryUnreadCounts(req.user.id);
-        const broadcastToUser = (global as any).broadcastToUser;
-        if (broadcastToUser) {
-          broadcastToUser(req.user.id, {
-            type: 'badge_counts_update',
-            counts: counts
-          });
-        }
+        wsService.broadcastBadgeCounts(req.user.id, counts);
+        console.log(`✅ Badge counts broadcast to user ${req.user.id} after marking notification as read`);
       } catch (wsError) {
         console.error("WebSocket broadcast error:", wsError);
+        // Don't fail the request if WebSocket broadcast fails
       }
       
       res.json({ message: "Notification marked as read" });
@@ -102,16 +99,13 @@ export function registerNotificationRoutes(app: Express) {
       
       // Send WebSocket update for badge counts
       try {
+        const { wsService } = await import('../websocketService.js');
         const counts = await storage.getCategoryUnreadCounts(req.user.id);
-        const broadcastToUser = (global as any).broadcastToUser;
-        if (broadcastToUser) {
-          broadcastToUser(req.user.id, {
-            type: 'badge_counts_update',
-            counts: counts
-          });
-        }
+        wsService.broadcastBadgeCounts(req.user.id, counts);
+        console.log(`✅ Badge counts broadcast to user ${req.user.id} after marking all notifications as read`);
       } catch (wsError) {
         console.error("WebSocket broadcast error:", wsError);
+        // Don't fail the request if WebSocket broadcast fails
       }
       
       res.json({ message: "All notifications marked as read" });
