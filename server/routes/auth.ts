@@ -30,6 +30,12 @@ export const computeUserRole = (user: any) => {
   // Check if email is in admin allowlist
   const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase());
   
+  // CRITICAL: If user.role is missing, this indicates data corruption
+  // Log error but don't crash - we'll fix this in the database migration
+  if (!user.role) {
+    console.error(`❌ CRITICAL: User ${user.id} (${user.email}) has NULL role in database!`);
+  }
+  
   // If user should be admin but isn't in database, update the database in background
   if (isAdmin && user.role !== 'admin') {
     // Update database role in the background (don't await)
@@ -42,7 +48,8 @@ export const computeUserRole = (user: any) => {
   
   return {
     ...user,
-    role: isAdmin ? 'admin' : (user.role || 'freelancer'), // Set role to admin if in allowlist
+    // Admin takes priority, otherwise use database role (don't apply fallback)
+    role: isAdmin ? 'admin' : user.role,
     is_admin: isAdmin // Add admin flag as well
   };
 };
