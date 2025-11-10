@@ -414,7 +414,7 @@ export function registerMessagingRoutes(app: Express) {
       // Check if user has access to delete this message by checking their conversations
       let hasAccess = false;
       for (const conversation of conversations) {
-        const messages = await storage.getConversationMessages(conversation.id);
+        const messages = await storage.getConversationMessagesForUser(conversation.id, req.user.id);
         const targetMessage = messages.find(m => m.id === messageId);
         if (targetMessage) {
           hasAccess = true;

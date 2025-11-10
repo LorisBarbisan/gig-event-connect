@@ -185,7 +185,6 @@ export interface IStorage {
   getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation>;
   getConversationsByUserId(userId: number): Promise<Array<Conversation & { otherUser: User }>>;
   sendMessage(message: InsertMessage): Promise<Message>;
-  getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
   getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
   markMessagesAsRead(conversationId: number, userId: number): Promise<void>;
   getUnreadMessageCount(userId: number): Promise<number>;
@@ -1305,6 +1304,8 @@ export class DatabaseStorage implements IStorage {
       participant_two_id: conversations.participant_two_id,
       participant_one_deleted: conversations.participant_one_deleted,
       participant_two_deleted: conversations.participant_two_deleted,
+      participant_one_deleted_at: conversations.participant_one_deleted_at,
+      participant_two_deleted_at: conversations.participant_two_deleted_at,
       last_message_at: conversations.last_message_at,
       created_at: conversations.created_at,
       otherUserId: sql<number>`CASE 
@@ -1364,6 +1365,8 @@ export class DatabaseStorage implements IStorage {
       participant_two_id: row.participant_two_id,
       participant_one_deleted: row.participant_one_deleted,
       participant_two_deleted: row.participant_two_deleted,
+      participant_one_deleted_at: row.participant_one_deleted_at,
+      participant_two_deleted_at: row.participant_two_deleted_at,
       last_message_at: row.last_message_at,
       created_at: row.created_at,
       otherUser: {
@@ -1448,67 +1451,6 @@ export class DatabaseStorage implements IStorage {
 
     return result;
   }
-
-  async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
-    const result = await db.select({
-      id: messages.id,
-      conversation_id: messages.conversation_id,
-      sender_id: messages.sender_id,
-      content: messages.content,
-      is_read: messages.is_read,
-      is_system_message: messages.is_system_message,
-      created_at: messages.created_at,
-      senderEmail: users.email,
-      senderRole: users.role
-    })
-    .from(messages)
-    .leftJoin(users, eq(messages.sender_id, users.id))
-    .where(eq(messages.conversation_id, conversationId))
-    .orderBy(messages.created_at);
-
-    // Load attachments for each message
-    const messagesWithAttachments = await Promise.all(
-      result.map(async (row) => {
-        const attachments = await this.getMessageAttachments(row.id);
-        return {
-          id: row.id,
-          conversation_id: row.conversation_id,
-          sender_id: row.sender_id,
-          content: row.content,
-          is_read: row.is_read,
-          is_system_message: row.is_system_message,
-          created_at: row.created_at,
-          sender: {
-            id: row.sender_id || 0, // Use 0 for system messages with null sender_id
-            email: row.senderEmail || '',
-            role: row.senderRole || ('freelancer' as const),
-            password: '',
-            first_name: null,
-            last_name: null,
-            email_verified: false,
-            email_verification_token: null,
-            email_verification_expires: null,
-            password_reset_token: null,
-            password_reset_expires: null,
-            auth_provider: 'email' as const,
-            google_id: null,
-            facebook_id: null,
-            linkedin_id: null,
-            profile_photo_url: null,
-            last_login_method: null,
-            last_login_at: null,
-            deleted_at: null,
-            created_at: new Date(),
-            updated_at: new Date()
-          },
-          attachments: attachments.length > 0 ? attachments : undefined
-        };
-      })
-    );
-
-    return messagesWithAttachments;
-  }
-
 
   async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
     // First, get the conversation to check if user deleted it and when

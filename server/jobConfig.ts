@@ -91,7 +91,6 @@ export const DEFAULT_JOB_CONFIG: JobSearchConfig = {
     enableDeduplication: true,
   }
 };
-
 /**
  * Pre-defined job search configurations for different use cases
  */
