@@ -1,18 +1,18 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Route, Router, Switch } from "wouter";
 import { OptimizedAuthProvider } from "@/hooks/useOptimizedAuth";
 import { queryClient } from "@/lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Route, Router, Switch } from "wouter";
 
 // OPTIMIZED APP: Simplified routing with essential pages only
 
-import Index from "./pages/Index";
 import Auth from "./pages/Auth-optimized";
 import Dashboard from "./pages/Dashboard-optimized";
-import Profile from "./pages/Profile-optimized";
+import Index from "./pages/Index";
 import Jobs from "./pages/Jobs-optimized";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile-optimized";
 
 const OptimizedApp = () => (
   <QueryClientProvider client={queryClient}>

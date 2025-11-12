@@ -6,7 +6,6 @@ import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react"
 import eventImage from "@assets/Landing page Image small_1762324021670.jpg";
 import eventlinkLogo from "@assets/E8-Logo-Orange-New.png";
 
-
 export const HeroSection = () => {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-background via-secondary/20 to-background">
@@ -19,70 +18,75 @@ export const HeroSection = () => {
               {/* Large EventLink Logo */}
               <div className="flex justify-center lg:justify-start mb-4 items-center gap-4">
                 <div className="relative">
-                  <img 
-                    src={eventlinkLogo} 
-                    alt="EventLink Logo" 
+                  <img
+                    src={eventlinkLogo}
+                    alt="EventLink Logo"
                     className="w-16 drop-shadow-lg"
-                    style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+                    style={{ aspectRatio: "1/1", objectFit: "contain" }}
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
-                <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-                  EventLink
-                </div>
+                <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">EventLink</div>
               </div>
 
               <Badge variant="secondary" className="w-fit hidden">
                 <Star className="w-3 h-3 mr-1" />
                 Trusted by 500+ companies
               </Badge>
-              
+
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                Connect with 
+                Connect with
                 <span className="text-primary"> Technical</span>
                 <span className="text-accent"> Crew</span> for Events
               </h1>
-              
+
               <p className="text-xl text-muted-foreground leading-relaxed">
-                EventLink connects top event industry professionals with companies across the UK. 
-                Whether you're seeking skilled technical crew or looking for your next opportunity, 
+                EventLink connects top event industry professionals with companies across the UK.
+                Whether you're seeking skilled technical crew or looking for your next opportunity,
                 we make professional connections that drive successful events.
               </p>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-primary hover:bg-primary-hover text-white text-lg px-8 transition-all duration-200" asChild>
+              <Button
+                size="lg"
+                className="bg-gradient-primary hover:bg-primary-hover text-white text-lg px-8 transition-all duration-200"
+                asChild
+              >
                 <Link to="/auth?tab=signup" data-testid="button-get-started">
                   Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-              
-              <Button variant="outline" size="lg" className="text-lg px-8 border-2 border-primary text-primary hover:bg-primary/10 hover:border-primary/80 hover:text-primary transition-all duration-200" asChild>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-lg px-8 border-2 border-primary text-primary hover:bg-primary/10 hover:border-primary/80 hover:text-primary transition-all duration-200"
+                asChild
+              >
                 <Link to="/jobs">
                   Browse Opportunities
                   <Briefcase className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
             </div>
-
-
           </div>
 
           {/* Right Column - Image & Cards */}
           <div className="relative animate-scale-in">
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
-              <img 
-                src={eventImage} 
+              <img
+                src={eventImage}
                 alt="Professional trade fair and exhibition hall with lighting and event displays"
                 className="w-full h-[500px] object-cover"
                 loading="eager"
                 decoding="async"
                 width="1200"
                 height="500"
-                style={{ contentVisibility: 'auto' }}
+                style={{ contentVisibility: "auto" }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>

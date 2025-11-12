@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { apiRequest } from '@/lib/queryClient';
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface BadgeCounts {
   messages: number;
@@ -15,19 +15,26 @@ interface UseBadgeCountsProps {
   refetchInterval?: number;
 }
 
-export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseBadgeCountsProps = {}) {
+export function useBadgeCounts({
+  enabled = true,
+  refetchInterval = 1500,
+}: UseBadgeCountsProps = {}) {
   const { user } = useOptimizedAuth();
+  const queryClient = useQueryClient();
 
   // Fetch badge counts from API
-  const { data: counts = { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 }, refetch } = useQuery<BadgeCounts>({
-    queryKey: ['/api/notifications/category-counts', user?.id],
+  const {
+    data: counts = { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 },
+    refetch,
+  } = useQuery<BadgeCounts>({
+    queryKey: ["/api/notifications/category-counts", user?.id],
     queryFn: async (): Promise<BadgeCounts> => {
       if (!user?.id) return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
-      
+
       try {
-        return await apiRequest('/api/notifications/category-counts');
+        return await apiRequest("/api/notifications/category-counts");
       } catch (error) {
-        console.error('Error fetching badge counts:', error);
+        console.error("Error fetching badge counts:", error);
         return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
       }
     },
@@ -43,13 +50,13 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
   const getRoleSpecificCounts = () => {
     if (!user) return {};
 
-    if (user.role === 'freelancer') {
+    if (user.role === "freelancer") {
       return {
         applications: counts.applications,
         messages: counts.messages,
         ratings: counts.ratings,
       };
-    } else if (user.role === 'recruiter') {
+    } else if (user.role === "recruiter") {
       return {
         jobs: counts.jobs,
         applications: counts.applications,
@@ -62,15 +69,30 @@ export function useBadgeCounts({ enabled = true, refetchInterval = 15000 }: UseB
   };
 
   // Function to mark category notifications as read
-  const markCategoryAsRead = async (category: 'messages' | 'applications' | 'jobs' | 'ratings') => {
+  const markCategoryAsRead = async (category: "messages" | "applications" | "jobs" | "ratings") => {
     if (!user?.id) return;
 
     try {
       await apiRequest(`/api/notifications/mark-category-read/${category}`, {
-        method: 'PATCH',
+        method: "PATCH",
       });
-      
-      // Refetch badge counts after marking as read
+
+      // Optimistically update badge counts immediately (set to 0 for the category)
+      // This provides instant UI feedback while WebSocket confirms the update
+      queryClient.setQueryData<BadgeCounts>(
+        ["/api/notifications/category-counts", user.id],
+        (old = { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 }) => {
+          const updated = {
+            ...old,
+            [category]: 0,
+            total: Math.max(0, old.total - (old[category] || 0)),
+          };
+          console.log(`✅ Optimistically updated badge counts for ${category}:`, updated);
+          return updated;
+        }
+      );
+
+      // Also refetch to ensure we have the latest from server
       refetch();
     } catch (error) {
       console.error(`Error marking ${category} notifications as read:`, error);

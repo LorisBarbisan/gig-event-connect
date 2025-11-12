@@ -1,65 +1,67 @@
-import type { Express } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import rateLimit from "express-rate-limit";
-import { randomBytes } from "crypto";
-import { storage } from "../storage";
 import { insertUserSchema } from "@shared/schema";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../emailService";
-import { nukeAllUserData } from "../clearAllUserData";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
+import type { Express } from "express";
+import rateLimit from "express-rate-limit";
+import jwt from "jsonwebtoken";
 import passport from "passport";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../emailService";
+import { storage } from "../storage";
 
 // Helper function to get the correct origin for redirects and email links
 function getOrigin(req: any): string {
   // Use X-Forwarded-Proto if available (for proxied environments like Replit)
-  const protocol = req.headers['x-forwarded-proto']?.includes('https') ? 'https' : req.protocol;
-  const host = req.get('host');
+  const protocol = req.headers["x-forwarded-proto"]?.includes("https") ? "https" : req.protocol;
+  const host = req.get("host");
   return `${protocol}://${host}`;
 }
 
 // Admin email allowlist for server-side admin role detection
 // Get admin emails from environment variable instead of hardcoding
-const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
-  ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS
+  ? process.env.ADMIN_EMAILS.split(",").map(email => email.trim().toLowerCase())
   : [];
 
 // Helper function to compute admin role based on email
 export const computeUserRole = (user: any) => {
   if (!user) return user;
-  
+
   // Check if email is in admin allowlist
   const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase());
-  
+
   // If user should be admin but isn't in database, update the database in background
-  if (isAdmin && user.role !== 'admin') {
+  if (isAdmin && user.role !== "admin") {
     // Update database role in the background (don't await)
-    storage.updateUserRole(user.id, 'admin').then(() => {
-      console.log(`✅ Updated ${user.email} to admin role in database`);
-    }).catch((error) => {
-      console.error(`❌ Failed to update admin role for ${user.email}:`, error);
-    });
+    storage
+      .updateUserRole(user.id, "admin")
+      .then(() => {
+        console.log(`✅ Updated ${user.email} to admin role in database`);
+      })
+      .catch(error => {
+        console.error(`❌ Failed to update admin role for ${user.email}:`, error);
+      });
   }
-  
+
   return {
     ...user,
-    role: isAdmin ? 'admin' : (user.role || 'freelancer'), // Set role to admin if in allowlist
-    is_admin: isAdmin // Add admin flag as well
+    role: isAdmin ? "admin" : user.role || "freelancer", // Set role to admin if in allowlist
+    is_admin: isAdmin, // Add admin flag as well
   };
 };
 
 // JWT utility functions
-const JWT_SECRET = process.env.JWT_SECRET || 'eventlink-jwt-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || "eventlink-jwt-secret-change-in-production";
 
 export const generateJWTToken = (user: any) => {
   const userWithRole = computeUserRole(user);
   return jwt.sign(
-    { 
-      id: userWithRole.id, 
-      email: userWithRole.email, 
-      role: userWithRole.role 
+    {
+      id: userWithRole.id,
+      email: userWithRole.email,
+      role: userWithRole.role,
     },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: "24h" }
   );
 };
 
@@ -81,9 +83,12 @@ const isTokenBlacklisted = (token: string): boolean => {
 const blacklistToken = (token: string): void => {
   blacklistedTokens.add(token);
   // Auto-cleanup: Remove tokens after 24 hours (matching JWT expiry)
-  setTimeout(() => {
-    blacklistedTokens.delete(token);
-  }, 24 * 60 * 60 * 1000);
+  setTimeout(
+    () => {
+      blacklistedTokens.delete(token);
+    },
+    24 * 60 * 60 * 1000
+  );
 };
 
 // JWT Authentication Middleware
@@ -91,9 +96,7 @@ export const authenticateJWT = async (req: any, res: any, next: any) => {
   try {
     // Check for JWT token in Authorization header
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
 
     if (!token) {
       return res.status(401).json({ error: "Not authenticated" });
@@ -106,7 +109,7 @@ export const authenticateJWT = async (req: any, res: any, next: any) => {
 
     // Verify JWT token
     const decoded = verifyJWTToken(token);
-    if (!decoded || typeof decoded !== 'object') {
+    if (!decoded || typeof decoded !== "object") {
       return res.status(401).json({ error: "Invalid token" });
     }
 
@@ -134,7 +137,7 @@ const sanitizeAuthInput = (req: any, res: any, next: any) => {
     }
     // Ensure password length limits
     if (req.body.password && req.body.password.length > 128) {
-      return res.status(400).json({ error: 'Password too long' });
+      return res.status(400).json({ error: "Password too long" });
     }
   }
   next();
@@ -145,53 +148,53 @@ export function registerAuthRoutes(app: Express) {
   const passwordRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes (aligned with general rate limiter)
     max: 10, // 10 password attempts per 15 minutes
-    message: { error: 'Too many password attempts. Please try again in 15 minutes.' },
+    message: { error: "Too many password attempts. Please try again in 15 minutes." },
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful requests
   });
-  
+
   // Apply strict rate limiting to sensitive routes
-  app.use('/api/auth/signin', passwordRateLimit);
-  app.use('/api/auth/forgot-password', passwordRateLimit);
-  app.use('/api/auth/reset-password', passwordRateLimit);
-  
+  app.use("/api/auth/signin", passwordRateLimit);
+  app.use("/api/auth/forgot-password", passwordRateLimit);
+  app.use("/api/auth/reset-password", passwordRateLimit);
+
   // Apply input sanitization
-  app.use('/api/auth', sanitizeAuthInput);
+  app.use("/api/auth", sanitizeAuthInput);
 
   // OAuth error handling for scope denial and token issues
-  app.get('/api/auth/oauth-error', (req, res) => {
+  app.get("/api/auth/oauth-error", (req, res) => {
     const error = req.query.error as string;
     const errorDescription = req.query.error_description as string;
-    
-    console.log('OAuth Error Details:', { error, errorDescription });
-    
-    let userMessage = 'Authentication failed. Please try again.';
-    let details = '';
-    
-    if (error === 'access_denied') {
-      userMessage = 'Access was denied. You need to allow access to continue.';
-      details = 'Please grant the necessary permissions and try again.';
-    } else if (error === 'invalid_scope') {
-      userMessage = 'Invalid permissions requested.';
-      details = 'The authentication request included invalid permissions.';
-    } else if (error === 'server_error') {
-      userMessage = 'Server error occurred during authentication.';
-      details = 'Please try again later or contact support if the issue persists.';
+
+    console.log("OAuth Error Details:", { error, errorDescription });
+
+    let userMessage = "Authentication failed. Please try again.";
+    let details = "";
+
+    if (error === "access_denied") {
+      userMessage = "Access was denied. You need to allow access to continue.";
+      details = "Please grant the necessary permissions and try again.";
+    } else if (error === "invalid_scope") {
+      userMessage = "Invalid permissions requested.";
+      details = "The authentication request included invalid permissions.";
+    } else if (error === "server_error") {
+      userMessage = "Server error occurred during authentication.";
+      details = "Please try again later or contact support if the issue persists.";
     }
-    
+
     // Return JSON response for API calls
-    if (req.headers.accept?.includes('application/json')) {
+    if (req.headers.accept?.includes("application/json")) {
       return res.status(400).json({
         error: userMessage,
         details: details,
-        code: error
+        code: error,
       });
     }
-    
+
     // For web requests, redirect to frontend with error info
     const redirectUrl = `${getOrigin(req)}/auth?error=${encodeURIComponent(userMessage)}&details=${encodeURIComponent(details)}`;
-    
+
     res.redirect(redirectUrl);
   });
 
@@ -200,258 +203,307 @@ export function registerAuthRoutes(app: Express) {
     res.json({
       google: {
         enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-        clientId: process.env.GOOGLE_CLIENT_ID
+        clientId: process.env.GOOGLE_CLIENT_ID,
       },
       facebook: {
         enabled: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-        appId: process.env.FACEBOOK_APP_ID
+        appId: process.env.FACEBOOK_APP_ID,
       },
       apple: {
         enabled: !!(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET),
-        clientId: process.env.APPLE_CLIENT_ID
+        clientId: process.env.APPLE_CLIENT_ID,
       },
       linkedin: {
         enabled: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
-        clientId: process.env.LINKEDIN_CLIENT_ID
-      }
+        clientId: process.env.LINKEDIN_CLIENT_ID,
+      },
     });
   });
 
   // Google OAuth routes
-  app.get('/api/auth/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-  }));
+  app.get(
+    "/api/auth/google",
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+    })
+  );
 
-  app.get('/api/auth/google/callback', (req, res, next) => {
-    passport.authenticate('google', async (err: any, user: any, info: any) => {
+  app.get("/api/auth/google/callback", (req, res, next) => {
+    passport.authenticate("google", async (err: any, user: any, info: any) => {
       try {
         if (err) {
-          console.error('Google OAuth callback error:', err);
-          return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication failed');
+          console.error("Google OAuth callback error:", err);
+          return res.redirect(
+            "/api/auth/oauth-error?error=server_error&error_description=Authentication failed"
+          );
         }
 
         if (!user) {
-          const error = info?.message || 'Authentication failed';
-          console.log('Google OAuth - No user returned:', info);
-          return res.redirect(`/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`);
+          const error = info?.message || "Authentication failed";
+          console.log("Google OAuth - No user returned:", info);
+          return res.redirect(
+            `/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`
+          );
         }
 
         // Manually establish the session
-        req.logIn(user, async (loginErr) => {
+        req.logIn(user, async loginErr => {
           if (loginErr) {
-            console.error('Session login error:', loginErr);
-            return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Session creation failed');
+            console.error("Session login error:", loginErr);
+            return res.redirect(
+              "/api/auth/oauth-error?error=server_error&error_description=Session creation failed"
+            );
           }
-          
+
           // Compute role after login
           const userWithRole = computeUserRole(user);
-          
+
           // Update the session with the computed role
           req.user = userWithRole;
-          
+
           // CRITICAL FIX: Generate JWT token for OAuth users
           const jwtToken = generateJWTToken(userWithRole);
-          
-          console.log('Google OAuth successful login:', {
+
+          console.log("Google OAuth successful login:", {
             id: user.id,
             email: user.email,
             role: userWithRole.role,
-            sessionId: req.session?.id
+            sessionId: req.session?.id,
           });
 
           // Redirect to frontend with JWT token for storage
           const frontendUrl = getOrigin(req);
-          
+
           // SECURITY FIX: Use URL fragment instead of query params to prevent JWT leakage
-          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(JSON.stringify({
-            id: userWithRole.id,
-            email: userWithRole.email,
-            first_name: userWithRole.first_name,
-            last_name: userWithRole.last_name,
-            role: userWithRole.role,
-            email_verified: userWithRole.email_verified
-          }))}`;
-          
+          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(
+            JSON.stringify({
+              id: userWithRole.id,
+              email: userWithRole.email,
+              first_name: userWithRole.first_name,
+              last_name: userWithRole.last_name,
+              role: userWithRole.role,
+              email_verified: userWithRole.email_verified,
+            })
+          )}`;
+
           return res.redirect(redirectUrl);
         });
       } catch (error) {
-        console.error('Google OAuth callback processing error:', error);
-        return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed');
+        console.error("Google OAuth callback processing error:", error);
+        return res.redirect(
+          "/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed"
+        );
       }
     })(req, res, next);
   });
 
   // Facebook OAuth routes
-  app.get('/api/auth/facebook', passport.authenticate('facebook', {
-    scope: ['email', 'public_profile']
-  }));
+  app.get(
+    "/api/auth/facebook",
+    passport.authenticate("facebook", {
+      scope: ["email", "public_profile"],
+    })
+  );
 
-  app.get('/api/auth/facebook/callback', (req, res, next) => {
-    passport.authenticate('facebook', async (err: any, user: any, info: any) => {
+  app.get("/api/auth/facebook/callback", (req, res, next) => {
+    passport.authenticate("facebook", async (err: any, user: any, info: any) => {
       try {
         if (err) {
-          console.error('Facebook OAuth callback error:', err);
-          return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication failed');
+          console.error("Facebook OAuth callback error:", err);
+          return res.redirect(
+            "/api/auth/oauth-error?error=server_error&error_description=Authentication failed"
+          );
         }
 
         if (!user) {
-          const error = info?.message || 'Authentication failed';
-          console.log('Facebook OAuth - No user returned:', info);
-          return res.redirect(`/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`);
+          const error = info?.message || "Authentication failed";
+          console.log("Facebook OAuth - No user returned:", info);
+          return res.redirect(
+            `/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`
+          );
         }
 
-        req.logIn(user, async (loginErr) => {
+        req.logIn(user, async loginErr => {
           if (loginErr) {
-            console.error('Session login error:', loginErr);
-            return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Session creation failed');
+            console.error("Session login error:", loginErr);
+            return res.redirect(
+              "/api/auth/oauth-error?error=server_error&error_description=Session creation failed"
+            );
           }
-          
+
           const userWithRole = computeUserRole(user);
           req.user = userWithRole;
-          
+
           // CRITICAL FIX: Generate JWT token for OAuth users
           const jwtToken = generateJWTToken(userWithRole);
-          
-          console.log('Facebook OAuth successful login:', {
+
+          console.log("Facebook OAuth successful login:", {
             id: user.id,
             email: user.email,
-            role: userWithRole.role
+            role: userWithRole.role,
           });
 
           // Redirect to frontend with JWT token for storage
           const frontendUrl = getOrigin(req);
-          
+
           // SECURITY FIX: Use URL fragment instead of query params to prevent JWT leakage
-          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(JSON.stringify({
-            id: userWithRole.id,
-            email: userWithRole.email,
-            first_name: userWithRole.first_name,
-            last_name: userWithRole.last_name,
-            role: userWithRole.role,
-            email_verified: userWithRole.email_verified
-          }))}`;
-          
+          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(
+            JSON.stringify({
+              id: userWithRole.id,
+              email: userWithRole.email,
+              first_name: userWithRole.first_name,
+              last_name: userWithRole.last_name,
+              role: userWithRole.role,
+              email_verified: userWithRole.email_verified,
+            })
+          )}`;
+
           return res.redirect(redirectUrl);
         });
       } catch (error) {
-        console.error('Facebook OAuth callback processing error:', error);
-        return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed');
+        console.error("Facebook OAuth callback processing error:", error);
+        return res.redirect(
+          "/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed"
+        );
       }
     })(req, res, next);
   });
 
   // Apple OAuth routes
-  app.get('/api/auth/apple', passport.authenticate('apple'));
+  app.get("/api/auth/apple", passport.authenticate("apple"));
 
-  app.post('/api/auth/apple/callback', (req, res, next) => {
-    passport.authenticate('apple', async (err: any, user: any, info: any) => {
+  app.post("/api/auth/apple/callback", (req, res, next) => {
+    passport.authenticate("apple", async (err: any, user: any, info: any) => {
       try {
         if (err) {
-          console.error('Apple OAuth callback error:', err);
-          return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication failed');
+          console.error("Apple OAuth callback error:", err);
+          return res.redirect(
+            "/api/auth/oauth-error?error=server_error&error_description=Authentication failed"
+          );
         }
 
         if (!user) {
-          const error = info?.message || 'Authentication failed';
-          console.log('Apple OAuth - No user returned:', info);
-          return res.redirect(`/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`);
+          const error = info?.message || "Authentication failed";
+          console.log("Apple OAuth - No user returned:", info);
+          return res.redirect(
+            `/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`
+          );
         }
 
-        req.logIn(user, async (loginErr) => {
+        req.logIn(user, async loginErr => {
           if (loginErr) {
-            console.error('Session login error:', loginErr);
-            return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Session creation failed');
+            console.error("Session login error:", loginErr);
+            return res.redirect(
+              "/api/auth/oauth-error?error=server_error&error_description=Session creation failed"
+            );
           }
-          
+
           const userWithRole = computeUserRole(user);
           req.user = userWithRole;
-          
+
           // CRITICAL FIX: Generate JWT token for OAuth users
           const jwtToken = generateJWTToken(userWithRole);
-          
-          console.log('Apple OAuth successful login:', {
+
+          console.log("Apple OAuth successful login:", {
             id: user.id,
             email: user.email,
-            role: userWithRole.role
+            role: userWithRole.role,
           });
 
           // Redirect to frontend with JWT token for storage
           const frontendUrl = getOrigin(req);
-          
+
           // SECURITY FIX: Use URL fragment instead of query params to prevent JWT leakage
-          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(JSON.stringify({
-            id: userWithRole.id,
-            email: userWithRole.email,
-            first_name: userWithRole.first_name,
-            last_name: userWithRole.last_name,
-            role: userWithRole.role,
-            email_verified: userWithRole.email_verified
-          }))}`;
-          
+          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(
+            JSON.stringify({
+              id: userWithRole.id,
+              email: userWithRole.email,
+              first_name: userWithRole.first_name,
+              last_name: userWithRole.last_name,
+              role: userWithRole.role,
+              email_verified: userWithRole.email_verified,
+            })
+          )}`;
+
           return res.redirect(redirectUrl);
         });
       } catch (error) {
-        console.error('Apple OAuth callback processing error:', error);
-        return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed');
+        console.error("Apple OAuth callback processing error:", error);
+        return res.redirect(
+          "/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed"
+        );
       }
     })(req, res, next);
   });
 
   // LinkedIn OAuth routes
-  app.get('/api/auth/linkedin', passport.authenticate('linkedin', {
-    scope: ['profile', 'email']
-  }));
+  app.get(
+    "/api/auth/linkedin",
+    passport.authenticate("linkedin", {
+      scope: ["profile", "email"],
+    })
+  );
 
-  app.get('/api/auth/linkedin/callback', (req, res, next) => {
-    passport.authenticate('linkedin', async (err: any, user: any, info: any) => {
+  app.get("/api/auth/linkedin/callback", (req, res, next) => {
+    passport.authenticate("linkedin", async (err: any, user: any, info: any) => {
       try {
         if (err) {
-          console.error('LinkedIn OAuth callback error:', err);
-          return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication failed');
+          console.error("LinkedIn OAuth callback error:", err);
+          return res.redirect(
+            "/api/auth/oauth-error?error=server_error&error_description=Authentication failed"
+          );
         }
 
         if (!user) {
-          const error = info?.message || 'Authentication failed';
-          console.log('LinkedIn OAuth - No user returned:', info);
-          return res.redirect(`/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`);
+          const error = info?.message || "Authentication failed";
+          console.log("LinkedIn OAuth - No user returned:", info);
+          return res.redirect(
+            `/api/auth/oauth-error?error=access_denied&error_description=${encodeURIComponent(error)}`
+          );
         }
 
-        req.logIn(user, async (loginErr) => {
+        req.logIn(user, async loginErr => {
           if (loginErr) {
-            console.error('Session login error:', loginErr);
-            return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Session creation failed');
+            console.error("Session login error:", loginErr);
+            return res.redirect(
+              "/api/auth/oauth-error?error=server_error&error_description=Session creation failed"
+            );
           }
-          
+
           const userWithRole = computeUserRole(user);
           req.user = userWithRole;
-          
+
           // CRITICAL FIX: Generate JWT token for OAuth users
           const jwtToken = generateJWTToken(userWithRole);
-          
-          console.log('LinkedIn OAuth successful login:', {
+
+          console.log("LinkedIn OAuth successful login:", {
             id: user.id,
             email: user.email,
-            role: userWithRole.role
+            role: userWithRole.role,
           });
 
           // Redirect to frontend with JWT token for storage
           const frontendUrl = getOrigin(req);
-          
+
           // SECURITY FIX: Use URL fragment instead of query params to prevent JWT leakage
-          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(JSON.stringify({
-            id: userWithRole.id,
-            email: userWithRole.email,
-            first_name: userWithRole.first_name,
-            last_name: userWithRole.last_name,
-            role: userWithRole.role,
-            email_verified: userWithRole.email_verified
-          }))}`;
-          
+          const redirectUrl = `${frontendUrl}/auth#oauth_success=true&token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(
+            JSON.stringify({
+              id: userWithRole.id,
+              email: userWithRole.email,
+              first_name: userWithRole.first_name,
+              last_name: userWithRole.last_name,
+              role: userWithRole.role,
+              email_verified: userWithRole.email_verified,
+            })
+          )}`;
+
           return res.redirect(redirectUrl);
         });
       } catch (error) {
-        console.error('LinkedIn OAuth callback processing error:', error);
-        return res.redirect('/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed');
+        console.error("LinkedIn OAuth callback processing error:", error);
+        return res.redirect(
+          "/api/auth/oauth-error?error=server_error&error_description=Authentication processing failed"
+        );
       }
     })(req, res, next);
   });
@@ -461,9 +513,7 @@ export function registerAuthRoutes(app: Express) {
     try {
       // Check for JWT token in Authorization header
       const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.startsWith('Bearer ') 
-        ? authHeader.substring(7) 
-        : null;
+      const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
 
       if (!token) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -476,7 +526,7 @@ export function registerAuthRoutes(app: Express) {
 
       // Verify JWT token
       const decoded = verifyJWTToken(token);
-      if (!decoded || typeof decoded !== 'object') {
+      if (!decoded || typeof decoded !== "object") {
         return res.status(401).json({ error: "Invalid token" });
       }
 
@@ -489,15 +539,15 @@ export function registerAuthRoutes(app: Express) {
       // Apply role computation to fresh user data
       const userWithRole = computeUserRole(user);
 
-      res.json({ 
+      res.json({
         user: {
           id: userWithRole.id,
           email: userWithRole.email,
           first_name: userWithRole.first_name,
           last_name: userWithRole.last_name,
           role: userWithRole.role,
-          email_verified: userWithRole.email_verified
-        }
+          email_verified: userWithRole.email_verified,
+        },
       });
     } catch (error) {
       console.error("Session check error:", error);
@@ -510,9 +560,9 @@ export function registerAuthRoutes(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: result.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues,
         });
       }
 
@@ -529,7 +579,7 @@ export function registerAuthRoutes(app: Express) {
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
       // Generate email verification token
-      const emailVerificationToken = randomBytes(32).toString('hex');
+      const emailVerificationToken = randomBytes(32).toString("hex");
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Create user with verification token
@@ -538,9 +588,9 @@ export function registerAuthRoutes(app: Express) {
         password: hashedPassword,
         first_name,
         last_name,
-        role: role || 'freelancer',
+        role: role || "freelancer",
         email_verification_token: emailVerificationToken,
-        email_verification_expires: emailVerificationExpires
+        email_verification_expires: emailVerificationExpires,
       });
 
       // Send verification email
@@ -548,14 +598,14 @@ export function registerAuthRoutes(app: Express) {
         const baseUrl = getOrigin(req);
         await sendVerificationEmail(email, emailVerificationToken, baseUrl);
       } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
+        console.error("Failed to send verification email:", emailError);
         // Don't fail signup if email fails
       }
 
       // Apply role computation
       const userWithRole = computeUserRole(user);
 
-      res.status(201).json({ 
+      res.status(201).json({
         message: "User created successfully. Please check your email to verify your account.",
         user: {
           id: userWithRole.id,
@@ -563,8 +613,8 @@ export function registerAuthRoutes(app: Express) {
           first_name: userWithRole.first_name,
           last_name: userWithRole.last_name,
           role: userWithRole.role,
-          email_verified: userWithRole.email_verified
-        }
+          email_verified: userWithRole.email_verified,
+        },
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -588,8 +638,8 @@ export function registerAuthRoutes(app: Express) {
 
       // Check if user has a password (not a social auth user)
       if (!user.password) {
-        return res.status(400).json({ 
-          error: "This account uses social login. Please sign in with your social provider." 
+        return res.status(400).json({
+          error: "This account uses social login. Please sign in with your social provider.",
         });
       }
 
@@ -600,9 +650,9 @@ export function registerAuthRoutes(app: Express) {
 
       // Check if email is verified
       if (!user.email_verified) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           error: "Please verify your email address before signing in",
-          code: "EMAIL_NOT_VERIFIED"
+          code: "EMAIL_NOT_VERIFIED",
         });
       }
 
@@ -612,7 +662,7 @@ export function registerAuthRoutes(app: Express) {
       // Generate JWT token instead of session
       const token = generateJWTToken(userWithRole);
 
-      res.json({ 
+      res.json({
         message: "Sign in successful",
         token: token,
         user: {
@@ -621,10 +671,9 @@ export function registerAuthRoutes(app: Express) {
           first_name: (userWithRole as any).first_name,
           last_name: (userWithRole as any).last_name,
           role: (userWithRole as any).role,
-          email_verified: (userWithRole as any).email_verified
-        }
+          email_verified: (userWithRole as any).email_verified,
+        },
       });
-
     } catch (error) {
       console.error("Signin error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -650,25 +699,32 @@ export function registerAuthRoutes(app: Express) {
       }
 
       // Generate new verification token
-      const emailVerificationToken = randomBytes(32).toString('hex');
+      const emailVerificationToken = randomBytes(32).toString("hex");
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Update user with new verification token
-      await storage.updateUserVerificationToken(user.id, emailVerificationToken, emailVerificationExpires);
+      await storage.updateUserVerificationToken(
+        user.id,
+        emailVerificationToken,
+        emailVerificationExpires
+      );
 
       // Send verification email
       try {
         const baseUrl = getOrigin(req);
         await sendVerificationEmail(email, emailVerificationToken, baseUrl);
         console.log(`✅ Resent verification email to: ${email}`);
-        
-        res.json({ 
-          message: "Verification email resent successfully. Please check your email and spam folder.",
-          success: true
+
+        res.json({
+          message:
+            "Verification email resent successfully. Please check your email and spam folder.",
+          success: true,
         });
       } catch (emailError) {
-        console.error('Failed to resend verification email:', emailError);
-        res.status(500).json({ error: "Failed to send verification email. Please try again later." });
+        console.error("Failed to resend verification email:", emailError);
+        res
+          .status(500)
+          .json({ error: "Failed to send verification email. Please try again later." });
       }
     } catch (error) {
       console.error("Resend verification error:", error);
@@ -681,25 +737,29 @@ export function registerAuthRoutes(app: Express) {
     try {
       const { token } = req.query;
 
-      if (!token || typeof token !== 'string') {
+      if (!token || typeof token !== "string") {
         // Redirect to frontend with error
         const frontendUrl = getOrigin(req);
-        return res.redirect(`${frontendUrl}/auth?error=${encodeURIComponent('Invalid verification token')}`);
+        return res.redirect(
+          `${frontendUrl}/auth?error=${encodeURIComponent("Invalid verification token")}`
+        );
       }
 
       const verified = await storage.verifyEmail(token);
-      
+
       const frontendUrl = getOrigin(req);
 
       if (verified) {
         res.redirect(`${frontendUrl}/auth?verified=true`);
       } else {
-        res.redirect(`${frontendUrl}/auth?error=${encodeURIComponent('Invalid or expired verification token')}`);
+        res.redirect(
+          `${frontendUrl}/auth?error=${encodeURIComponent("Invalid or expired verification token")}`
+        );
       }
     } catch (error) {
-      console.error('Email verification error:', error);
+      console.error("Email verification error:", error);
       const frontendUrl = getOrigin(req);
-      res.redirect(`${frontendUrl}/auth?error=${encodeURIComponent('Verification failed')}`);
+      res.redirect(`${frontendUrl}/auth?error=${encodeURIComponent("Verification failed")}`);
     }
   });
 
@@ -708,29 +768,27 @@ export function registerAuthRoutes(app: Express) {
     try {
       // Extract JWT token from Authorization header
       const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.startsWith('Bearer ') 
-        ? authHeader.substring(7) 
-        : null;
-      
+      const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
       if (token) {
         // Add token to blacklist to invalidate it immediately
         blacklistToken(token);
-        console.log('✅ JWT token blacklisted on signout');
+        console.log("✅ JWT token blacklisted on signout");
       }
-      
-      req.logout((err) => {
+
+      req.logout(err => {
         if (err) {
-          console.error('Logout error:', err);
+          console.error("Logout error:", err);
           return res.status(500).json({ error: "Failed to sign out" });
         }
-        
-        req.session.destroy((sessionErr) => {
+
+        req.session.destroy(sessionErr => {
           if (sessionErr) {
-            console.error('Session destruction error:', sessionErr);
+            console.error("Session destruction error:", sessionErr);
             return res.status(500).json({ error: "Failed to destroy session" });
           }
-          
-          res.clearCookie('eventlink.sid');
+
+          res.clearCookie("eventlink.sid");
           res.json({ message: "Signed out successfully" });
         });
       });
@@ -752,11 +810,13 @@ export function registerAuthRoutes(app: Express) {
       const user = await storage.getUserByEmail(email.toLowerCase().trim());
       if (!user) {
         // Don't reveal if user exists for security
-        return res.json({ message: "If an account with that email exists, a password reset link has been sent." });
+        return res.json({
+          message: "If an account with that email exists, a password reset link has been sent.",
+        });
       }
 
       // Generate reset token
-      const resetToken = randomBytes(32).toString('hex');
+      const resetToken = randomBytes(32).toString("hex");
       const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Save reset token to user
@@ -767,16 +827,19 @@ export function registerAuthRoutes(app: Express) {
 
       // Send password reset email
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? `https://${req.get('host')}` 
-          : `http://localhost:5000`;
+        const baseUrl =
+          process.env.NODE_ENV === "production"
+            ? `https://${req.get("host")}`
+            : `http://localhost:5000`;
         await sendPasswordResetEmail(email, resetToken, baseUrl, user.first_name);
       } catch (emailError) {
-        console.error('Failed to send password reset email:', emailError);
+        console.error("Failed to send password reset email:", emailError);
         return res.status(500).json({ error: "Failed to send reset email" });
       }
 
-      res.json({ message: "If an account with that email exists, a password reset link has been sent." });
+      res.json({
+        message: "If an account with that email exists, a password reset link has been sent.",
+      });
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -838,18 +901,22 @@ export function registerAuthRoutes(app: Express) {
       }
 
       // Generate new verification token
-      const emailVerificationToken = randomBytes(32).toString('hex');
+      const emailVerificationToken = randomBytes(32).toString("hex");
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Update user with new token
-      await storage.updateUserVerificationToken((user as any).id, emailVerificationToken, emailVerificationExpires);
+      await storage.updateUserVerificationToken(
+        (user as any).id,
+        emailVerificationToken,
+        emailVerificationExpires
+      );
 
       // Send verification email
       try {
         const baseUrl = getOrigin(req);
         await sendVerificationEmail(email, emailVerificationToken, baseUrl);
       } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
+        console.error("Failed to send verification email:", emailError);
         return res.status(500).json({ error: "Failed to send verification email" });
       }
 
@@ -914,7 +981,7 @@ export function registerAuthRoutes(app: Express) {
       await storage.updateUserAccount(user.id, {
         first_name,
         last_name,
-        role
+        role,
       });
 
       // Get updated user and apply role computation
@@ -925,15 +992,15 @@ export function registerAuthRoutes(app: Express) {
 
       const userWithRole = computeUserRole(updatedUser);
 
-      res.json({ 
+      res.json({
         user: {
           id: userWithRole.id,
           email: userWithRole.email,
           first_name: userWithRole.first_name,
           last_name: userWithRole.last_name,
           role: userWithRole.role,
-          email_verified: userWithRole.email_verified
-        }
+          email_verified: userWithRole.email_verified,
+        },
       });
     } catch (error) {
       console.error("Update account error:", error);
@@ -972,21 +1039,20 @@ export function registerAuthRoutes(app: Express) {
       await storage.deleteUserAccount(user.id);
 
       // Destroy session
-      req.logout((err) => {
+      req.logout(err => {
         if (err) {
-          console.error('Logout error during account deletion:', err);
+          console.error("Logout error during account deletion:", err);
         }
-        
-        req.session.destroy((sessionErr) => {
+
+        req.session.destroy(sessionErr => {
           if (sessionErr) {
-            console.error('Session destruction error during account deletion:', sessionErr);
+            console.error("Session destruction error during account deletion:", sessionErr);
           }
-          
-          res.clearCookie('eventlink.sid');
+
+          res.clearCookie("eventlink.sid");
           res.json({ message: "Account deleted successfully" });
         });
       });
-
     } catch (error) {
       console.error("Delete account error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -1002,26 +1068,26 @@ export function registerAuthRoutes(app: Express) {
 
       // Check if user is admin
       const userWithRole = computeUserRole(req.user);
-      if (userWithRole.role !== 'admin') {
+      if (userWithRole.role !== "admin") {
         return res.status(403).json({ error: "Admin access required" });
       }
 
-      const adminEmails = process.env.ADMIN_EMAILS 
-        ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+      const adminEmails = process.env.ADMIN_EMAILS
+        ? process.env.ADMIN_EMAILS.split(",").map(email => email.trim().toLowerCase())
         : [];
 
       const diagnostics = {
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'unknown',
+        environment: process.env.NODE_ENV || "unknown",
         adminEmails: adminEmails,
         currentUser: {
           id: userWithRole.id,
           email: userWithRole.email,
           role: userWithRole.role,
-          is_admin: userWithRole.is_admin
+          is_admin: userWithRole.is_admin,
         },
-        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'missing',
-        nuclearCleanupAllowed: process.env.ALLOW_NUCLEAR_CLEANUP === 'true'
+        databaseUrl: process.env.DATABASE_URL ? "configured" : "missing",
+        nuclearCleanupAllowed: process.env.ALLOW_NUCLEAR_CLEANUP === "true",
       };
 
       res.json(diagnostics);

@@ -14,9 +14,9 @@ export function registerRatingsRoutes(app: Express) {
       // Validate the rating data
       const result = insertRatingSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: result.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues,
         });
       }
 
@@ -28,13 +28,14 @@ export function registerRatingsRoutes(app: Express) {
       );
 
       if (!canRate) {
-        return res.status(403).json({ 
-          error: "Cannot rate this freelancer. Either you're not authorized or a rating already exists for this application." 
+        return res.status(403).json({
+          error:
+            "Cannot rate this freelancer. Either you're not authorized or a rating already exists for this application.",
         });
       }
 
       // Verify the recruiter_id matches the authenticated user
-      if (req.user.role !== 'admin' && req.user.id !== result.data.recruiter_id) {
+      if (req.user.role !== "admin" && req.user.id !== result.data.recruiter_id) {
         return res.status(403).json({ error: "Not authorized to create this rating" });
       }
 
@@ -46,19 +47,19 @@ export function registerRatingsRoutes(app: Express) {
         const job = await storage.getJobById(application.job_id);
         await storage.createNotification({
           user_id: result.data.freelancer_id,
-          type: 'rating_received',
-          title: 'New Rating Received',
-          message: `You received a ${result.data.rating}-star rating for your work on "${job?.title || 'a job'}".`,
-          priority: 'normal',
-          related_entity_type: 'rating',
+          type: "rating_received",
+          title: "New Rating Received",
+          message: `You received a ${result.data.rating}-star rating for your work on "${job?.title || "a job"}".`,
+          priority: "normal",
+          related_entity_type: "rating",
           related_entity_id: rating.id,
-          action_url: '/dashboard?tab=bookings',
-          metadata: JSON.stringify({ 
+          action_url: "/dashboard?tab=bookings",
+          metadata: JSON.stringify({
             rating_id: rating.id,
             rating_value: result.data.rating,
             job_id: application.job_id,
-            job_title: job?.title
-          })
+            job_title: job?.title,
+          }),
         });
       }
 
@@ -79,7 +80,7 @@ export function registerRatingsRoutes(app: Express) {
       }
 
       const rating = await storage.getRatingByJobApplication(applicationId);
-      
+
       if (!rating) {
         return res.status(404).json({ error: "Rating not found" });
       }
@@ -135,21 +136,25 @@ export function registerRatingsRoutes(app: Express) {
       // Validate the rating request data
       const result = insertRatingRequestSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: result.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues,
         });
       }
 
       // Verify the freelancer_id matches the authenticated user (only freelancers can request ratings)
-      if (req.user.role !== 'admin' && req.user.id !== result.data.freelancer_id) {
+      if (req.user.role !== "admin" && req.user.id !== result.data.freelancer_id) {
         return res.status(403).json({ error: "Not authorized to create this rating request" });
       }
 
       // Check if a rating request already exists for this application
-      const existingRequest = await storage.getRatingRequestByJobApplication(result.data.job_application_id);
+      const existingRequest = await storage.getRatingRequestByJobApplication(
+        result.data.job_application_id
+      );
       if (existingRequest) {
-        return res.status(400).json({ error: "A rating request already exists for this application" });
+        return res
+          .status(400)
+          .json({ error: "A rating request already exists for this application" });
       }
 
       // Check if the application exists and is hired
@@ -158,7 +163,7 @@ export function registerRatingsRoutes(app: Express) {
         return res.status(404).json({ error: "Application not found" });
       }
 
-      if (application.status !== 'hired') {
+      if (application.status !== "hired") {
         return res.status(400).json({ error: "Can only request ratings for hired applications" });
       }
 
@@ -169,19 +174,19 @@ export function registerRatingsRoutes(app: Express) {
       if (job) {
         await storage.createNotification({
           user_id: result.data.recruiter_id,
-          type: 'rating_request',
-          title: 'Rating Request',
+          type: "rating_request",
+          title: "Rating Request",
           message: `A freelancer has requested a rating for their work on "${job.title}".`,
-          priority: 'normal',
-          related_entity_type: 'application',
+          priority: "normal",
+          related_entity_type: "application",
           related_entity_id: application.id,
-          action_url: '/dashboard?tab=applications',
-          metadata: JSON.stringify({ 
+          action_url: "/dashboard?tab=applications",
+          metadata: JSON.stringify({
             rating_request_id: ratingRequest.id,
             job_id: job.id,
             job_title: job.title,
-            freelancer_id: result.data.freelancer_id
-          })
+            freelancer_id: result.data.freelancer_id,
+          }),
         });
       }
 

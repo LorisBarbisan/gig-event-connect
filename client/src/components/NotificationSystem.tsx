@@ -1,36 +1,46 @@
-import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { Bell, Check, CheckCheck, X, Clock, AlertCircle, MessageCircle, Briefcase, User } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
-import type { Notification } from '@shared/schema';
-import { useWebSocket } from '@/contexts/WebSocketContext';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { Notification } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Bell,
+  Briefcase,
+  Check,
+  CheckCheck,
+  Clock,
+  MessageCircle,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 
 interface NotificationSystemProps {
   userId: number;
 }
 
 const getNotificationIcon = (type: string, priority: string) => {
-  if (priority === 'urgent') {
+  if (priority === "urgent") {
     return <AlertCircle className="w-4 h-4 text-red-500" />;
   }
 
   switch (type) {
-    case 'new_message':
+    case "new_message":
       return <MessageCircle className="w-4 h-4 text-blue-500" />;
-    case 'application_update':
+    case "application_update":
       return <Briefcase className="w-4 h-4 text-green-500" />;
-    case 'job_update':
+    case "job_update":
       return <Briefcase className="w-4 h-4 text-purple-500" />;
-    case 'profile_view':
+    case "profile_view":
       return <User className="w-4 h-4 text-orange-500" />;
-    case 'system':
+    case "system":
       return <Bell className="w-4 h-4 text-gray-500" />;
     default:
       return <Bell className="w-4 h-4 text-gray-500" />;
@@ -39,16 +49,16 @@ const getNotificationIcon = (type: string, priority: string) => {
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'urgent':
-      return 'bg-red-50 border-red-200';
-    case 'high':
-      return 'bg-orange-50 border-orange-200';
-    case 'normal':
-      return 'bg-blue-50 border-blue-200';
-    case 'low':
-      return 'bg-gray-50 border-gray-200';
+    case "urgent":
+      return "bg-red-50 border-red-200";
+    case "high":
+      return "bg-orange-50 border-orange-200";
+    case "normal":
+      return "bg-blue-50 border-blue-200";
+    case "low":
+      return "bg-gray-50 border-gray-200";
     default:
-      return 'bg-gray-50 border-gray-200';
+      return "bg-gray-50 border-gray-200";
   }
 };
 
@@ -59,7 +69,7 @@ const formatRelativeTime = (date: Date) => {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -74,17 +84,17 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
 
   // Fetch notifications - always enabled so refetches work
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['/api/notifications', userId],
-    queryFn: () => apiRequest('/api/notifications') as Promise<Notification[]>,
+    queryKey: ["/api/notifications", userId],
+    queryFn: () => apiRequest("/api/notifications") as Promise<Notification[]>,
     refetchInterval: isOpen ? 10000 : false, // Only poll when dropdown is open
     staleTime: 0, // Always consider data stale so refetches work immediately
   });
 
   // Fetch unread count with smart polling
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['/api/notifications/unread-count', userId],
+    queryKey: ["/api/notifications/unread-count", userId],
     queryFn: async () => {
-      const data = await apiRequest('/api/notifications/unread-count');
+      const data = await apiRequest("/api/notifications/unread-count");
       return data.count;
     },
     refetchInterval: 20000, // Reduced from 10s to 20s
@@ -95,22 +105,22 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
       return apiRequest(`/api/notifications/${notificationId}/read`, {
-        method: 'PATCH',
+        method: "PATCH",
       });
     },
     onSuccess: async () => {
       // AWAIT refetchQueries for immediate, synchronous badge updates
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] }),
-        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
-        queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] })
+        queryClient.refetchQueries({ queryKey: ["/api/notifications", userId] }),
+        queryClient.refetchQueries({ queryKey: ["/api/notifications/unread-count", userId] }),
+        queryClient.refetchQueries({ queryKey: ["/api/notifications/category-counts", userId] }),
       ]);
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to mark notification as read',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to mark notification as read",
+        variant: "destructive",
       });
     },
   });
@@ -118,28 +128,28 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   // Mark all notifications as read
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/notifications/mark-all-read', {
-        method: 'PATCH',
+      return apiRequest("/api/notifications/mark-all-read", {
+        method: "PATCH",
       });
     },
     onSuccess: async () => {
       // AWAIT refetchQueries for immediate, synchronous badge updates
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] }),
-        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
-        queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] })
+        queryClient.refetchQueries({ queryKey: ["/api/notifications", userId] }),
+        queryClient.refetchQueries({ queryKey: ["/api/notifications/unread-count", userId] }),
+        queryClient.refetchQueries({ queryKey: ["/api/notifications/category-counts", userId] }),
       ]);
-      
+
       toast({
-        title: 'Success',
-        description: 'All notifications marked as read',
+        title: "Success",
+        description: "All notifications marked as read",
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to mark all notifications as read',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
       });
     },
   });
@@ -148,18 +158,24 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: number) => {
       return apiRequest(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
     },
     onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ['/api/notifications', userId], type: 'active' });
-      await queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId], type: 'active' });
+      await queryClient.refetchQueries({
+        queryKey: ["/api/notifications", userId],
+        type: "active",
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["/api/notifications/unread-count", userId],
+        type: "active",
+      });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete notification',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
       });
     },
   });
@@ -171,17 +187,17 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     if (!notification.is_read) {
       try {
         await apiRequest(`/api/notifications/${notification.id}/read`, {
-          method: 'PATCH',
+          method: "PATCH",
         });
-        
+
         // AWAIT all refetches to complete BEFORE closing dropdown or navigating
         await Promise.all([
-          queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-count', userId] }),
-          queryClient.refetchQueries({ queryKey: ['/api/notifications/category-counts', userId] }),
-          queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] })
+          queryClient.refetchQueries({ queryKey: ["/api/notifications/unread-count", userId] }),
+          queryClient.refetchQueries({ queryKey: ["/api/notifications/category-counts", userId] }),
+          queryClient.refetchQueries({ queryKey: ["/api/notifications", userId] }),
         ]);
       } catch (error) {
-        console.error('Failed to mark notification as read:', error);
+        console.error("Failed to mark notification as read:", error);
       }
     }
 
@@ -191,11 +207,11 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     // Navigate to action URL if provided
     if (notification.action_url) {
       // Use client-side routing for internal URLs to preserve app state
-      if (notification.action_url.startsWith('/')) {
+      if (notification.action_url.startsWith("/")) {
         setLocation(notification.action_url);
       } else {
         // External URLs open in new tab
-        window.open(notification.action_url, '_blank');
+        window.open(notification.action_url, "_blank");
       }
     }
   };
@@ -211,40 +227,37 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
   // Subscribe to WebSocket events for instant notification updates
   const { subscribe } = useWebSocket();
-  
+
   useEffect(() => {
     if (!userId) return;
 
-    const unsubscribe = subscribe((data) => {
+    const unsubscribe = subscribe(data => {
       // Handle different WebSocket events
-      if (data.type === 'new_notification') {
+      if (data.type === "new_notification") {
         // Immediately refetch notifications list
-        queryClient.refetchQueries({ queryKey: ['/api/notifications', userId] });
-        console.log('📨 New notification received, refetching notifications list');
-      } else if (data.type === 'badge_counts_update') {
+        queryClient.refetchQueries({ queryKey: ["/api/notifications", userId] });
+        console.log("📨 New notification received, refetching notifications list");
+      } else if (data.type === "badge_counts_update") {
         // Update badge counts cache directly (no refetch needed)
         if (data.counts) {
-          queryClient.setQueryData(
-            ['/api/notifications/category-counts', userId],
-            data.counts
-          );
+          queryClient.setQueryData(["/api/notifications/category-counts", userId], data.counts);
           // Also update unread count
-          const totalUnread = Object.values(data.counts as Record<string, number>).reduce((a, b) => a + b, 0);
-          queryClient.setQueryData(
-            ['/api/notifications/unread-count', userId],
-            totalUnread
+          const totalUnread = Object.values(data.counts as Record<string, number>).reduce(
+            (a, b) => a + b,
+            0
           );
-          console.log('📊 Badge counts updated via WebSocket');
+          queryClient.setQueryData(["/api/notifications/unread-count", userId], totalUnread);
+          console.log("📊 Badge counts updated via WebSocket");
         }
       }
     });
@@ -263,17 +276,17 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
+          <Badge
+            variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </Badge>
         )}
       </Button>
 
       {isOpen && (
-        <div 
+        <div
           ref={dropdownRef}
           className="absolute right-0 top-full mt-2 w-96 bg-white border rounded-lg shadow-lg z-50"
         >
@@ -294,18 +307,14 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
                       Mark all read
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsOpen(false)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
               {unreadCount > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                  You have {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
                 </p>
               )}
             </CardHeader>
@@ -327,41 +336,50 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {notifications.map((notification) => (
+                    {notifications.map(notification => (
                       <div
                         key={notification.id}
                         className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                          !notification.is_read ? getPriorityColor(notification.priority || 'normal') : ''
+                          !notification.is_read
+                            ? getPriorityColor(notification.priority || "normal")
+                            : ""
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                         data-testid={`notification-${notification.id}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-1">
-                            {getNotificationIcon(notification.type, notification.priority || 'normal')}
+                            {getNotificationIcon(
+                              notification.type,
+                              notification.priority || "normal"
+                            )}
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium truncate ${
-                                  !notification.is_read ? 'text-gray-900' : 'text-gray-600'
-                                }`}>
+                                <p
+                                  className={`text-sm font-medium truncate ${
+                                    !notification.is_read ? "text-gray-900" : "text-gray-600"
+                                  }`}
+                                >
                                   {notification.title}
                                 </p>
-                                <p className={`text-sm mt-1 ${
-                                  !notification.is_read ? 'text-gray-700' : 'text-gray-500'
-                                }`}>
+                                <p
+                                  className={`text-sm mt-1 ${
+                                    !notification.is_read ? "text-gray-700" : "text-gray-500"
+                                  }`}
+                                >
                                   {notification.message}
                                 </p>
                               </div>
-                              
+
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 {!notification.is_read && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={(e) => {
+                                    onClick={e => {
                                       e.stopPropagation();
                                       markAsReadMutation.mutate(notification.id);
                                     }}
@@ -374,7 +392,7 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={(e) => {
+                                  onClick={e => {
                                     e.stopPropagation();
                                     deleteNotificationMutation.mutate(notification.id);
                                   }}
@@ -385,15 +403,17 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
                                 </Button>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-2 mt-2">
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">
                                 {formatRelativeTime(new Date(notification.created_at))}
                               </span>
-                              {notification.priority !== 'normal' && (
-                                <Badge 
-                                  variant={notification.priority === 'urgent' ? 'destructive' : 'secondary'}
+                              {notification.priority !== "normal" && (
+                                <Badge
+                                  variant={
+                                    notification.priority === "urgent" ? "destructive" : "secondary"
+                                  }
                                   className="text-xs px-1 py-0"
                                 >
                                   {notification.priority}

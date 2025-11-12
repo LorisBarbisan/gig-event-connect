@@ -52,7 +52,7 @@ export class ObjectStorageService {
     try {
       // Get file metadata
       const [metadata] = await file.getMetadata();
-      
+
       // Set appropriate headers
       res.set({
         "Content-Type": metadata.contentType || "application/octet-stream",
@@ -63,7 +63,7 @@ export class ObjectStorageService {
       // Stream the file to the response
       const stream = file.createReadStream();
 
-      stream.on("error", (err) => {
+      stream.on("error", err => {
         console.error("Stream error:", err);
         if (!res.headersSent) {
           res.status(500).json({ error: "Error streaming file" });
@@ -114,7 +114,7 @@ export class ObjectStorageService {
     if (!privateDir.endsWith("/")) {
       privateDir = `${privateDir}/`;
     }
-    
+
     let cvPath;
     if (objectPath.startsWith("/objects/uploads/")) {
       // Handle legacy /objects/uploads/ format - use path as is
@@ -123,7 +123,7 @@ export class ObjectStorageService {
       // Handle /cvs/ format
       cvPath = `${privateDir}${objectPath.substring(1)}`; // Remove leading slash
     }
-    
+
     const { bucketName, objectName } = parseObjectPath(cvPath);
     const bucket = objectStorageClient.bucket(bucketName);
     const cvFile = bucket.file(objectName);
@@ -140,10 +140,10 @@ export class ObjectStorageService {
     if (!privateDir) {
       throw new Error("PRIVATE_OBJECT_DIR not set");
     }
-    
+
     const fullPath = `${privateDir}/${objectKey}`;
     const { bucketName, objectName } = parseObjectPath(fullPath);
-    
+
     return signObjectURL({
       bucketName,
       objectName,
@@ -158,10 +158,12 @@ export class ObjectStorageService {
     if (!privateDir) {
       throw new Error("PRIVATE_OBJECT_DIR not set");
     }
-    
-    const fullPath = objectKey.startsWith('/') ? `${privateDir}${objectKey}` : `${privateDir}/${objectKey}`;
+
+    const fullPath = objectKey.startsWith("/")
+      ? `${privateDir}${objectKey}`
+      : `${privateDir}/${objectKey}`;
     const { bucketName, objectName } = parseObjectPath(fullPath);
-    
+
     return signObjectURL({
       bucketName,
       objectName,
@@ -176,10 +178,12 @@ export class ObjectStorageService {
     if (!privateDir) {
       throw new Error("PRIVATE_OBJECT_DIR not set");
     }
-    
-    const fullPath = objectKey.startsWith('/') ? `${privateDir}${objectKey}` : `${privateDir}/${objectKey}`;
+
+    const fullPath = objectKey.startsWith("/")
+      ? `${privateDir}${objectKey}`
+      : `${privateDir}/${objectKey}`;
     const { bucketName, objectName } = parseObjectPath(fullPath);
-    
+
     const bucket = objectStorageClient.bucket(bucketName);
     const file = bucket.file(objectName);
     await file.delete();
@@ -191,7 +195,7 @@ export class ObjectStorageService {
     const objectId = randomUUID();
     const fullPath = `${privateObjectDir}/uploads/${objectId}`;
     const { bucketName, objectName } = parseObjectPath(fullPath);
-    
+
     return signObjectURL({
       bucketName,
       objectName,
@@ -205,24 +209,27 @@ export class ObjectStorageService {
     if (!uploadURL.startsWith("https://storage.googleapis.com/")) {
       return uploadURL;
     }
-    
+
     const url = new URL(uploadURL);
     const rawObjectPath = url.pathname;
     let privateDir = this.getPrivateObjectDir();
     if (!privateDir.endsWith("/")) {
       privateDir = `${privateDir}/`;
     }
-    
+
     if (!rawObjectPath.startsWith(privateDir)) {
       return rawObjectPath;
     }
-    
+
     const objectId = rawObjectPath.slice(privateDir.length);
     return `/objects/${objectId}`;
   }
 
   // Set ACL policy for object (no-op for now, could implement later)
-  async trySetObjectEntityAclPolicy(uploadURL: string, policy: { owner: string, visibility: string }): Promise<string> {
+  async trySetObjectEntityAclPolicy(
+    uploadURL: string,
+    policy: { owner: string; visibility: string }
+  ): Promise<string> {
     // For now, just return the normalized path
     return this.normalizeObjectEntityPath(uploadURL);
   }
@@ -233,24 +240,24 @@ export class ObjectStorageService {
     if (!privateDir.endsWith("/")) {
       privateDir = `${privateDir}/`;
     }
-    
+
     // Handle paths starting with /objects/
     let fullPath;
     if (objectPath.startsWith("/objects/")) {
       fullPath = `${privateDir}${objectPath.substring(9)}`; // Remove "/objects/"
     } else {
-      fullPath = `${privateDir}${objectPath.startsWith('/') ? objectPath.substring(1) : objectPath}`;
+      fullPath = `${privateDir}${objectPath.startsWith("/") ? objectPath.substring(1) : objectPath}`;
     }
-    
+
     const { bucketName, objectName } = parseObjectPath(fullPath);
     const bucket = objectStorageClient.bucket(bucketName);
     const file = bucket.file(objectName);
-    
+
     const [exists] = await file.exists();
     if (!exists) {
       throw new ObjectNotFoundError();
     }
-    
+
     return file;
   }
 
@@ -259,20 +266,20 @@ export class ObjectStorageService {
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
       return rawPath;
     }
-  
+
     // Extract the path from the URL by removing query parameters and domain
     const url = new URL(rawPath);
     const rawObjectPath = url.pathname;
-  
+
     let privateDir = this.getPrivateObjectDir();
     if (!privateDir.endsWith("/")) {
       privateDir = `${privateDir}/`;
     }
-  
+
     if (!rawObjectPath.startsWith(privateDir)) {
       return rawObjectPath;
     }
-  
+
     // Extract the CV ID from the path
     const cvId = rawObjectPath.slice(privateDir.length);
     return `/cvs/${cvId}`;
@@ -317,16 +324,13 @@ async function signObjectURL({
     method,
     expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
   };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }
-  );
+  const response = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
   if (!response.ok) {
     throw new Error(
       `Failed to sign object URL, errorcode: ${response.status}, ` +

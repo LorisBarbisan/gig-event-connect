@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface UseTabNotificationsProps {
   userId: number | null | undefined;
@@ -8,13 +8,13 @@ interface UseTabNotificationsProps {
 }
 
 export function useTabNotifications({ userId, enabled = true }: UseTabNotificationsProps) {
-  const originalTitleRef = useRef<string>('EventLink');
+  const originalTitleRef = useRef<string>("EventLink");
   const [pollingInterval, setPollingInterval] = useState(15000); // Start with 15s
   const lastCountRef = useRef(0);
-  
+
   // Fetch unread count using smart polling strategy
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['/api/notifications/unread-count', userId],
+    queryKey: ["/api/notifications/unread-count", userId],
     queryFn: async (): Promise<number> => {
       if (!userId) return 0;
       try {
@@ -26,7 +26,7 @@ export function useTabNotifications({ userId, enabled = true }: UseTabNotificati
     },
     refetchInterval: pollingInterval,
     refetchIntervalInBackground: false, // Stop polling when tab is inactive
-    enabled: enabled && !!userId
+    enabled: enabled && !!userId,
   });
 
   // Smart polling: adapt frequency based on activity (using useEffect instead of onSuccess)
@@ -48,19 +48,23 @@ export function useTabNotifications({ userId, enabled = true }: UseTabNotificati
   // Update document title when unread count changes
   useEffect(() => {
     if (!enabled || !userId) return;
-    
+
     // Store the original title on first load
-    if (originalTitleRef.current === 'EventLink' && document.title && document.title !== 'EventLink') {
+    if (
+      originalTitleRef.current === "EventLink" &&
+      document.title &&
+      document.title !== "EventLink"
+    ) {
       originalTitleRef.current = document.title;
     }
-    
+
     // Update title based on unread count
     if (unreadCount > 0) {
-      document.title = `(${unreadCount > 99 ? '99+' : unreadCount}) ${originalTitleRef.current}`;
+      document.title = `(${unreadCount > 99 ? "99+" : unreadCount}) ${originalTitleRef.current}`;
     } else {
       document.title = originalTitleRef.current;
     }
-    
+
     // Cleanup: restore original title when component unmounts
     return () => {
       document.title = originalTitleRef.current;
@@ -70,10 +74,10 @@ export function useTabNotifications({ userId, enabled = true }: UseTabNotificati
   // Optional: Add favicon notification badge (browser permitting)
   useEffect(() => {
     if (!enabled || !userId) return;
-    
+
     // Try to find existing favicon
     const existingFavicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
-    
+
     if (unreadCount > 0 && existingFavicon) {
       // Add a simple red dot or indicator to favicon if possible
       // Note: This is limited by browser support and would require canvas manipulation

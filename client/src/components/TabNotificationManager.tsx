@@ -1,5 +1,5 @@
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useTabNotifications } from '@/hooks/useTabNotifications';
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useTabNotifications } from "@/hooks/useTabNotifications";
 
 /**
  * Component that manages browser tab notifications for the entire application.
@@ -8,7 +8,7 @@ import { useTabNotifications } from '@/hooks/useTabNotifications';
  */
 export function TabNotificationManager() {
   const { user, loading } = useOptimizedAuth();
-  
+
   // Use the tab notifications hook with the current user's ID
   const { unreadCount, hasNotifications } = useTabNotifications({
     userId: user?.id,

@@ -2,7 +2,7 @@ declare global {
   namespace Express {
     interface User {
       id: number;
-      role: 'freelancer' | 'recruiter' | 'admin';
+      role: "freelancer" | "recruiter" | "admin";
       email: string;
     }
 

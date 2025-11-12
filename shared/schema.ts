@@ -1,4 +1,14 @@
-import { pgTable, text, serial, integer, boolean, decimal, uuid, timestamp, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  decimal,
+  uuid,
+  timestamp,
+  index,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -6,7 +16,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password"), // Made nullable for social auth users
-  role: text("role").notNull().$type<'freelancer' | 'recruiter' | 'admin'>(),
+  role: text("role").notNull().$type<"freelancer" | "recruiter" | "admin">(),
   first_name: text("first_name"),
   last_name: text("last_name"),
   email_verified: boolean("email_verified").default(false).notNull(),
@@ -15,12 +25,16 @@ export const users = pgTable("users", {
   password_reset_token: text("password_reset_token"),
   password_reset_expires: timestamp("password_reset_expires"),
   // Social auth fields
-  auth_provider: text("auth_provider").default('email').$type<'email' | 'google' | 'facebook' | 'linkedin'>(),
+  auth_provider: text("auth_provider")
+    .default("email")
+    .$type<"email" | "google" | "facebook" | "linkedin">(),
   google_id: text("google_id"),
   facebook_id: text("facebook_id"),
   linkedin_id: text("linkedin_id"),
   profile_photo_url: text("profile_photo_url"), // For social auth profile photos
-  last_login_method: text("last_login_method").$type<'email' | 'google' | 'facebook' | 'linkedin'>(),
+  last_login_method: text("last_login_method").$type<
+    "email" | "google" | "facebook" | "linkedin"
+  >(),
   last_login_at: timestamp("last_login_at"),
   // Soft delete support for account deletion conversations
   deleted_at: timestamp("deleted_at"), // NULL = active user, timestamp = deleted user
@@ -28,36 +42,46 @@ export const users = pgTable("users", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const freelancer_profiles = pgTable("freelancer_profiles", {
-  id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  first_name: text("first_name"),
-  last_name: text("last_name"),
-  title: text("title"),
-  bio: text("bio"),
-  location: text("location"),
-  experience_years: integer("experience_years"),
-  skills: text("skills").array(),
-  portfolio_url: text("portfolio_url"),
-  linkedin_url: text("linkedin_url"),
-  website_url: text("website_url"),
-  availability_status: text("availability_status").default('available').$type<'available' | 'busy' | 'unavailable'>(),
-  profile_photo_url: text("profile_photo_url"),
-  cv_file_url: text("cv_file_url"),
-  cv_file_name: text("cv_file_name"),
-  cv_file_type: text("cv_file_type"),
-  cv_file_size: integer("cv_file_size"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  titleIdx: index("freelancer_profiles_title_idx").on(table.title),
-  locationIdx: index("freelancer_profiles_location_idx").on(table.location),
-  availabilityIdx: index("freelancer_profiles_availability_idx").on(table.availability_status),
-}));
+export const freelancer_profiles = pgTable(
+  "freelancer_profiles",
+  {
+    id: serial("id").primaryKey(),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    first_name: text("first_name"),
+    last_name: text("last_name"),
+    title: text("title"),
+    bio: text("bio"),
+    location: text("location"),
+    experience_years: integer("experience_years"),
+    skills: text("skills").array(),
+    portfolio_url: text("portfolio_url"),
+    linkedin_url: text("linkedin_url"),
+    website_url: text("website_url"),
+    availability_status: text("availability_status")
+      .default("available")
+      .$type<"available" | "busy" | "unavailable">(),
+    profile_photo_url: text("profile_photo_url"),
+    cv_file_url: text("cv_file_url"),
+    cv_file_name: text("cv_file_name"),
+    cv_file_type: text("cv_file_type"),
+    cv_file_size: integer("cv_file_size"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  table => ({
+    titleIdx: index("freelancer_profiles_title_idx").on(table.title),
+    locationIdx: index("freelancer_profiles_location_idx").on(table.location),
+    availabilityIdx: index("freelancer_profiles_availability_idx").on(table.availability_status),
+  })
+);
 
 export const recruiter_profiles = pgTable("recruiter_profiles", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   company_name: text("company_name").notNull(),
   contact_name: text("contact_name"),
   company_type: text("company_type"),
@@ -76,21 +100,23 @@ export const jobs = pgTable("jobs", {
   title: text("title").notNull(),
   company: text("company").notNull(),
   location: text("location").notNull(),
-  type: text("type").notNull().$type<'full-time' | 'part-time' | 'contract' | 'temporary' | 'freelance' | 'external'>(),
+  type: text("type")
+    .notNull()
+    .$type<"full-time" | "part-time" | "contract" | "temporary" | "freelance" | "external">(),
   contract_type: text("contract_type"), // Specific contract type when type is 'contract'
   rate: text("rate").notNull(),
   description: text("description").notNull(),
   event_date: text("event_date").notNull(), // Start date of the event/job
   end_date: text("end_date"), // Optional end date of the event/job
   // Job duration fields - user can choose one of three options
-  duration_type: text("duration_type").$type<'time' | 'days' | 'hours' | null>(), // Which duration option was selected
+  duration_type: text("duration_type").$type<"time" | "days" | "hours" | null>(), // Which duration option was selected
   start_time: text("start_time"), // Optional start time (e.g., "09:00")
   end_time: text("end_time"), // Optional end time (e.g., "17:00")
   days: integer("days"), // Number of days if duration_type = 'days'
   hours: integer("hours"), // Number of hours if duration_type = 'hours'
-  status: text("status").default('active').$type<'active' | 'paused' | 'closed'>(),
+  status: text("status").default("active").$type<"active" | "paused" | "closed">(),
   external_id: text("external_id"), // For external job IDs (reed_123, adzuna_456)
-  external_source: text("external_source").$type<'reed' | 'adzuna' | null>(), // Source of external job
+  external_source: text("external_source").$type<"reed" | "adzuna" | null>(), // Source of external job
   external_url: text("external_url"), // URL to original job posting
   posted_date: text("posted_date"), // Original posting date from external source
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -99,9 +125,15 @@ export const jobs = pgTable("jobs", {
 
 export const job_applications = pgTable("job_applications", {
   id: serial("id").primaryKey(),
-  job_id: integer("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
-  freelancer_id: integer("freelancer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  status: text("status").default('applied').$type<'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired'>(),
+  job_id: integer("job_id")
+    .notNull()
+    .references(() => jobs.id, { onDelete: "cascade" }),
+  freelancer_id: integer("freelancer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: text("status")
+    .default("applied")
+    .$type<"applied" | "reviewed" | "shortlisted" | "rejected" | "hired">(),
   cover_letter: text("cover_letter"),
   rejection_message: text("rejection_message"), // Message explaining rejection
   freelancer_deleted: boolean("freelancer_deleted").default(false).notNull(), // Soft delete flag for freelancer view
@@ -112,8 +144,12 @@ export const job_applications = pgTable("job_applications", {
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  participant_one_id: integer("participant_one_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  participant_two_id: integer("participant_two_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  participant_one_id: integer("participant_one_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  participant_two_id: integer("participant_two_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   participant_one_deleted: boolean("participant_one_deleted").default(false).notNull(), // Soft delete flag for participant one
   participant_two_deleted: boolean("participant_two_deleted").default(false).notNull(), // Soft delete flag for participant two
   participant_one_deleted_at: timestamp("participant_one_deleted_at"), // Timestamp when participant one deleted (null = not deleted)
@@ -124,7 +160,9 @@ export const conversations = pgTable("conversations", {
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  conversation_id: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  conversation_id: integer("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
   sender_id: integer("sender_id").references(() => users.id, { onDelete: "cascade" }), // Made nullable for system messages
   content: text("content").notNull(),
   is_read: boolean("is_read").default(false).notNull(),
@@ -134,33 +172,51 @@ export const messages = pgTable("messages", {
 
 export const message_user_states = pgTable("message_user_states", {
   id: serial("id").primaryKey(),
-  message_id: integer("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message_id: integer("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   deleted_at: timestamp("deleted_at").defaultNow().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const message_attachments = pgTable("message_attachments", {
   id: serial("id").primaryKey(),
-  message_id: integer("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+  message_id: integer("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
   object_path: text("object_path").notNull(), // Path to file in object storage (e.g., "/objects/uuid")
   original_filename: text("original_filename").notNull(), // Original filename from user
   file_type: text("file_type").notNull(), // MIME type (e.g., "application/pdf", "image/jpeg")
   file_size: integer("file_size").notNull(), // Size in bytes
-  scan_status: text("scan_status").default('pending').$type<'pending' | 'safe' | 'unsafe' | 'error'>(),
+  scan_status: text("scan_status")
+    .default("pending")
+    .$type<"pending" | "safe" | "unsafe" | "error">(),
   scan_result: text("scan_result"), // JSON string with scan details
-  moderation_status: text("moderation_status").default('pending').$type<'pending' | 'approved' | 'rejected' | 'error'>(),
+  moderation_status: text("moderation_status")
+    .default("pending")
+    .$type<"pending" | "approved" | "rejected" | "error">(),
   moderation_result: text("moderation_result"), // JSON string with moderation details
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const file_reports = pgTable("file_reports", {
   id: serial("id").primaryKey(),
-  attachment_id: integer("attachment_id").notNull().references(() => message_attachments.id, { onDelete: "cascade" }),
-  reporter_id: integer("reporter_id").notNull().references(() => users.id, { onDelete: "set null" }),
-  report_reason: text("report_reason").notNull().$type<'malware' | 'inappropriate' | 'harassment' | 'other'>(),
+  attachment_id: integer("attachment_id")
+    .notNull()
+    .references(() => message_attachments.id, { onDelete: "cascade" }),
+  reporter_id: integer("reporter_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  report_reason: text("report_reason")
+    .notNull()
+    .$type<"malware" | "inappropriate" | "harassment" | "other">(),
   report_details: text("report_details"), // Additional details from reporter
-  status: text("status").default('pending').$type<'pending' | 'under_review' | 'resolved' | 'dismissed'>(),
+  status: text("status")
+    .default("pending")
+    .$type<"pending" | "under_review" | "resolved" | "dismissed">(),
   admin_notes: text("admin_notes"), // Admin notes for review
   admin_user_id: integer("admin_user_id").references(() => users.id, { onDelete: "set null" }),
   resolved_at: timestamp("resolved_at"),
@@ -170,13 +226,27 @@ export const file_reports = pgTable("file_reports", {
 
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull().$type<'application_update' | 'new_message' | 'job_update' | 'profile_view' | 'rating_received' | 'rating_request' | 'system'>(),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type")
+    .notNull()
+    .$type<
+      | "application_update"
+      | "new_message"
+      | "job_update"
+      | "profile_view"
+      | "rating_received"
+      | "rating_request"
+      | "system"
+    >(),
   title: text("title").notNull(),
   message: text("message").notNull(),
   is_read: boolean("is_read").default(false).notNull(),
-  priority: text("priority").default('normal').$type<'low' | 'normal' | 'high' | 'urgent'>(),
-  related_entity_type: text("related_entity_type").$type<'job' | 'application' | 'message' | 'profile' | 'rating' | null>(),
+  priority: text("priority").default("normal").$type<"low" | "normal" | "high" | "urgent">(),
+  related_entity_type: text("related_entity_type").$type<
+    "job" | "application" | "message" | "profile" | "rating" | null
+  >(),
   related_entity_id: integer("related_entity_id"),
   action_url: text("action_url"), // URL to navigate to when clicked
   metadata: text("metadata"), // JSON string for additional data
@@ -186,9 +256,15 @@ export const notifications = pgTable("notifications", {
 
 export const ratings = pgTable("ratings", {
   id: serial("id").primaryKey(),
-  job_application_id: integer("job_application_id").notNull().references(() => job_applications.id, { onDelete: "cascade" }),
-  recruiter_id: integer("recruiter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  freelancer_id: integer("freelancer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  job_application_id: integer("job_application_id")
+    .notNull()
+    .references(() => job_applications.id, { onDelete: "cascade" }),
+  recruiter_id: integer("recruiter_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  freelancer_id: integer("freelancer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   rating: integer("rating").notNull().$type<1 | 2 | 3 | 4 | 5>(), // 1-5 stars
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -196,10 +272,16 @@ export const ratings = pgTable("ratings", {
 
 export const rating_requests = pgTable("rating_requests", {
   id: serial("id").primaryKey(),
-  job_application_id: integer("job_application_id").notNull().references(() => job_applications.id, { onDelete: "cascade" }),
-  freelancer_id: integer("freelancer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  recruiter_id: integer("recruiter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  status: text("status").default('pending').$type<'pending' | 'completed' | 'declined'>(),
+  job_application_id: integer("job_application_id")
+    .notNull()
+    .references(() => job_applications.id, { onDelete: "cascade" }),
+  freelancer_id: integer("freelancer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  recruiter_id: integer("recruiter_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").default("pending").$type<"pending" | "completed" | "declined">(),
   requested_at: timestamp("requested_at").defaultNow().notNull(),
   responded_at: timestamp("responded_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -207,70 +289,85 @@ export const rating_requests = pgTable("rating_requests", {
 });
 
 // Schema for email/password registration (password required)
-export const insertUserSchema = createInsertSchema(users).pick({
-  email: true,
-  password: true,
-  role: true,
-  first_name: true,
-  last_name: true,
-}).extend({
-  password: z.string().min(1, "Password is required"),
-});
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    email: true,
+    password: true,
+    role: true,
+    first_name: true,
+    last_name: true,
+  })
+  .extend({
+    password: z.string().min(1, "Password is required"),
+  });
 
-// Schema for social auth registration  
-export const insertSocialUserSchema = createInsertSchema(users).pick({
-  email: true,
-  role: true,
-  first_name: true,
-  last_name: true,
-  auth_provider: true,
-  google_id: true,
-  facebook_id: true,
-  linkedin_id: true,
-  profile_photo_url: true,
-}).extend({
-  password: z.string().optional(),
-});
+// Schema for social auth registration
+export const insertSocialUserSchema = createInsertSchema(users)
+  .pick({
+    email: true,
+    role: true,
+    first_name: true,
+    last_name: true,
+    auth_provider: true,
+    google_id: true,
+    facebook_id: true,
+    linkedin_id: true,
+    profile_photo_url: true,
+  })
+  .extend({
+    password: z.string().optional(),
+  });
 
-export const insertFreelancerProfileSchema = createInsertSchema(freelancer_profiles).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  user_id: z.number(),
-  hourly_rate: z.number().nullable().transform((val) => val ? val.toString() : null),
-});
+export const insertFreelancerProfileSchema = createInsertSchema(freelancer_profiles)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    user_id: z.number(),
+    hourly_rate: z
+      .number()
+      .nullable()
+      .transform(val => (val ? val.toString() : null)),
+  });
 
-export const insertRecruiterProfileSchema = createInsertSchema(recruiter_profiles).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  user_id: z.number(),
-});
+export const insertRecruiterProfileSchema = createInsertSchema(recruiter_profiles)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    user_id: z.number(),
+  });
 
-export const insertJobSchema = createInsertSchema(jobs).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  recruiter_id: z.number(),
-  company: z.string().min(1, "Company name is required"),
-  title: z.string().min(1, "Job title is required"),
-  location: z.string().min(1, "Location is required"),
-  description: z.string().min(1, "Description is required"),
-});
+export const insertJobSchema = createInsertSchema(jobs)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    recruiter_id: z.number(),
+    company: z.string().min(1, "Company name is required"),
+    title: z.string().min(1, "Job title is required"),
+    location: z.string().min(1, "Location is required"),
+    description: z.string().min(1, "Description is required"),
+  });
 
-export const insertJobApplicationSchema = createInsertSchema(job_applications).omit({
-  id: true,
-  applied_at: true,
-  updated_at: true,
-  freelancer_deleted: true, // Auto-generated field
-  recruiter_deleted: true, // Auto-generated field
-}).extend({
-  job_id: z.number(),
-  freelancer_id: z.number(),
-});
+export const insertJobApplicationSchema = createInsertSchema(job_applications)
+  .omit({
+    id: true,
+    applied_at: true,
+    updated_at: true,
+    freelancer_deleted: true, // Auto-generated field
+    recruiter_deleted: true, // Auto-generated field
+  })
+  .extend({
+    job_id: z.number(),
+    freelancer_id: z.number(),
+  });
 
 export const insertMessageUserStateSchema = createInsertSchema(message_user_states).omit({
   id: true,
@@ -278,56 +375,68 @@ export const insertMessageUserStateSchema = createInsertSchema(message_user_stat
   deleted_at: true, // Auto-generated field
 });
 
-export const insertConversationSchema = createInsertSchema(conversations).omit({
-  id: true,
-  created_at: true,
-  last_message_at: true,
-}).extend({
-  participant_one_id: z.number(),
-  participant_two_id: z.number(),
-});
+export const insertConversationSchema = createInsertSchema(conversations)
+  .omit({
+    id: true,
+    created_at: true,
+    last_message_at: true,
+  })
+  .extend({
+    participant_one_id: z.number(),
+    participant_two_id: z.number(),
+  });
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
-  id: true,
-  created_at: true,
-}).extend({
-  conversation_id: z.number(),
-  sender_id: z.number().nullable().optional(), // Made optional for system messages
-  is_system_message: z.boolean().optional().default(false),
-});
+export const insertMessageSchema = createInsertSchema(messages)
+  .omit({
+    id: true,
+    created_at: true,
+  })
+  .extend({
+    conversation_id: z.number(),
+    sender_id: z.number().nullable().optional(), // Made optional for system messages
+    is_system_message: z.boolean().optional().default(false),
+  });
 
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  created_at: true,
-}).extend({
-  user_id: z.number(),
-});
+export const insertNotificationSchema = createInsertSchema(notifications)
+  .omit({
+    id: true,
+    created_at: true,
+  })
+  .extend({
+    user_id: z.number(),
+  });
 
-export const insertRatingSchema = createInsertSchema(ratings).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  job_application_id: z.number(),
-  recruiter_id: z.number(),
-  freelancer_id: z.number(),
-  rating: z.number().min(1).max(5),
-});
+export const insertRatingSchema = createInsertSchema(ratings)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    job_application_id: z.number(),
+    recruiter_id: z.number(),
+    freelancer_id: z.number(),
+    rating: z.number().min(1).max(5),
+  });
 
 // Feedback table for admin dashboard
 export const feedback = pgTable("feedback", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").references(() => users.id, { onDelete: "set null" }), // Nullable for guest users
-  feedback_type: text("feedback_type").notNull().$type<'malfunction' | 'feature-missing' | 'suggestion' | 'other'>(),
+  feedback_type: text("feedback_type")
+    .notNull()
+    .$type<"malfunction" | "feature-missing" | "suggestion" | "other">(),
   message: text("message").notNull(),
   page_url: text("page_url"),
-  source: text("source").$type<'header' | 'popup'>(),
+  source: text("source").$type<"header" | "popup">(),
   user_email: text("user_email"), // Store email for guest users
   user_name: text("user_name"), // Store name for guest users or logged-in users
-  status: text("status").default('pending').$type<'pending' | 'in_review' | 'resolved' | 'closed'>(),
+  status: text("status")
+    .default("pending")
+    .$type<"pending" | "in_review" | "resolved" | "closed">(),
   admin_response: text("admin_response"),
   admin_user_id: integer("admin_user_id").references(() => users.id, { onDelete: "set null" }),
-  priority: text("priority").default('normal').$type<'low' | 'normal' | 'high' | 'urgent'>(),
+  priority: text("priority").default("normal").$type<"low" | "normal" | "high" | "urgent">(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
   resolved_at: timestamp("resolved_at"),
@@ -339,7 +448,7 @@ export const contact_messages = pgTable("contact_messages", {
   email: text("email").notNull(),
   subject: text("subject").notNull(),
   message: text("message").notNull(),
-  status: text("status").default('pending').$type<'pending' | 'replied' | 'resolved'>(),
+  status: text("status").default("pending").$type<"pending" | "replied" | "resolved">(),
   ip_address: text("ip_address"), // For rate limiting and spam prevention
   user_agent: text("user_agent"), // Browser/device information
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -348,7 +457,10 @@ export const contact_messages = pgTable("contact_messages", {
 // Email notification preferences for users
 export const notification_preferences = pgTable("notification_preferences", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
   // Email notification toggles
   email_messages: boolean("email_messages").default(true).notNull(), // New internal messages
   email_application_updates: boolean("email_application_updates").default(true).notNull(), // Application status changes (freelancers only)
@@ -357,8 +469,8 @@ export const notification_preferences = pgTable("notification_preferences", {
   email_rating_requests: boolean("email_rating_requests").default(true).notNull(), // Rating requests
   email_system_updates: boolean("email_system_updates").default(true).notNull(), // Platform updates and announcements
   // Future: digest mode settings
-  digest_mode: text("digest_mode").default('instant').$type<'instant' | 'daily' | 'weekly'>(),
-  digest_time: text("digest_time").default('09:00'), // Time to send daily digest (HH:MM format)
+  digest_mode: text("digest_mode").default("instant").$type<"instant" | "daily" | "weekly">(),
+  digest_time: text("digest_time").default("09:00"), // Time to send daily digest (HH:MM format)
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -366,7 +478,9 @@ export const notification_preferences = pgTable("notification_preferences", {
 // Job alert filters for personalized job notifications
 export const job_alert_filters = pgTable("job_alert_filters", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   // Filter criteria
   skills: text("skills").array(), // Array of skills to match
   locations: text("locations").array(), // Array of locations to match
@@ -384,26 +498,34 @@ export const email_notification_logs = pgTable("email_notification_logs", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").references(() => users.id, { onDelete: "set null" }), // Nullable in case user is deleted
   email: text("email").notNull(), // Email address where notification was sent
-  notification_type: text("notification_type").notNull().$type<'message' | 'application_update' | 'job_update' | 'job_alert' | 'rating_request' | 'system'>(),
+  notification_type: text("notification_type")
+    .notNull()
+    .$type<
+      "message" | "application_update" | "job_update" | "job_alert" | "rating_request" | "system"
+    >(),
   subject: text("subject").notNull(),
-  status: text("status").notNull().$type<'sent' | 'failed' | 'bounced'>(),
+  status: text("status").notNull().$type<"sent" | "failed" | "bounced">(),
   error_message: text("error_message"), // Error details if failed
-  related_entity_type: text("related_entity_type").$type<'job' | 'application' | 'message' | 'rating' | null>(),
+  related_entity_type: text("related_entity_type").$type<
+    "job" | "application" | "message" | "rating" | null
+  >(),
   related_entity_id: integer("related_entity_id"), // ID of related entity (job, application, etc.)
   metadata: text("metadata"), // JSON string for additional data
   sent_at: timestamp("sent_at").defaultNow().notNull(),
 });
 
-export const insertRatingRequestSchema = createInsertSchema(rating_requests).omit({
-  id: true,
-  requested_at: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  job_application_id: z.number(),
-  freelancer_id: z.number(),
-  recruiter_id: z.number(),
-});
+export const insertRatingRequestSchema = createInsertSchema(rating_requests)
+  .omit({
+    id: true,
+    requested_at: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    job_application_id: z.number(),
+    freelancer_id: z.number(),
+    recruiter_id: z.number(),
+  });
 
 export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   id: true,
@@ -412,16 +534,18 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   resolved_at: true,
 });
 
-export const insertContactMessageSchema = createInsertSchema(contact_messages).omit({
-  id: true,
-  created_at: true,
-  status: true,
-}).extend({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  subject: z.string().min(1, "Subject is required"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-});
+export const insertContactMessageSchema = createInsertSchema(contact_messages)
+  .omit({
+    id: true,
+    created_at: true,
+    status: true,
+  })
+  .extend({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email is required"),
+    subject: z.string().min(1, "Subject is required"),
+    message: z.string().min(10, "Message must be at least 10 characters"),
+  });
 
 export const insertMessageAttachmentSchema = createInsertSchema(message_attachments).omit({
   id: true,
@@ -435,21 +559,25 @@ export const insertFileReportSchema = createInsertSchema(file_reports).omit({
   resolved_at: true,
 });
 
-export const insertNotificationPreferencesSchema = createInsertSchema(notification_preferences).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  user_id: z.number(),
-});
+export const insertNotificationPreferencesSchema = createInsertSchema(notification_preferences)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    user_id: z.number(),
+  });
 
-export const insertJobAlertFilterSchema = createInsertSchema(job_alert_filters).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).extend({
-  user_id: z.number(),
-});
+export const insertJobAlertFilterSchema = createInsertSchema(job_alert_filters)
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    user_id: z.number(),
+  });
 
 export const insertEmailNotificationLogSchema = createInsertSchema(email_notification_logs).omit({
   id: true,

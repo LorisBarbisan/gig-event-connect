@@ -21,14 +21,14 @@ export class WebSocketService {
     try {
       if (this.broadcastToUser) {
         this.broadcastToUser(userId, {
-          type: 'new_notification',
-          notification
+          type: "new_notification",
+          notification,
         });
       } else {
-        console.warn('WebSocket broadcast function not initialized');
+        console.warn("WebSocket broadcast function not initialized");
       }
     } catch (error) {
-      console.error('Failed to broadcast notification:', error);
+      console.error("Failed to broadcast notification:", error);
       throw error; // Rethrow so caller knows broadcast failed
     }
   }
@@ -40,14 +40,14 @@ export class WebSocketService {
     try {
       if (this.broadcastToUser) {
         this.broadcastToUser(userId, {
-          type: 'badge_counts_update',
-          counts
+          type: "badge_counts_update",
+          counts,
         });
       } else {
-        console.warn('WebSocket broadcast function not initialized');
+        console.warn("WebSocket broadcast function not initialized");
       }
     } catch (error) {
-      console.error('Failed to broadcast badge counts:', error);
+      console.error("Failed to broadcast badge counts:", error);
       throw error;
     }
   }
@@ -61,16 +61,56 @@ export class WebSocketService {
       if (this.broadcastToUser) {
         // Send new_message event with full data for toast and refetch
         this.broadcastToUser(userId, {
-          type: 'new_message',
+          type: "new_message",
           message: message,
           sender: sender,
-          conversation_id: conversationId
+          conversation_id: conversationId,
         });
       } else {
-        console.warn('WebSocket broadcast function not initialized');
+        console.warn("WebSocket broadcast function not initialized");
       }
     } catch (error) {
-      console.error('Failed to broadcast new message:', error);
+      console.error("Failed to broadcast new message:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Broadcast a conversation deletion event to a specific user
+   * Notifies the user that a conversation was deleted so they can refresh their list
+   */
+  broadcastConversationDeleted(userId: number, conversationId: number) {
+    try {
+      if (this.broadcastToUser) {
+        this.broadcastToUser(userId, {
+          type: "conversation_deleted",
+          conversation_id: conversationId,
+        });
+      } else {
+        console.warn("WebSocket broadcast function not initialized");
+      }
+    } catch (error) {
+      console.error("Failed to broadcast conversation deletion:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Broadcast a conversation update event to a specific user
+   * Notifies the user that a conversation was updated (e.g., restored after deletion) so they can refresh their list
+   */
+  broadcastConversationUpdated(userId: number, conversationId: number) {
+    try {
+      if (this.broadcastToUser) {
+        this.broadcastToUser(userId, {
+          type: "conversation_updated",
+          conversation_id: conversationId,
+        });
+      } else {
+        console.warn("WebSocket broadcast function not initialized");
+      }
+    } catch (error) {
+      console.error("Failed to broadcast conversation update:", error);
       throw error;
     }
   }

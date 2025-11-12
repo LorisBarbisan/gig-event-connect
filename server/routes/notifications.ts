@@ -1,13 +1,17 @@
+import {
+  insertJobAlertFilterSchema,
+  insertNotificationPreferencesSchema,
+  insertNotificationSchema,
+} from "@shared/schema";
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertNotificationSchema, insertNotificationPreferencesSchema, insertJobAlertFilterSchema } from "@shared/schema";
 import { authenticateJWT } from "./auth";
 
 export function registerNotificationRoutes(app: Express) {
   // Get user notifications
   app.get("/api/notifications", authenticateJWT, async (req, res) => {
     try {
-      const notifications = await storage.getUserNotifications(req.user.id);
+      const notifications = await storage.getUserNotifications(req.user!.id);
       res.json(notifications);
     } catch (error) {
       console.error("Get notifications error:", error);
@@ -18,7 +22,7 @@ export function registerNotificationRoutes(app: Express) {
   // Get unread notification count
   app.get("/api/notifications/unread-count", authenticateJWT, async (req, res) => {
     try {
-      const unreadCount = await storage.getUnreadNotificationCount(req.user.id);
+      const unreadCount = await storage.getUnreadNotificationCount(req.user!.id);
       res.json({ count: unreadCount });
     } catch (error) {
       console.error("Get unread notification count error:", error);
@@ -29,7 +33,7 @@ export function registerNotificationRoutes(app: Express) {
   // Get category-specific unread notification counts for tab badges
   app.get("/api/notifications/category-counts", authenticateJWT, async (req, res) => {
     try {
-      const counts = await storage.getCategoryUnreadCounts(req.user.id);
+      const counts = await storage.getCategoryUnreadCounts(req.user!.id);
       res.json(counts);
     } catch (error) {
       console.error("Get category notification counts error:", error);
@@ -40,7 +44,7 @@ export function registerNotificationRoutes(app: Express) {
   // Create notification (usually called internally)
   app.post("/api/notifications", async (req, res) => {
     try {
-      if (!req.user || req.user.role !== 'admin') {
+      if (!req.user || req.user.role !== "admin") {
         return res.status(403).json({ error: "Only admins can create notifications directly" });
       }
 
@@ -61,30 +65,32 @@ export function registerNotificationRoutes(app: Express) {
   app.patch("/api/notifications/:id/read", authenticateJWT, async (req, res) => {
     try {
       const notificationId = parseInt(req.params.id);
-      
+
       // Check if notification belongs to user
       const notification = await storage.getNotification(notificationId);
       if (!notification) {
         return res.status(404).json({ error: "Notification not found" });
       }
 
-      if (notification.user_id !== req.user.id && req.user.role !== 'admin') {
+      if (notification.user_id !== req.user.id && req.user.role !== "admin") {
         return res.status(403).json({ error: "Not authorized to mark this notification as read" });
       }
 
       await storage.markNotificationAsRead(notificationId);
-      
+
       // Send WebSocket update for badge counts
       try {
-        const { wsService } = await import('../websocketService.js');
+        const { wsService } = await import("../websocketService.js");
         const counts = await storage.getCategoryUnreadCounts(req.user.id);
         wsService.broadcastBadgeCounts(req.user.id, counts);
-        console.log(`✅ Badge counts broadcast to user ${req.user.id} after marking notification as read`);
+        console.log(
+          `✅ Badge counts broadcast to user ${req.user.id} after marking notification as read`
+        );
       } catch (wsError) {
         console.error("WebSocket broadcast error:", wsError);
         // Don't fail the request if WebSocket broadcast fails
       }
-      
+
       res.json({ message: "Notification marked as read" });
     } catch (error) {
       console.error("Mark notification as read error:", error);
@@ -96,18 +102,20 @@ export function registerNotificationRoutes(app: Express) {
   app.patch("/api/notifications/mark-all-read", authenticateJWT, async (req, res) => {
     try {
       await storage.markAllNotificationsAsRead(req.user.id);
-      
+
       // Send WebSocket update for badge counts
       try {
-        const { wsService } = await import('../websocketService.js');
+        const { wsService } = await import("../websocketService.js");
         const counts = await storage.getCategoryUnreadCounts(req.user.id);
         wsService.broadcastBadgeCounts(req.user.id, counts);
-        console.log(`✅ Badge counts broadcast to user ${req.user.id} after marking all notifications as read`);
+        console.log(
+          `✅ Badge counts broadcast to user ${req.user.id} after marking all notifications as read`
+        );
       } catch (wsError) {
         console.error("WebSocket broadcast error:", wsError);
         // Don't fail the request if WebSocket broadcast fails
       }
-      
+
       res.json({ message: "All notifications marked as read" });
     } catch (error) {
       console.error("Mark all notifications as read error:", error);
@@ -116,68 +124,72 @@ export function registerNotificationRoutes(app: Express) {
   });
 
   // Mark category-specific notifications as read
-  app.patch("/api/notifications/mark-category-read/:category", authenticateJWT, async (req, res) => {
-    try {
-      const category = req.params.category as 'messages' | 'applications' | 'jobs' | 'ratings';
-      
-      if (!['messages', 'applications', 'jobs', 'ratings'].includes(category)) {
-        return res.status(400).json({ error: "Invalid category" });
-      }
-
-      await storage.markCategoryNotificationsAsRead(req.user.id, category);
-      
-      // Send WebSocket update for badge counts
+  app.patch(
+    "/api/notifications/mark-category-read/:category",
+    authenticateJWT,
+    async (req, res) => {
       try {
-        const counts = await storage.getCategoryUnreadCounts(req.user.id);
-        const broadcastToUser = (global as any).broadcastToUser;
-        if (broadcastToUser) {
-          broadcastToUser(req.user.id, {
-            type: 'badge_counts_update',
-            counts: counts
-          });
+        const category = req.params.category as "messages" | "applications" | "jobs" | "ratings";
+
+        if (!["messages", "applications", "jobs", "ratings"].includes(category)) {
+          return res.status(400).json({ error: "Invalid category" });
         }
-      } catch (wsError) {
-        console.error("WebSocket broadcast error:", wsError);
+
+        await storage.markCategoryNotificationsAsRead(req.user.id, category);
+
+        // Send WebSocket update for badge counts
+        try {
+          const counts = await storage.getCategoryUnreadCounts(req.user.id);
+          const broadcastToUser = (global as any).broadcastToUser;
+          if (broadcastToUser) {
+            broadcastToUser(req.user.id, {
+              type: "badge_counts_update",
+              counts: counts,
+            });
+          }
+        } catch (wsError) {
+          console.error("WebSocket broadcast error:", wsError);
+        }
+
+        res.json({ message: `${category} notifications marked as read` });
+      } catch (error) {
+        console.error("Mark category notifications as read error:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-      
-      res.json({ message: `${category} notifications marked as read` });
-    } catch (error) {
-      console.error("Mark category notifications as read error:", error);
-      res.status(500).json({ error: "Internal server error" });
     }
-  });
+  );
 
   // Delete notification
   app.delete("/api/notifications/:id", authenticateJWT, async (req, res) => {
     try {
       const notificationId = parseInt(req.params.id);
-      
+
       // Check if notification belongs to user
       const notification = await storage.getNotification(notificationId);
       if (!notification) {
         return res.status(404).json({ error: "Notification not found" });
       }
 
-      if (notification.user_id !== req.user.id && req.user.role !== 'admin') {
+      if (notification.user_id !== req.user.id && req.user.role !== "admin") {
         return res.status(403).json({ error: "Not authorized to delete this notification" });
       }
 
       await storage.deleteNotification(notificationId);
-      
+
       // Send WebSocket update for badge counts
       try {
         const counts = await storage.getCategoryUnreadCounts(req.user.id);
         const broadcastToUser = (global as any).broadcastToUser;
         if (broadcastToUser) {
           broadcastToUser(req.user.id, {
-            type: 'badge_counts_update',
-            counts: counts
+            type: "badge_counts_update",
+            counts: counts,
           });
         }
       } catch (wsError) {
         console.error("WebSocket broadcast error:", wsError);
       }
-      
+
       res.json({ message: "Notification deleted successfully" });
     } catch (error) {
       console.error("Delete notification error:", error);
@@ -189,12 +201,12 @@ export function registerNotificationRoutes(app: Express) {
   app.get("/api/notifications/settings", authenticateJWT, async (req, res) => {
     try {
       let preferences = await storage.getNotificationPreferences(req.user.id);
-      
+
       // Create default preferences if they don't exist
       if (!preferences) {
         preferences = await storage.createNotificationPreferences(req.user.id);
       }
-      
+
       res.json(preferences);
     } catch (error) {
       console.error("Get notification preferences error:", error);
@@ -208,9 +220,9 @@ export function registerNotificationRoutes(app: Express) {
       // Validate request body with Zod schema
       const validationResult = insertNotificationPreferencesSchema.partial().safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: validationResult.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: validationResult.error.issues,
         });
       }
 
@@ -222,7 +234,10 @@ export function registerNotificationRoutes(app: Express) {
 
       // Update with validated settings only (no user_id allowed in updates)
       const { user_id, ...updateData } = validationResult.data;
-      const updatedPreferences = await storage.updateNotificationPreferences(req.user.id, updateData);
+      const updatedPreferences = await storage.updateNotificationPreferences(
+        req.user.id,
+        updateData
+      );
       res.json(updatedPreferences);
     } catch (error) {
       console.error("Update notification preferences error:", error);
@@ -250,17 +265,17 @@ export function registerNotificationRoutes(app: Express) {
         ...req.body,
         user_id: req.user.id, // Force user_id to authenticated user
       });
-      
+
       if (!validationResult.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: validationResult.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: validationResult.error.issues,
         });
       }
 
       // Check if user already has a filter
       const existingFilters = await storage.getJobAlertFilters(req.user.id);
-      
+
       let filter;
       if (existingFilters.length > 0) {
         // Update existing filter
@@ -279,7 +294,7 @@ export function registerNotificationRoutes(app: Express) {
           is_active: validationResult.data.is_active ?? true,
         });
       }
-      
+
       res.json(filter);
     } catch (error) {
       console.error("Create/update job alert filter error:", error);
@@ -291,11 +306,11 @@ export function registerNotificationRoutes(app: Express) {
   app.patch("/api/notifications/job-alerts/:id", authenticateJWT, async (req, res) => {
     try {
       const filterId = parseInt(req.params.id);
-      
+
       // Verify ownership before updating
       const existingFilters = await storage.getJobAlertFilters(req.user.id);
       const ownedFilter = existingFilters.find(f => f.id === filterId);
-      
+
       if (!ownedFilter) {
         return res.status(404).json({ error: "Job alert filter not found or access denied" });
       }
@@ -303,9 +318,9 @@ export function registerNotificationRoutes(app: Express) {
       // Validate request body
       const validationResult = insertJobAlertFilterSchema.partial().safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: validationResult.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: validationResult.error.issues,
         });
       }
 
@@ -323,11 +338,11 @@ export function registerNotificationRoutes(app: Express) {
   app.delete("/api/notifications/job-alerts/:id", authenticateJWT, async (req, res) => {
     try {
       const filterId = parseInt(req.params.id);
-      
+
       // Verify ownership before deleting
       const existingFilters = await storage.getJobAlertFilters(req.user.id);
       const ownedFilter = existingFilters.find(f => f.id === filterId);
-      
+
       if (!ownedFilter) {
         return res.status(404).json({ error: "Job alert filter not found or access denied" });
       }

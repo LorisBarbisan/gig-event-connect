@@ -1,23 +1,28 @@
 # EventLink - Freelance Marketplace
 
 ## Overview
+
 EventLink is a freelance marketplace platform tailored for the events industry, connecting event professionals (freelancers) with recruiters and companies. Its primary purpose is to streamline the hiring process for event staff by providing detailed profiles, job posting capabilities, and integrated communication tools. The platform aims to be a leading solution for event staffing needs.
 
 ## User Preferences
+
 - Security-focused development with proper client/server separation
 - Modern web application patterns with backend handling data persistence
 - Minimal file structure with consolidated components where appropriate
 - Maximum system efficiency and performance optimization
 
 ## System Architecture
+
 The EventLink platform utilizes a modern web application stack designed for efficiency and performance.
 
 ### UI/UX Decisions
+
 - **Styling**: Tailwind CSS for utility-first styling.
 - **Components**: shadcn/ui for consistent and accessible UI components.
 - **Responsive Design**: Mobile-first approach with responsive breakpoints. Dashboards use 2-column tab layout on mobile (expanding to 4 columns on larger screens), card layouts stack vertically on mobile with full-width buttons, and flexible grid systems adapt from single column on mobile to multi-column on desktop.
 
 ### Technical Implementations
+
 - **Frontend**: React and TypeScript with Wouter for client-side routing.
 - **Backend**: Express.js and TypeScript, providing a comprehensive API layer.
 - **Database**: PostgreSQL with Drizzle ORM. The schema has been optimized to unify profile tables, simplify messaging, streamline job handling, and improve notification efficiency.
@@ -26,6 +31,7 @@ The EventLink platform utilizes a modern web application stack designed for effi
 - **Real-Time WebSocket System**: Centralized WebSocket architecture with single shared connection managed by WebSocketProvider. Features include automatic reconnection, message deduplication, connection state management, and subscriber pattern for component-level event handling. WebSocket service layer (`websocketService.ts`) handles all broadcast operations, maintaining separation from storage layer. Supports real-time events for messages, notifications, and badge count updates.
 
 ### Feature Specifications
+
 - **Optimized Database Schema**: Significant reduction in database complexity through table unification and streamlined data models. Indexes added on freelancer_profiles(title, location, availability_status) for search performance.
 - **Optimized Backend**: Simplified API endpoints and a unified interface for improved performance.
 - **Optimized Frontend**: Streamlined authentication and version-based cache clearing to prevent deployment issues.
@@ -37,6 +43,7 @@ The EventLink platform utilizes a modern web application stack designed for effi
 - **Email Notification System**: Comprehensive notification system with user-configurable preferences via dedicated settings page accessible from account dropdown. Supports role-based notifications (freelancers vs. recruiters) including message alerts, application updates, job alerts with filters, and rating requests. Branded email templates with EventLink orange gradient (#D8690E) and full logging for debugging and reliability tracking. Email addressing logic prioritizes company name (from Settings) for recruiters, falling back to user's full name, then email. **Note: Currently blocked by SendGrid account credit limitations.**
 
 ## External Dependencies
+
 - **PostgreSQL**: The primary relational database for all application data.
 - **SendGrid**: Used for sending transactional emails, primarily for user verification and notifications.
 - **Tailwind CSS**: A utility-first CSS framework for styling the application.

@@ -13,22 +13,22 @@ export const requireAdminAuth = async (req: any, res: any, next: any) => {
         else resolve(undefined);
       });
     });
-    
+
     // Then check if user has admin role
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
     }
-    
+
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Authentication failed' });
+    return res.status(401).json({ error: "Authentication failed" });
   }
 };
 
 // Admin email allowlist for server-side admin role detection
 // Get admin emails from environment variable
-const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
-  ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS
+  ? process.env.ADMIN_EMAILS.split(",").map(email => email.trim().toLowerCase())
   : [];
 
 export function registerAdminRoutes(app: Express) {
@@ -60,7 +60,7 @@ export function registerAdminRoutes(app: Express) {
       const feedbackId = parseInt(req.params.id);
       const { status } = req.body;
 
-      if (!['pending', 'in_progress', 'resolved'].includes(status)) {
+      if (!["pending", "in_progress", "resolved"].includes(status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
 
@@ -110,7 +110,7 @@ export function registerAdminRoutes(app: Express) {
       console.log(`📧 Reply content length: ${reply?.length || 0}`);
 
       if (!reply || !reply.trim()) {
-        console.log('❌ Reply validation failed - empty reply');
+        console.log("❌ Reply validation failed - empty reply");
         return res.status(400).json({ error: "Reply message is required" });
       }
 
@@ -132,9 +132,9 @@ export function registerAdminRoutes(app: Express) {
         );
 
         console.log(`✅ Email sent successfully to ${message.email}`);
-        
+
         // Update message status to replied only after successful email send
-        await storage.updateContactMessageStatus(messageId, 'replied');
+        await storage.updateContactMessageStatus(messageId, "replied");
         console.log(`✅ Message status updated to 'replied' for ID: ${messageId}`);
 
         res.json({ message: "Reply sent successfully" });
@@ -143,9 +143,12 @@ export function registerAdminRoutes(app: Express) {
         console.error("❌ Full error:", JSON.stringify(emailError, null, 2));
         // Don't update status if email fails - let admin retry
         // Return error so frontend can show proper error message
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to send email reply. Please try again.",
-          details: process.env.NODE_ENV === 'development' ? `Email error: ${emailError?.message || 'Unknown error'}` : undefined
+          details:
+            process.env.NODE_ENV === "development"
+              ? `Email error: ${emailError?.message || "Unknown error"}`
+              : undefined,
         });
       }
     } catch (error) {
@@ -158,13 +161,13 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/users", requireAdminAuth, async (req, res) => {
     try {
       const users = await storage.getAdminUsers();
-      
+
       // Remove sensitive information
       const safeUsers = users.map((user: any) => {
         const { password, email_verification_token, password_reset_token, ...safeUser } = user;
         return safeUser;
       });
-      
+
       res.json(safeUsers);
     } catch (error) {
       console.error("Get admin users error:", error);
@@ -179,9 +182,9 @@ export function registerAdminRoutes(app: Express) {
       const analytics = {
         users: { total: 0, freelancers: 0, recruiters: 0, verified: 0, thisMonth: 0 },
         jobs: { total: 0, active: 0, thisMonth: 0 },
-        applications: { total: 0, applied: 0, hired: 0, thisMonth: 0 }
+        applications: { total: 0, applied: 0, hired: 0, thisMonth: 0 },
       };
-      
+
       res.json(analytics);
     } catch (error) {
       console.error("Get analytics overview error:", error);
@@ -193,13 +196,13 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/users/admins", requireAdminAuth, async (req, res) => {
     try {
       const adminUsers = await storage.getAdminUsers();
-      
+
       // Remove sensitive information
       const safeAdmins = adminUsers.map((user: any) => {
         const { password, email_verification_token, password_reset_token, ...safeUser } = user;
         return safeUser;
       });
-      
+
       res.json(safeAdmins);
     } catch (error) {
       console.error("Get admin users error:", error);
@@ -215,12 +218,12 @@ export function registerAdminRoutes(app: Express) {
       // Support both email and userId for backwards compatibility
       let user;
       if (email) {
-        console.log('🔧 Looking up user by email:', email.trim().toLowerCase());
+        console.log("🔧 Looking up user by email:", email.trim().toLowerCase());
         // Find user by email
         user = await storage.getUserByEmail(email.trim().toLowerCase());
-        console.log('🔧 User lookup result:', user ? `Found user ${user.id}` : 'User not found');
+        console.log("🔧 User lookup result:", user ? `Found user ${user.id}` : "User not found");
         if (!user) {
-          console.log('❌ User not found with email:', email);
+          console.log("❌ User not found with email:", email);
           return res.status(404).json({ error: "User not found with that email address" });
         }
       } else if (userId) {
@@ -233,12 +236,12 @@ export function registerAdminRoutes(app: Express) {
         return res.status(400).json({ error: "Either email or user ID is required" });
       }
 
-      console.log('🔧 Updating user role to admin for user:', user.id);
+      console.log("🔧 Updating user role to admin for user:", user.id);
       // Email allowlist restriction removed - any existing user can become admin
 
       // Update user role to admin using the updateUserRole function
-      const updatedUser = await storage.updateUserRole(user.id, 'admin');
-      console.log('✅ Admin role granted successfully to:', updatedUser.email);
+      const updatedUser = await storage.updateUserRole(user.id, "admin");
+      console.log("✅ Admin role granted successfully to:", updatedUser.email);
 
       res.json({
         message: "Admin access granted successfully",
@@ -247,12 +250,12 @@ export function registerAdminRoutes(app: Express) {
           email: updatedUser.email,
           first_name: updatedUser.first_name,
           last_name: updatedUser.last_name,
-          role: updatedUser.role
-        }
+          role: updatedUser.role,
+        },
       });
     } catch (error) {
-      console.error('❌ Grant admin error:', error);
-      res.status(500).json({ error: 'Failed to grant admin access' });
+      console.error("❌ Grant admin error:", error);
+      res.status(500).json({ error: "Failed to grant admin access" });
     }
   });
 
@@ -284,12 +287,12 @@ export function registerAdminRoutes(app: Express) {
         return res.status(400).json({ error: "Cannot revoke your own admin access" });
       }
 
-      if (user.role !== 'admin') {
+      if (user.role !== "admin") {
         return res.status(400).json({ error: "User is not an admin" });
       }
 
       // Update user role to freelancer (default) using the updateUserRole function
-      const updatedUser = await storage.updateUserRole(user.id, 'freelancer');
+      const updatedUser = await storage.updateUserRole(user.id, "freelancer");
 
       res.json({
         message: "Admin access revoked successfully",
@@ -298,12 +301,12 @@ export function registerAdminRoutes(app: Express) {
           email: updatedUser.email,
           first_name: updatedUser.first_name,
           last_name: updatedUser.last_name,
-          role: updatedUser.role
-        }
+          role: updatedUser.role,
+        },
       });
     } catch (error) {
-      console.error('Revoke admin error:', error);
-      res.status(500).json({ error: 'Failed to revoke admin status' });
+      console.error("Revoke admin error:", error);
+      res.status(500).json({ error: "Failed to revoke admin status" });
     }
   });
 
@@ -318,7 +321,7 @@ export function registerAdminRoutes(app: Express) {
       }
 
       // Only allow admin@eventlink.one for this override
-      if (email.trim().toLowerCase() !== 'admin@eventlink.one') {
+      if (email.trim().toLowerCase() !== "admin@eventlink.one") {
         return res.status(403).json({ error: "This endpoint is only for admin@eventlink.one" });
       }
 
@@ -329,7 +332,7 @@ export function registerAdminRoutes(app: Express) {
       }
 
       // Update user role to admin
-      const updatedUser = await storage.updateUserRole(user.id, 'admin');
+      const updatedUser = await storage.updateUserRole(user.id, "admin");
 
       // Generate JWT token using the same function as signin to ensure consistency
       const token = generateJWTToken(updatedUser);
@@ -342,12 +345,12 @@ export function registerAdminRoutes(app: Express) {
           email: updatedUser.email,
           first_name: updatedUser.first_name,
           last_name: updatedUser.last_name,
-          role: updatedUser.role
-        }
+          role: updatedUser.role,
+        },
       });
     } catch (error) {
-      console.error('Grant admin access error:', error);
-      res.status(500).json({ error: 'Failed to grant admin access' });
+      console.error("Grant admin access error:", error);
+      res.status(500).json({ error: "Failed to grant admin access" });
     }
   });
 
@@ -363,22 +366,24 @@ export function registerAdminRoutes(app: Express) {
 
       // Check if any admins already exist (to prevent abuse)
       const existingAdmins = await storage.getAdminUsers();
-      const realAdmins = existingAdmins.filter(admin => admin.role === 'admin');
-      
+      const realAdmins = existingAdmins.filter(admin => admin.role === "admin");
+
       if (realAdmins.length > 0) {
-        return res.status(400).json({ 
-          error: "Admin users already exist. Use the regular admin management interface." 
+        return res.status(400).json({
+          error: "Admin users already exist. Use the regular admin management interface.",
         });
       }
 
       // Find user by email
       const user = await storage.getUserByEmail(email.trim().toLowerCase());
       if (!user) {
-        return res.status(404).json({ error: "User not found with that email address. Please register first." });
+        return res
+          .status(404)
+          .json({ error: "User not found with that email address. Please register first." });
       }
 
       // Update user role to admin
-      const updatedUser = await storage.updateUserRole(user.id, 'admin');
+      const updatedUser = await storage.updateUserRole(user.id, "admin");
 
       // Generate JWT token using the same function as signin to ensure consistency
       const token = generateJWTToken(updatedUser);
@@ -391,12 +396,12 @@ export function registerAdminRoutes(app: Express) {
           email: updatedUser.email,
           first_name: updatedUser.first_name,
           last_name: updatedUser.last_name,
-          role: updatedUser.role
-        }
+          role: updatedUser.role,
+        },
       });
     } catch (error) {
-      console.error('Bootstrap admin creation error:', error);
-      res.status(500).json({ error: 'Failed to create first admin' });
+      console.error("Bootstrap admin creation error:", error);
+      res.status(500).json({ error: "Failed to create first admin" });
     }
   });
 

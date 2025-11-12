@@ -1,22 +1,32 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { Send, MessageCircle, Clock, User, Trash2 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useWebSocket } from "@/contexts/WebSocketContext";
+import { useToast } from "@/hooks/use-toast";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Clock, MessageCircle, Send, Trash2, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface User {
   id: number;
   email: string;
-  role: 'freelancer' | 'recruiter' | 'admin';
+  role: "freelancer" | "recruiter" | "admin";
   deleted_at?: string | null;
   first_name?: string | null;
   last_name?: string | null;
@@ -51,9 +61,9 @@ const isUserDeleted = (user: User | undefined): boolean => {
 // Helper function to get display name for a user
 const getDisplayName = (user: User): string => {
   if (isUserDeleted(user)) {
-    return `[Deleted ${user.role === 'freelancer' ? 'Freelancer' : 'Company'}]`;
+    return `[Deleted ${user.role === "freelancer" ? "Freelancer" : "Company"}]`;
   }
-  
+
   if (user.first_name && user.last_name) {
     return `${user.first_name} ${user.last_name}`;
   }
@@ -66,9 +76,9 @@ const getDisplayName = (user: User): string => {
 // Helper function to get avatar initials
 const getAvatarInitials = (user: User): string => {
   if (isUserDeleted(user)) {
-    return user.role === 'freelancer' ? 'DF' : 'DC';
+    return user.role === "freelancer" ? "DF" : "DC";
   }
-  
+
   if (user.first_name && user.last_name) {
     return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
   }
@@ -79,30 +89,50 @@ const getAvatarInitials = (user: User): string => {
 };
 
 // Helper function to format dates
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  const diffInDays = Math.floor(diffInHours / 24);
+const formatDate = (dateString: string | Date): string => {
+  // Handle both string and Date object inputs
+  const date = typeof dateString === "string" ? new Date(dateString) : dateString;
 
-  if (diffInMinutes < 1) {
-    return 'Just now';
-  } else if (diffInMinutes < 60) {
-    return `${diffInMinutes}m ago`;
-  } else if (diffInHours < 24) {
-    return `${diffInHours}h ago`;
-  } else if (diffInDays < 7) {
-    return `${diffInDays}d ago`;
-  } else {
-    return date.toLocaleDateString();
+  // Validate date
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date:", dateString);
+    return "Invalid date";
   }
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+
+  // Handle future dates
+  if (diffMs < 0) return "In the future";
+  console.log("diffMs", diffMs);
+
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  // Relative time ranges
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  if (diffYears < 5) return `${diffYears}y ago`;
+
+  // Fallback to full date for old timestamps
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 };
 
 export function MessagingInterface() {
   const { user } = useOptimizedAuth();
-  
+
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,173 +141,207 @@ export function MessagingInterface() {
   const { subscribe } = useWebSocket();
 
   // Fetch messages using React Query (enabled only when a conversation is selected)
+  // NO CACHING - Always fetch fresh data from server
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: ['/api/conversations', selectedConversation, 'messages'],
-    queryFn: () => apiRequest(`/api/conversations/${selectedConversation}/messages`),
+    queryKey: ["/api/conversations", selectedConversation, "messages"],
+    queryFn: async () => {
+      const data = await apiRequest(`/api/conversations/${selectedConversation}/messages`);
+      // Ensure all created_at timestamps are properly formatted ISO strings
+      return data.map((msg: Message) => ({
+        ...msg,
+        created_at:
+          typeof msg.created_at === "string"
+            ? msg.created_at
+            : new Date(msg.created_at).toISOString(),
+      }));
+    },
     enabled: selectedConversation !== null,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false, // Don't refetch on focus to preserve optimistic updates
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true, // Always refetch on focus
+    staleTime: 0, // Always consider stale - no caching
+    gcTime: 1000, // Keep in cache for 1 second (was 0, but 0 might cause issues)
+    refetchOnReconnect: true,
   });
 
   // Fetch conversations (still using React Query)
-  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
-    queryKey: ['/api/conversations'],
-    refetchOnMount: 'always',
+  // NO CACHING - Always fetch fresh data from server
+  const {
+    data: conversations = [],
+    isLoading: conversationsLoading,
+    refetch: refetchConversations,
+    error: conversationsError,
+  } = useQuery<Conversation[]>({
+    queryKey: ["/api/conversations"],
+    queryFn: async () => {
+      console.log("🔄 Fetching conversations from API...");
+      try {
+        const data = await apiRequest("/api/conversations");
+        console.log("✅ Conversations fetched successfully:", data?.length || 0, "conversations");
+        return data;
+      } catch (error) {
+        console.error("❌ Error fetching conversations:", error);
+        throw error;
+      }
+    },
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    staleTime: 0, // Always consider data stale - no caching
+    gcTime: 1000, // Keep in cache for 1 second (was 0, but 0 might cause issues)
+    retry: 1, // Retry once on failure
   });
 
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
     mutationFn: async (conversationId: number) => {
       return apiRequest(`/api/conversations/${conversationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
     },
-    onSuccess: (_, conversationId) => {
-      // Immediately update the cache to remove the deleted conversation
-      queryClient.setQueryData<Conversation[]>(
-        ['/api/conversations'],
-        (oldConversations = []) => oldConversations.filter(c => c.id !== conversationId)
-      );
-      
+    onSuccess: async (_, conversationId) => {
+      // Clear the selected conversation first
       setSelectedConversation(null);
-      
+
+      // NO OPTIMISTIC UPDATES - Just refetch from server
+      // Clear messages cache for the deleted conversation
+      queryClient.removeQueries({
+        queryKey: ["/api/conversations", conversationId, "messages"],
+      });
+
+      // Invalidate and refetch conversations to ensure backend state is reflected
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/conversations"],
+        refetchType: "all", // Refetch all queries, not just active ones
+      });
+
+      // Force a refetch to ensure we have the latest data
+      await queryClient.refetchQueries({
+        queryKey: ["/api/conversations"],
+        type: "all",
+      });
+
       toast({
         title: "Conversation deleted",
         description: "The conversation has been permanently removed",
       });
     },
-    onError: (error) => {
+    onError: _error => {
       toast({
         title: "Failed to delete conversation",
         description: "Please try again",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Send message mutation - simple fetch-first approach
+  // Send message mutation with optimistic updates for instant UI feedback
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { conversation_id: number; content: string }) => {
-      console.log('🚀 Sending message:', messageData);
-      const result = await apiRequest(`/api/messages`, {
-        method: 'POST',
+      const result = await apiRequest("/api/messages", {
+        method: "POST",
         body: JSON.stringify(messageData),
       });
-      console.log('✅ Message sent successfully:', result);
       return result;
     },
-    onSuccess: (data, variables) => {
-      console.log('✅ onSuccess triggered, data:', data);
-      
-      // OPTIMISTIC UPDATE: Immediately add message to cache for instant UI update
-      queryClient.setQueryData<Message[]>(
-        ['/api/conversations', variables.conversation_id, 'messages'], 
-        (old = []) => {
-          console.log('📝 Adding message to cache optimistically');
-          // Check if message already exists (avoid duplicates)
-          if (old.some(msg => msg.id === data.id)) {
-            console.log('⚠️ Message already in cache, skipping');
-            return old;
-          }
-          
-          // Create the full message object with sender info
-          const newMessage: Message & { sender: any } = {
-            id: data.id,
-            conversation_id: data.conversation_id,
-            sender_id: data.sender_id,
-            content: data.content,
-            is_read: data.is_read || false,
-            is_system_message: data.is_system_message || false,
-            created_at: data.created_at || new Date(),
-            sender: {
-              id: data.sender_id,
-              email: user?.email || '',
-              role: user?.role || 'freelancer',
-              password: '',
-              first_name: null,
-              last_name: null,
-              email_verified: false,
-              email_verification_token: null,
-              email_verification_expires: null,
-              password_reset_token: null,
-              password_reset_expires: null,
-              auth_provider: 'email' as const,
-              google_id: null,
-              facebook_id: null,
-              linkedin_id: null,
-              profile_photo_url: null,
-              last_login_method: null,
-              last_login_at: null,
-              deleted_at: null,
-              created_at: new Date(),
-              updated_at: new Date()
-            }
-          };
-          console.log('✅ Message added to cache, new total:', old.length + 1);
-          return [...old, newMessage];
-        }
-      );
-      
-      // Update conversations list last_message_at without refetching
-      queryClient.setQueryData<Conversation[]>(
-        ['/api/conversations'],
-        (old = []) => {
-          return old.map(conv => 
-            conv.id === variables.conversation_id
-              ? { ...conv, last_message_at: new Date().toISOString() }
-              : conv
-          );
-        }
-      );
-      
-      // DO NOT refetch - it overwrites the optimistic update before DB is ready
-      // WebSocket will handle updates for the recipient
+    onMutate: async variables => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({
+        queryKey: ["/api/conversations", variables.conversation_id, "messages"],
+      });
+
+      // Snapshot the previous value
+      const previousMessages = queryClient.getQueryData<Message[]>([
+        "/api/conversations",
+        variables.conversation_id,
+        "messages",
+      ]);
+
+      // Optimistically update the messages cache
+      if (selectedConversation === variables.conversation_id && user) {
+        const optimisticMessage: Message = {
+          id: Date.now(), // Temporary ID (will be replaced by real ID from server)
+          conversation_id: variables.conversation_id,
+          sender_id: user.id,
+          content: variables.content,
+          is_read: false,
+          is_system_message: false,
+          created_at: new Date().toISOString(),
+          sender: {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            deleted_at: null,
+            first_name: (user as User).first_name || null,
+            last_name: (user as User).last_name || null,
+            company_name: (user as User).company_name || null,
+          },
+        };
+
+        queryClient.setQueryData<Message[]>(
+          ["/api/conversations", variables.conversation_id, "messages"],
+          old => [...(old || []), optimisticMessage]
+        );
+      }
+
+      // Return context with the previous value for rollback
+      return { previousMessages };
     },
-    onError: (error, variables) => {
-      console.error('❌ Message send failed:', error);
-      // Only restore user input if fields are still empty
-      // (prevents overwriting new content user typed while mutation was in flight)
-      setNewMessage(prev => prev === "" ? variables.content : prev);
-      
+    onSuccess: () => {
+      // Don't block - WebSocket will update the UI instantly
+      // Just invalidate to trigger background refresh if needed
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations"],
+      });
+    },
+    onError: (error: unknown, variables, context) => {
+      console.error("❌ Message send failed:", error);
+
+      // Rollback optimistic update
+      if (context?.previousMessages) {
+        queryClient.setQueryData(
+          ["/api/conversations", variables.conversation_id, "messages"],
+          context.previousMessages
+        );
+      }
+
+      // Restore the message content
+      setNewMessage(variables.content);
+
+      const errorMessage =
+        error && typeof error === "object" && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+
       toast({
         title: "Failed to send message",
-        description: "Please try again",
+        description: errorMessage ?? "Please try again",
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Handle sending messages
   const handleSendMessage = () => {
-    console.log('📝 handleSendMessage called');
-    console.log('newMessage:', newMessage);
-    console.log('selectedConversation:', selectedConversation);
-    
     if (!newMessage.trim() || !selectedConversation) {
-      console.log('⚠️ Send blocked - missing message or conversation');
+      console.log("⚠️ Send blocked - missing message or conversation");
       return;
     }
-    
+
     const messageData = {
       conversation_id: selectedConversation,
-      content: newMessage.trim()
+      content: newMessage.trim(),
     };
-    
-    console.log('📤 Preparing to send:', messageData);
-    
+
     // Clear inputs immediately BEFORE mutation to prevent race condition
     // if user switches conversations while mutation is in flight
     setNewMessage("");
-    
+
     sendMessageMutation.mutate(messageData);
   };
 
   // Handle key press in input
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -286,52 +350,189 @@ export function MessagingInterface() {
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
   // Handle conversation selection from URL parameters (from notifications)
   useEffect(() => {
     if (!conversations.length) return; // Wait until conversations are loaded
-    
+
     const urlParams = new URLSearchParams(window.location.search);
-    const conversationParam = urlParams.get('conversation');
-    
+    const conversationParam = urlParams.get("conversation");
+
     if (conversationParam) {
       const conversationId = parseInt(conversationParam);
-      
+
       // Check if this conversation exists in the user's conversations
       const conversationExists = conversations.some(c => c.id === conversationId);
-      
+
       if (conversationExists && conversationId !== selectedConversation) {
-        console.log('📬 Auto-selecting conversation from notification:', conversationId);
+        console.log("📬 Auto-selecting conversation from notification:", conversationId);
         setSelectedConversation(conversationId);
       }
-      
+
       // Clear the conversation parameter from URL after handling
-      urlParams.delete('conversation');
-      const newUrl = urlParams.toString() 
-        ? `${window.location.pathname}?${urlParams.toString()}` 
+      urlParams.delete("conversation");
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      window.history.replaceState({}, "", newUrl);
     }
-  }, [conversations]); // Only run when conversations change
+  }, [conversations, selectedConversation]); // Run when conversations or selectedConversation changes
 
   // Subscribe to WebSocket events for real-time message updates
   useEffect(() => {
-    if (!selectedConversation) return;
+    const unsubscribe = subscribe(data => {
+      // Handle new message events
+      if (data.type === "NEW_MESSAGE" || data.type === "new_message") {
+        const conversationId = data.conversation_id;
+        const messageData = data.message;
+        const senderData = data.sender;
 
-    const unsubscribe = subscribe((data) => {
-      // Refetch messages for active conversation when NEW_MESSAGE is received
-      if ((data.type === 'NEW_MESSAGE' || data.type === 'new_message') && data.conversation_id === selectedConversation) {
-        queryClient.refetchQueries({ 
-          queryKey: ['/api/conversations', selectedConversation, 'messages'] 
+        console.log("📨 New message received via WebSocket:", {
+          conversationId,
+          selectedConversation,
+          messageId: messageData?.id,
+        });
+
+        // Update cache DIRECTLY with WebSocket data for instant UI update
+        // This is much faster than refetching from the server
+        if (
+          selectedConversation &&
+          conversationId === selectedConversation &&
+          messageData &&
+          senderData
+        ) {
+          const currentMessages = queryClient.getQueryData<Message[]>([
+            "/api/conversations",
+            selectedConversation,
+            "messages",
+          ]);
+
+          // Check if message already exists by ID
+          const messageExists = currentMessages?.some(msg => msg.id === messageData.id);
+
+          if (!messageExists) {
+            console.log("✨ Updating cache directly with WebSocket message:", messageData.id);
+
+            // Create the message object matching our Message interface
+            const newMessage: Message = {
+              id: messageData.id,
+              conversation_id: conversationId,
+              sender_id: messageData.sender_id,
+              content: messageData.content,
+              is_read: messageData.is_read || false,
+              is_system_message: messageData.is_system_message || false,
+              created_at:
+                typeof messageData.created_at === "string"
+                  ? messageData.created_at
+                  : new Date(messageData.created_at).toISOString(),
+              sender: {
+                id: senderData.id,
+                email: senderData.email,
+                role: senderData.role,
+                deleted_at: senderData.deleted_at || null,
+                first_name: senderData.first_name || null,
+                last_name: senderData.last_name || null,
+                company_name: senderData.company_name || null,
+              },
+            };
+
+            // Update cache directly - instant UI update!
+            queryClient.setQueryData<Message[]>(
+              ["/api/conversations", selectedConversation, "messages"],
+              old => {
+                if (!old) return [newMessage];
+
+                // Remove optimistic message (temporary ID) if it matches this real message
+                // Optimistic messages have temporary IDs (Date.now()), real ones have database IDs
+                const filtered = old.filter(msg => {
+                  // If this is an optimistic message (very large ID from Date.now())
+                  // and the content matches, remove it
+                  const isOptimistic = msg.id > 1000000000000; // Rough check for Date.now() ID
+                  const contentMatches =
+                    msg.content === newMessage.content && msg.sender_id === newMessage.sender_id;
+
+                  // Keep the message unless it's an optimistic duplicate
+                  return !(isOptimistic && contentMatches);
+                });
+
+                // Check if real message already exists
+                const exists = filtered.some(msg => msg.id === newMessage.id);
+                if (exists) return filtered;
+
+                return [...filtered, newMessage];
+              }
+            );
+          } else {
+            console.log("⚠️ Message already in cache, skipping duplicate");
+          }
+        }
+
+        // Invalidate conversations list to update timestamps (non-blocking)
+        queryClient.invalidateQueries({
+          queryKey: ["/api/conversations"],
+          refetchType: "active",
+        });
+      }
+
+      // Handle conversation deletion events
+      if (data.type === "conversation_deleted") {
+        const deletedConversationId = data.conversation_id;
+
+        // If the deleted conversation is currently selected, clear selection
+        if (selectedConversation === deletedConversationId) {
+          setSelectedConversation(null);
+        }
+
+        // NO OPTIMISTIC UPDATES - Just refetch from server
+        // Clear messages cache for the deleted conversation
+        queryClient.removeQueries({
+          queryKey: ["/api/conversations", deletedConversationId, "messages"],
+        });
+
+        // Invalidate and refetch conversations list to remove deleted conversation
+        queryClient.invalidateQueries({
+          queryKey: ["/api/conversations"],
+          refetchType: "all", // Refetch all to prevent stale data
+        });
+
+        // Force refetch to ensure we have latest data
+        queryClient.refetchQueries({
+          queryKey: ["/api/conversations"],
+          type: "all",
+        });
+      }
+
+      // Handle conversation update events (e.g., restored after deletion)
+      if (data.type === "conversation_updated") {
+        const updatedConversationId = data.conversation_id;
+
+        // Invalidate and refetch conversations list to show restored/updated conversation
+        queryClient.invalidateQueries({
+          queryKey: ["/api/conversations"],
+          refetchType: "all", // Refetch all to ensure we see restored conversations
+        });
+
+        // Also invalidate messages for this conversation in case it was restored
+        if (updatedConversationId) {
+          queryClient.invalidateQueries({
+            queryKey: ["/api/conversations", updatedConversationId, "messages"],
+            refetchType: "active",
+          });
+        }
+
+        // Force refetch to ensure we have latest data
+        queryClient.refetchQueries({
+          queryKey: ["/api/conversations"],
+          type: "all",
         });
       }
     });
 
     return unsubscribe;
-  }, [selectedConversation, subscribe, queryClient]);
+  }, [selectedConversation, subscribe, queryClient, refetchConversations]);
 
   return (
     <div className="space-y-6">
@@ -339,7 +540,7 @@ export function MessagingInterface() {
         <MessageCircle className="h-5 w-5" />
         <h1 className="text-2xl font-bold">Messages</h1>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Conversations List */}
         <Card>
@@ -351,7 +552,14 @@ export function MessagingInterface() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[500px]">
-              {conversationsLoading ? (
+              {conversationsError ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <p className="text-destructive mb-2">Error loading conversations</p>
+                  <Button onClick={() => refetchConversations()} variant="outline" size="sm">
+                    Retry
+                  </Button>
+                </div>
+              ) : conversationsLoading ? (
                 <div className="flex items-center justify-center p-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
@@ -359,7 +567,9 @@ export function MessagingInterface() {
                 <div className="flex flex-col items-center justify-center p-8 text-center">
                   <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No conversations yet</p>
-                  <p className="text-sm text-muted-foreground">Start messaging by visiting a profile</p>
+                  <p className="text-sm text-muted-foreground">
+                    Start messaging by visiting a profile
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -371,23 +581,28 @@ export function MessagingInterface() {
                         data-testid={`conversation-${conversation.id}`}
                         className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                           selectedConversation === conversation.id
-                            ? 'bg-primary/10 border-primary'
-                            : 'hover:bg-muted'
-                        } ${isDeleted ? 'opacity-60' : ''}`}
+                            ? "bg-primary/10 border-primary"
+                            : "hover:bg-muted"
+                        } ${isDeleted ? "opacity-60" : ""}`}
                         onClick={() => setSelectedConversation(conversation.id)}
                       >
-                        <Avatar className={isDeleted ? 'opacity-50' : ''}>
-                          <AvatarFallback className={isDeleted ? 'bg-red-100 text-red-600' : ''}>
+                        <Avatar className={isDeleted ? "opacity-50" : ""}>
+                          <AvatarFallback className={isDeleted ? "bg-red-100 text-red-600" : ""}>
                             {getAvatarInitials(conversation.otherUser)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className={`font-medium truncate ${isDeleted ? 'text-muted-foreground' : ''}`}>
+                            <p
+                              className={`font-medium truncate ${isDeleted ? "text-muted-foreground" : ""}`}
+                            >
                               {getDisplayName(conversation.otherUser)}
                             </p>
                             {isDeleted && (
-                              <Badge variant="secondary" className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              >
                                 Deleted
                               </Badge>
                             )}
@@ -415,9 +630,18 @@ export function MessagingInterface() {
               {selectedConversation ? (
                 <>
                   <User className="h-5 w-5" />
-                  <span>{conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser.email || 'Chat'}</span>
-                  {isUserDeleted(conversations.find((c: Conversation) => c.id === selectedConversation)?.otherUser) && (
-                    <Badge variant="secondary" className="ml-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                  <span>
+                    {conversations.find((c: Conversation) => c.id === selectedConversation)
+                      ?.otherUser.email || "Chat"}
+                  </span>
+                  {isUserDeleted(
+                    conversations.find((c: Conversation) => c.id === selectedConversation)
+                      ?.otherUser
+                  ) && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                    >
                       Account Deleted
                     </Badge>
                   )}
@@ -447,32 +671,47 @@ export function MessagingInterface() {
                         <p className="text-sm text-muted-foreground">Start the conversation!</p>
                       </div>
                     ) : (
-                      messages.map((message) => {
+                      messages.map(message => {
                         const isMyMessage = message.sender_id === user?.id;
                         const isSystemMessage = message.sender_id === null;
-                        
+
                         return (
-                        <div key={message.id} className={`flex ${
-                          isSystemMessage ? 'justify-center' : isMyMessage ? 'justify-start' : 'justify-end'
-                        }`}>
-                          <div className={`max-w-[70%] p-3 rounded-lg ${
-                            isSystemMessage 
-                              ? 'bg-muted text-muted-foreground text-center text-sm' 
-                              : isMyMessage
-                              ? 'bg-gray-100 dark:bg-gray-800 text-foreground'
-                              : 'bg-gradient-primary text-white'
-                          }`}>
-                            <p className="break-words">{message.content}</p>
-                            
-                            <p className={`text-xs mt-1 ${
-                              isSystemMessage ? 'text-muted-foreground' : isMyMessage ? 'text-muted-foreground' : 'text-white/70'
-                            }`}>
-                              {formatDate(message.created_at)}
-                            </p>
+                          <div
+                            key={message.id}
+                            className={`flex ${
+                              isSystemMessage
+                                ? "justify-center"
+                                : isMyMessage
+                                  ? "justify-end" // MY messages on the RIGHT
+                                  : "justify-start" // Received messages on the LEFT
+                            }`}
+                          >
+                            <div
+                              className={`max-w-[70%] p-3 rounded-lg ${
+                                isSystemMessage
+                                  ? "bg-muted text-muted-foreground text-center text-sm"
+                                  : isMyMessage
+                                    ? "bg-blue-500 text-white rounded-br-none" // Sent messages: blue on the RIGHT
+                                    : "bg-gray-200 dark:bg-gray-700 text-foreground rounded-bl-none" // Received messages: gray on the LEFT
+                              }`}
+                            >
+                              <p className="break-words">{message.content}</p>
+
+                              <p
+                                className={`text-xs mt-1 ${
+                                  isSystemMessage
+                                    ? "text-muted-foreground"
+                                    : isMyMessage
+                                      ? "text-white/70" // White text on primary background
+                                      : "text-muted-foreground" // Muted text on gray background
+                                }`}
+                              >
+                                {formatDate(message.created_at)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })
                     )}
                     <div ref={messagesEndRef} />
                   </div>
@@ -483,13 +722,13 @@ export function MessagingInterface() {
                   <Input
                     placeholder="Type a message..."
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={e => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={!selectedConversation}
                     data-testid="input-message"
                   />
-                  <Button 
-                    onClick={handleSendMessage} 
+                  <Button
+                    onClick={handleSendMessage}
                     disabled={!newMessage.trim() || !selectedConversation}
                     data-testid="button-send-message"
                   >
@@ -502,8 +741,8 @@ export function MessagingInterface() {
                 <div className="mt-4 pt-4 border-t">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         className="text-muted-foreground hover:text-destructive"
                         data-testid="button-delete-conversation"
@@ -516,11 +755,14 @@ export function MessagingInterface() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently delete this conversation and all messages. This action cannot be undone.
+                          This will permanently delete this conversation and all messages. This
+                          action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel data-testid="button-cancel-delete">
+                          Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteConversationMutation.mutate(selectedConversation)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -537,7 +779,9 @@ export function MessagingInterface() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <MessageCircle className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">Select a conversation</p>
-                <p className="text-sm text-muted-foreground">Choose a conversation from the list to start messaging</p>
+                <p className="text-sm text-muted-foreground">
+                  Choose a conversation from the list to start messaging
+                </p>
               </div>
             )}
           </CardContent>

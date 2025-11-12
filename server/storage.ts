@@ -1,106 +1,106 @@
+import {
+  contact_messages,
+  conversations,
+  email_notification_logs,
+  feedback,
+  freelancer_profiles,
+  job_alert_filters,
+  job_applications,
+  jobs,
+  message_attachments,
+  message_user_states,
+  messages,
+  notification_preferences,
+  notifications,
+  rating_requests,
+  ratings,
+  recruiter_profiles,
+  users,
+  type ContactMessage,
+  type Conversation,
+  type EmailNotificationLog,
+  type Feedback,
+  type FreelancerProfile,
+  type InsertEmailNotificationLog,
+  type InsertFeedback,
+  type InsertFreelancerProfile,
+  type InsertJob,
+  type InsertJobAlertFilter,
+  type InsertJobApplication,
+  type InsertMessage,
+  type InsertMessageAttachment,
+  type InsertNotification,
+  type InsertNotificationPreferences,
+  type InsertRating,
+  type InsertRatingRequest,
+  type InsertRecruiterProfile,
+  type InsertUser,
+  type Job,
+  type JobAlertFilter,
+  type JobApplication,
+  type Message,
+  type MessageAttachment,
+  type Notification,
+  type NotificationPreferences,
+  type Rating,
+  type RatingRequest,
+  type RecruiterProfile,
+  type User,
+} from "@shared/schema";
+import dotenv from "dotenv";
+import { and, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { 
-  users, 
-  freelancer_profiles, 
-  recruiter_profiles,
-  jobs,
-  job_applications,
-  conversations,
-  messages,
-  message_user_states,
-  message_attachments,
-  notifications,
-  ratings,
-  rating_requests,
-  feedback,
-  contact_messages,
-  notification_preferences,
-  job_alert_filters,
-  email_notification_logs,
-  type User, 
-  type InsertUser,
-  type FreelancerProfile,
-  type RecruiterProfile,
-  type InsertFreelancerProfile,
-  type InsertRecruiterProfile,
-  type Job,
-  type InsertJob,
-  type JobApplication,
-  type InsertJobApplication,
-  type Conversation,
-  type Message,
-  type MessageUserState,
-  type MessageAttachment,
-  type InsertConversation,
-  type InsertMessage,
-  type InsertMessageUserState,
-  type InsertMessageAttachment,
-  type Notification,
-  type InsertNotification,
-  type Rating,
-  type InsertRating,
-  type RatingRequest,
-  type InsertRatingRequest,
-  type Feedback,
-  type InsertFeedback,
-  type ContactMessage,
-  type NotificationPreferences,
-  type InsertNotificationPreferences,
-  type JobAlertFilter,
-  type InsertJobAlertFilter,
-  type EmailNotificationLog,
-  type InsertEmailNotificationLog
-} from "@shared/schema";
-import { eq, desc, isNull, and, or, sql, inArray, gt } from "drizzle-orm";
+dotenv.config();
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString, {
-  max: 20,          // Maximum connections in the pool
+  max: 20, // Maximum connections in the pool
   idle_timeout: 20, // Close idle connections after 20 seconds
   connect_timeout: 5, // Reduced connection timeout for faster failure detection
-  prepare: false,   // Disable prepared statements to reduce memory usage
+  prepare: false, // Disable prepared statements to reduce memory usage
   transform: {
-    undefined: null // Transform undefined to null for better SQL compatibility
+    undefined: null, // Transform undefined to null for better SQL compatibility
   },
-  debug: process.env.NODE_ENV === 'development' ? false : false, // Disable debug in production
-  onnotice: process.env.NODE_ENV === 'development' ? console.log : () => {}, // Log notices only in dev
+  debug: process.env.NODE_ENV === "development" ? false : false, // Disable debug in production
+  onnotice: process.env.NODE_ENV === "development" ? console.log : () => {}, // Log notices only in dev
   // Add connection retry logic for better reliability
   connection: {
-    options: `--application_name=eventlink-${process.env.NODE_ENV || 'development'}`,
-  }
+    options: `--application_name=eventlink-${process.env.NODE_ENV || "development"}`,
+  },
 });
 const db = drizzle(client);
+export { db };
 
 // Simple in-memory cache for frequently accessed data
 class SimpleCache {
   private cache = new Map<string, { data: any; expiry: number }>();
-  
+
   set(key: string, data: any, ttlSeconds: number = 300) {
-    const expiry = Date.now() + (ttlSeconds * 1000);
+    const expiry = Date.now() + ttlSeconds * 1000;
     this.cache.set(key, { data, expiry });
   }
-  
+
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
     if (!item) return null;
-    
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.data as T;
   }
-  
+
   delete(key: string) {
     this.cache.delete(key);
   }
-  
+
   clear() {
     this.cache.clear();
   }
-  
+
   // Clear cache entries that start with a pattern
   clearPattern(pattern: string) {
     const keysToDelete: string[] = [];
@@ -119,33 +119,62 @@ export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User>;
+  createUser(
+    user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }
+  ): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
-  updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string }): Promise<void>;
+  updateUserAccount(
+    userId: number,
+    accountData: { first_name?: string; last_name?: string }
+  ): Promise<void>;
   deleteUserAccount(userId: number): Promise<void>;
   isUserDeleted(userId: number): Promise<boolean>;
-  canSendMessageToUser(senderId: number, recipientId: number): Promise<{ canSend: boolean; error?: string }>;
-  
+  canSendMessageToUser(
+    senderId: number,
+    recipientId: number
+  ): Promise<{ canSend: boolean; error?: string }>;
+
   // Email verification methods
   verifyEmail(token: string): Promise<boolean>;
-  updateUserVerificationToken(userId: number, token: string | null, expires: Date | null): Promise<void>;
-  
+  updateUserVerificationToken(
+    userId: number,
+    token: string | null,
+    expires: Date | null
+  ): Promise<void>;
+
   // Social auth methods
-  getUserBySocialProvider(provider: 'google' | 'facebook' | 'linkedin', providerId: string): Promise<User | undefined>;
+  getUserBySocialProvider(
+    provider: "google" | "facebook" | "linkedin",
+    providerId: string
+  ): Promise<User | undefined>;
   createSocialUser(user: any): Promise<User>;
-  linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'linkedin', providerId: string, profilePhotoUrl?: string): Promise<void>;
-  updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'linkedin'): Promise<void>;
-  
+  linkSocialProvider(
+    userId: number,
+    provider: "google" | "facebook" | "linkedin",
+    providerId: string,
+    profilePhotoUrl?: string
+  ): Promise<void>;
+  updateUserLastLogin(
+    userId: number,
+    method: "email" | "google" | "facebook" | "linkedin"
+  ): Promise<void>;
+
   // Freelancer profile management
   getFreelancerProfile(userId: number): Promise<FreelancerProfile | undefined>;
   createFreelancerProfile(profile: InsertFreelancerProfile): Promise<FreelancerProfile>;
-  updateFreelancerProfile(userId: number, profile: Partial<InsertFreelancerProfile>): Promise<FreelancerProfile | undefined>;
-  
+  updateFreelancerProfile(
+    userId: number,
+    profile: Partial<InsertFreelancerProfile>
+  ): Promise<FreelancerProfile | undefined>;
+
   // Recruiter profile management
   getRecruiterProfile(userId: number): Promise<RecruiterProfile | undefined>;
   createRecruiterProfile(profile: InsertRecruiterProfile): Promise<RecruiterProfile>;
-  updateRecruiterProfile(userId: number, profile: Partial<InsertRecruiterProfile>): Promise<RecruiterProfile | undefined>;
-  
+  updateRecruiterProfile(
+    userId: number,
+    profile: Partial<InsertRecruiterProfile>
+  ): Promise<RecruiterProfile | undefined>;
+
   // Job management
   getAllJobs(): Promise<Job[]>;
   getJobsByRecruiterId(recruiterId: number): Promise<Job[]>;
@@ -153,55 +182,79 @@ export interface IStorage {
   createJob(job: InsertJob): Promise<Job>;
   updateJob(jobId: number, job: Partial<InsertJob>): Promise<Job | undefined>;
   deleteJob(jobId: number): Promise<void>;
-  searchJobs(filters: { keyword?: string; location?: string; startDate?: string; endDate?: string }): Promise<Job[]>;
-  
+  searchJobs(filters: {
+    keyword?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Job[]>;
+
   // External job management
   getJobByExternalId(externalId: string): Promise<Job | undefined>;
   createExternalJob(job: any): Promise<Job>;
   getExternalJobs(): Promise<Job[]>;
   getAllJobsSortedByDate(): Promise<Job[]>;
-  
+
   // Get all freelancer profiles for listings
   getAllFreelancerProfiles(): Promise<FreelancerProfile[]>;
   getAllRecruiterProfiles(): Promise<RecruiterProfile[]>;
-  searchFreelancers(filters: { keyword?: string; location?: string; page?: number; limit?: number }): Promise<{ 
-    results: Array<FreelancerProfile & { rating?: number; rating_count?: number }>; 
-    total: number; 
-    page: number; 
-    totalPages: number 
+  searchFreelancers(filters: {
+    keyword?: string;
+    location?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    results: Array<FreelancerProfile & { rating?: number; rating_count?: number }>;
+    total: number;
+    page: number;
+    totalPages: number;
   }>;
-  
+
   // Job application management
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
   getFreelancerApplications(freelancerId: number): Promise<JobApplication[]>;
   getJobApplications(jobId: number): Promise<JobApplication[]>;
   getJobApplicationById(applicationId: number): Promise<JobApplication | undefined>;
-  updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired', rejectionMessage?: string): Promise<JobApplication>;
+  updateApplicationStatus(
+    applicationId: number,
+    status: "applied" | "reviewed" | "shortlisted" | "rejected" | "hired",
+    rejectionMessage?: string
+  ): Promise<JobApplication>;
   // Soft delete methods for applications
-  softDeleteApplication(applicationId: number, userRole: 'freelancer' | 'recruiter'): Promise<void>;
+  softDeleteApplication(applicationId: number, userRole: "freelancer" | "recruiter"): Promise<void>;
   getRecruiterApplications(recruiterId: number): Promise<JobApplication[]>;
-  
+
   // Messaging management
   getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation>;
   getConversationsByUserId(userId: number): Promise<Array<Conversation & { otherUser: User }>>;
   sendMessage(message: InsertMessage): Promise<Message>;
-  getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
-  getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>>;
+  getConversationMessages(
+    conversationId: number
+  ): Promise<Array<Message & { sender: User; attachments?: MessageAttachment[] }>>;
+  getConversationMessagesForUser(
+    conversationId: number,
+    userId: number
+  ): Promise<Array<Message & { sender: User; attachments?: MessageAttachment[] }>>;
   markMessagesAsRead(conversationId: number, userId: number): Promise<void>;
   getUnreadMessageCount(userId: number): Promise<number>;
   // Soft delete methods for messages
   markMessageDeletedForUser(messageId: number, userId: number): Promise<void>;
   // Soft delete methods for conversations
   deleteConversation(conversationId: number, userId: number): Promise<void>;
-  
+
   // Message attachment management
   createMessageAttachment(attachment: InsertMessageAttachment): Promise<MessageAttachment>;
   getMessageAttachments(messageId: number): Promise<MessageAttachment[]>;
   getAttachmentById(attachmentId: number): Promise<MessageAttachment | undefined>;
   getMessageById(messageId: number): Promise<Message | undefined>;
   getMessageAttachmentById(attachmentId: number): Promise<MessageAttachment | undefined>;
-  createFileReport(report: { attachment_id: number, reporter_id: number, report_reason: string, report_details: string | null }): Promise<any>;
-  
+  createFileReport(report: {
+    attachment_id: number;
+    reporter_id: number;
+    report_reason: string;
+    report_details: string | null;
+  }): Promise<any>;
+
   // Notification management
   createNotification(notification: InsertNotification): Promise<Notification>;
   getNotification(notificationId: number): Promise<Notification | undefined>;
@@ -215,30 +268,54 @@ export interface IStorage {
   // Rating management
   createRating(rating: InsertRating): Promise<Rating>;
   getRatingByJobApplication(jobApplicationId: number): Promise<Rating | undefined>;
-  getFreelancerRatings(freelancerId: number): Promise<Array<Rating & { recruiter: User; job_title?: string }>>;
+  getFreelancerRatings(
+    freelancerId: number
+  ): Promise<Array<Rating & { recruiter: User; job_title?: string }>>;
   getFreelancerAverageRating(freelancerId: number): Promise<{ average: number; count: number }>;
-  canRecruiterRateFreelancer(recruiterId: number, freelancerId: number, jobApplicationId: number): Promise<boolean>;
+  canRecruiterRateFreelancer(
+    recruiterId: number,
+    freelancerId: number,
+    jobApplicationId: number
+  ): Promise<boolean>;
 
   // Rating request management
   createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest>;
   getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined>;
-  getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
-  getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>>;
-  updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest>;
+  getRecruiterRatingRequests(
+    recruiterId: number
+  ): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>>;
+  getFreelancerRatingRequests(
+    freelancerId: number
+  ): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>>;
+  updateRatingRequestStatus(
+    requestId: number,
+    status: "completed" | "declined"
+  ): Promise<RatingRequest>;
 
   // Feedback management for admin dashboard
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   getAllFeedback(): Promise<Array<Feedback & { user?: User }>>;
   getFeedbackById(id: number): Promise<Feedback | undefined>;
-  updateFeedbackStatus(id: number, status: 'pending' | 'in_review' | 'resolved' | 'closed', adminUserId?: number): Promise<Feedback>;
+  updateFeedbackStatus(
+    id: number,
+    status: "pending" | "in_review" | "resolved" | "closed",
+    adminUserId?: number
+  ): Promise<Feedback>;
   addAdminResponse(id: number, response: string, adminUserId: number): Promise<Feedback>;
-  getFeedbackByStatus(status: 'pending' | 'in_review' | 'resolved' | 'closed'): Promise<Array<Feedback & { user?: User }>>;
-  getFeedbackStats(): Promise<{ total: number; pending: number; resolved: number; byType: Record<string, number> }>;
-  
+  getFeedbackByStatus(
+    status: "pending" | "in_review" | "resolved" | "closed"
+  ): Promise<Array<Feedback & { user?: User }>>;
+  getFeedbackStats(): Promise<{
+    total: number;
+    pending: number;
+    resolved: number;
+    byType: Record<string, number>;
+  }>;
+
   // Admin management
-  updateUserRole(userId: number, role: 'freelancer' | 'recruiter' | 'admin'): Promise<User>;
+  updateUserRole(userId: number, role: "freelancer" | "recruiter" | "admin"): Promise<User>;
   getAdminUsers(): Promise<User[]>;
-  
+
   // Category-specific notification counts
   getCategoryUnreadCounts(userId: number): Promise<{
     messages: number;
@@ -247,25 +324,34 @@ export interface IStorage {
     ratings: number;
     total: number;
   }>;
-  
+
   // Mark category-specific notifications as read
-  markCategoryNotificationsAsRead(userId: number, category: 'messages' | 'applications' | 'jobs' | 'ratings'): Promise<void>;
-  
+  markCategoryNotificationsAsRead(
+    userId: number,
+    category: "messages" | "applications" | "jobs" | "ratings"
+  ): Promise<void>;
+
   // Notification preferences management
   getNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined>;
   createNotificationPreferences(userId: number): Promise<NotificationPreferences>;
-  updateNotificationPreferences(userId: number, preferences: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences>;
-  
+  updateNotificationPreferences(
+    userId: number,
+    preferences: Partial<InsertNotificationPreferences>
+  ): Promise<NotificationPreferences>;
+
   // Job alert filters management
   getJobAlertFilters(userId: number): Promise<JobAlertFilter[]>;
   createJobAlertFilter(filter: InsertJobAlertFilter): Promise<JobAlertFilter>;
-  updateJobAlertFilter(filterId: number, filter: Partial<InsertJobAlertFilter>): Promise<JobAlertFilter>;
+  updateJobAlertFilter(
+    filterId: number,
+    filter: Partial<InsertJobAlertFilter>
+  ): Promise<JobAlertFilter>;
   deleteJobAlertFilter(filterId: number): Promise<void>;
-  
+
   // Email notification logging
   logEmailNotification(log: InsertEmailNotificationLog): Promise<EmailNotificationLog>;
   getEmailNotificationLogs(userId: number, limit?: number): Promise<EmailNotificationLog[]>;
-  
+
   // Cache management
   clearCache(): void;
 }
@@ -284,7 +370,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Optimized method to get user with profile data in single query
-  async getUserWithProfile(id: number): Promise<(User & { profile?: FreelancerProfile | RecruiterProfile }) | undefined> {
+  async getUserWithProfile(
+    id: number
+  ): Promise<(User & { profile?: FreelancerProfile | RecruiterProfile }) | undefined> {
     const cacheKey = `user_with_profile:${id}`;
     const cached = cache.get<User & { profile?: FreelancerProfile | RecruiterProfile }>(cacheKey);
     if (cached) return cached;
@@ -293,9 +381,9 @@ export class DatabaseStorage implements IStorage {
     if (!user) return undefined;
 
     let profile: FreelancerProfile | RecruiterProfile | undefined;
-    if (user.role === 'freelancer') {
+    if (user.role === "freelancer") {
       profile = await this.getFreelancerProfile(id);
-    } else if (user.role === 'recruiter') {
+    } else if (user.role === "recruiter") {
       profile = await this.getRecruiterProfile(id);
     }
 
@@ -311,7 +399,9 @@ export class DatabaseStorage implements IStorage {
     if (cached) return cached;
 
     // Case-insensitive email comparison using SQL lower function
-    const result = await db.select().from(users)
+    const result = await db
+      .select()
+      .from(users)
       .where(sql`lower(${users.email}) = ${normalizedEmail}`)
       .limit(1);
     if (result[0]) {
@@ -322,14 +412,16 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createUser(user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }): Promise<User> {
+  async createUser(
+    user: InsertUser & { email_verification_token?: string; email_verification_expires?: Date }
+  ): Promise<User> {
     const userData = {
       email: user.email,
       password: user.password,
-      role: user.role as 'freelancer' | 'recruiter',
+      role: user.role as "freelancer" | "recruiter",
       email_verified: false,
       email_verification_token: user.email_verification_token,
-      email_verification_expires: user.email_verification_expires
+      email_verification_expires: user.email_verification_expires,
     };
     const result = await db.insert(users).values(userData).returning();
     return result[0];
@@ -337,61 +429,72 @@ export class DatabaseStorage implements IStorage {
 
   async verifyEmail(token: string): Promise<boolean> {
     try {
-      const result = await db.select().from(users)
+      const result = await db
+        .select()
+        .from(users)
         .where(eq(users.email_verification_token, token))
         .limit(1);
-      
+
       if (!result[0]) return false;
-      
+
       const user = result[0];
-      
+
       // Check if token has expired
       if (user.email_verification_expires && new Date() > user.email_verification_expires) {
         return false;
       }
-      
+
       // Update user as verified and clear verification token
-      await db.update(users)
+      await db
+        .update(users)
         .set({
           email_verified: true,
           email_verification_token: null,
           email_verification_expires: null,
-          updated_at: new Date()
+          updated_at: new Date(),
         })
         .where(eq(users.id, user.id));
-      
+
       return true;
     } catch (error) {
-      console.error('Error verifying email:', error);
+      console.error("Error verifying email:", error);
       return false;
     }
   }
 
-  async updateUserVerificationToken(userId: number, token: string | null, expires: Date | null): Promise<void> {
-    await db.update(users)
+  async updateUserVerificationToken(
+    userId: number,
+    token: string | null,
+    expires: Date | null
+  ): Promise<void> {
+    await db
+      .update(users)
       .set({
         email_verification_token: token,
         email_verification_expires: expires,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(eq(users.id, userId));
   }
 
   // Social auth methods
-  async getUserBySocialProvider(provider: 'google' | 'facebook' | 'linkedin', providerId: string): Promise<User | undefined> {
+  async getUserBySocialProvider(
+    provider: "google" | "facebook" | "linkedin",
+    providerId: string
+  ): Promise<User | undefined> {
     const cacheKey = `user:${provider}:${providerId}`;
     const cached = cache.get<User>(cacheKey);
     if (cached) return cached;
 
     let condition;
     switch (provider) {
-      case 'google':
+      case "google":
         condition = eq(users.google_id, providerId);
         break;
-      case 'facebook':
+      case "facebook":
         condition = eq(users.facebook_id, providerId);
         break;
-      case 'linkedin':
+      case "linkedin":
         condition = eq(users.linkedin_id, providerId);
         break;
     }
@@ -407,13 +510,13 @@ export class DatabaseStorage implements IStorage {
     email: string;
     first_name?: string;
     last_name?: string;
-    auth_provider: 'google' | 'facebook' | 'linkedin';
+    auth_provider: "google" | "facebook" | "linkedin";
     google_id?: string;
     facebook_id?: string;
     linkedin_id?: string;
     profile_photo_url?: string;
     email_verified: boolean;
-    role: 'freelancer' | 'recruiter';
+    role: "freelancer" | "recruiter";
   }): Promise<User> {
     const user = {
       email: userData.email,
@@ -428,28 +531,33 @@ export class DatabaseStorage implements IStorage {
       profile_photo_url: userData.profile_photo_url,
       email_verified: userData.email_verified,
       last_login_method: userData.auth_provider,
-      last_login_at: new Date()
+      last_login_at: new Date(),
     };
 
     const result = await db.insert(users).values(user).returning();
-    
+
     // Clear cache since we added a new user
-    cache.clearPattern('user:');
-    
+    cache.clearPattern("user:");
+
     return result[0];
   }
 
-  async linkSocialProvider(userId: number, provider: 'google' | 'facebook' | 'linkedin', providerId: string, profilePhotoUrl?: string): Promise<void> {
+  async linkSocialProvider(
+    userId: number,
+    provider: "google" | "facebook" | "linkedin",
+    providerId: string,
+    profilePhotoUrl?: string
+  ): Promise<void> {
     const updateData: any = { updated_at: new Date() };
-    
+
     switch (provider) {
-      case 'google':
+      case "google":
         updateData.google_id = providerId;
         break;
-      case 'facebook':
+      case "facebook":
         updateData.facebook_id = providerId;
         break;
-      case 'linkedin':
+      case "linkedin":
         updateData.linkedin_id = providerId;
         break;
     }
@@ -458,21 +566,23 @@ export class DatabaseStorage implements IStorage {
       updateData.profile_photo_url = profilePhotoUrl;
     }
 
-    await db.update(users)
-      .set(updateData)
-      .where(eq(users.id, userId));
+    await db.update(users).set(updateData).where(eq(users.id, userId));
 
     // Clear cache for this user
     cache.clearPattern(`user:${userId}`);
     cache.clearPattern(`user:${provider}:`);
   }
 
-  async updateUserLastLogin(userId: number, method: 'email' | 'google' | 'facebook' | 'linkedin'): Promise<void> {
-    await db.update(users)
+  async updateUserLastLogin(
+    userId: number,
+    method: "email" | "google" | "facebook" | "linkedin"
+  ): Promise<void> {
+    await db
+      .update(users)
       .set({
         last_login_method: method,
         last_login_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(eq(users.id, userId));
 
@@ -481,13 +591,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
-    await db.update(users)
-      .set({ 
+    await db
+      .update(users)
+      .set({
         password: hashedPassword,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(eq(users.id, userId));
-    
+
     // Clear the user cache so getUser() returns fresh data with new password
     const cacheKey = `user:${userId}`;
     cache.delete(cacheKey);
@@ -495,72 +606,84 @@ export class DatabaseStorage implements IStorage {
 
   async setPasswordResetToken(email: string, token: string, expires: Date): Promise<boolean> {
     try {
-      const result = await db.update(users)
+      const result = await db
+        .update(users)
         .set({
           password_reset_token: token,
           password_reset_expires: expires,
-          updated_at: new Date()
+          updated_at: new Date(),
         })
         .where(eq(users.email, email));
       return true;
     } catch (error) {
-      console.error('Error setting password reset token:', error);
+      console.error("Error setting password reset token:", error);
       return false;
     }
   }
 
   async validatePasswordResetToken(token: string): Promise<{ isValid: boolean; userId?: number }> {
     try {
-      const result = await db.select().from(users)
+      const result = await db
+        .select()
+        .from(users)
         .where(eq(users.password_reset_token, token))
         .limit(1);
-      
+
       if (!result[0]) return { isValid: false };
-      
+
       const user = result[0];
-      
+
       // Check if token has expired
       if (user.password_reset_expires && new Date() > user.password_reset_expires) {
         return { isValid: false };
       }
-      
+
       return { isValid: true, userId: user.id };
     } catch (error) {
-      console.error('Error validating password reset token:', error);
+      console.error("Error validating password reset token:", error);
       return { isValid: false };
     }
   }
 
   async resetPassword(userId: number, hashedPassword: string): Promise<boolean> {
     try {
-      await db.update(users)
+      await db
+        .update(users)
         .set({
           password: hashedPassword,
           password_reset_token: null,
           password_reset_expires: null,
-          updated_at: new Date()
+          updated_at: new Date(),
         })
         .where(eq(users.id, userId));
-      
+
       // Clear the user cache so getUser() returns fresh data with new password
       const cacheKey = `user:${userId}`;
       cache.delete(cacheKey);
-      
+
       return true;
     } catch (error) {
-      console.error('Error resetting password:', error);
+      console.error("Error resetting password:", error);
       return false;
     }
   }
 
-  async updateUserAccount(userId: number, accountData: { first_name?: string; last_name?: string; role?: 'freelancer' | 'recruiter' | 'admin' }): Promise<void> {
-    await db.update(users)
-      .set({ 
+  async updateUserAccount(
+    userId: number,
+    accountData: {
+      first_name?: string;
+      last_name?: string;
+      role?: "freelancer" | "recruiter" | "admin";
+    }
+  ): Promise<void> {
+    await db
+      .update(users)
+      .set({
         ...accountData,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(eq(users.id, userId));
-    
+
     // Clear the user cache so getUser() returns fresh data
     const cacheKey = `user:${userId}`;
     cache.delete(cacheKey);
@@ -571,7 +694,11 @@ export class DatabaseStorage implements IStorage {
     const cached = cache.get<FreelancerProfile>(cacheKey);
     if (cached) return cached;
 
-    const result = await db.select().from(freelancer_profiles).where(eq(freelancer_profiles.user_id, userId)).limit(1);
+    const result = await db
+      .select()
+      .from(freelancer_profiles)
+      .where(eq(freelancer_profiles.user_id, userId))
+      .limit(1);
     if (result[0]) {
       cache.set(cacheKey, result[0], 600); // Cache for 10 minutes (profiles change less frequently)
     }
@@ -591,78 +718,92 @@ export class DatabaseStorage implements IStorage {
       portfolio_url: profile.portfolio_url,
       linkedin_url: profile.linkedin_url,
       website_url: profile.website_url,
-      availability_status: profile.availability_status as 'available' | 'busy' | 'unavailable',
-      profile_photo_url: profile.profile_photo_url
+      availability_status: profile.availability_status as "available" | "busy" | "unavailable",
+      profile_photo_url: profile.profile_photo_url,
     };
     const result = await db.insert(freelancer_profiles).values([profileData]).returning();
     return result[0];
   }
 
-  async updateFreelancerProfile(userId: number, profile: Partial<InsertFreelancerProfile>): Promise<FreelancerProfile | undefined> {
+  async updateFreelancerProfile(
+    userId: number,
+    profile: Partial<InsertFreelancerProfile>
+  ): Promise<FreelancerProfile | undefined> {
     // Clear cache BEFORE update to prevent any race conditions
     const cacheKey = `freelancer_profile:${userId}`;
     cache.delete(cacheKey);
-    
+
     const updateData: any = { updated_at: new Date() };
-    
+
     // Only include defined fields
     if (profile.first_name !== undefined) updateData.first_name = profile.first_name;
     if (profile.last_name !== undefined) updateData.last_name = profile.last_name;
     if (profile.title !== undefined) updateData.title = profile.title;
     if (profile.bio !== undefined) updateData.bio = profile.bio;
     if (profile.location !== undefined) updateData.location = profile.location;
-    if (profile.experience_years !== undefined) updateData.experience_years = profile.experience_years;
+    if (profile.experience_years !== undefined)
+      updateData.experience_years = profile.experience_years;
     if (profile.skills !== undefined) updateData.skills = profile.skills;
     if (profile.portfolio_url !== undefined) updateData.portfolio_url = profile.portfolio_url;
     if (profile.linkedin_url !== undefined) updateData.linkedin_url = profile.linkedin_url;
     if (profile.website_url !== undefined) updateData.website_url = profile.website_url;
-    if (profile.availability_status !== undefined) updateData.availability_status = profile.availability_status as 'available' | 'busy' | 'unavailable';
+    if (profile.availability_status !== undefined)
+      updateData.availability_status = profile.availability_status as
+        | "available"
+        | "busy"
+        | "unavailable";
     if (profile.profile_photo_url !== undefined) {
-      console.log('Updating profile_photo_url:', profile.profile_photo_url ? profile.profile_photo_url.substring(0, 50) + '...' : 'null');
+      console.log(
+        "Updating profile_photo_url:",
+        profile.profile_photo_url ? profile.profile_photo_url.substring(0, 50) + "..." : "null"
+      );
       updateData.profile_photo_url = profile.profile_photo_url;
     }
-    
+
     // CV fields
     if (profile.cv_file_url !== undefined) updateData.cv_file_url = profile.cv_file_url;
     if (profile.cv_file_name !== undefined) updateData.cv_file_name = profile.cv_file_name;
     if (profile.cv_file_type !== undefined) updateData.cv_file_type = profile.cv_file_type;
     if (profile.cv_file_size !== undefined) updateData.cv_file_size = profile.cv_file_size;
-    
-    const result = await db.update(freelancer_profiles)
+
+    const result = await db
+      .update(freelancer_profiles)
       .set(updateData)
       .where(eq(freelancer_profiles.user_id, userId))
       .returning();
-    
+
     // If no existing profile found, create one
     if (result.length === 0) {
       const newProfile = {
         user_id: userId,
-        first_name: updateData.first_name || '',
-        last_name: updateData.last_name || '',
-        title: updateData.title || '',
-        bio: updateData.bio || '',
-        location: updateData.location || '',
+        first_name: updateData.first_name || "",
+        last_name: updateData.last_name || "",
+        title: updateData.title || "",
+        bio: updateData.bio || "",
+        location: updateData.location || "",
         experience_years: updateData.experience_years || null,
         skills: updateData.skills || [],
-        portfolio_url: updateData.portfolio_url || '',
-        linkedin_url: updateData.linkedin_url || '',
-        website_url: updateData.website_url || '',
-        availability_status: updateData.availability_status || 'available',
-        profile_photo_url: updateData.profile_photo_url || '',
+        portfolio_url: updateData.portfolio_url || "",
+        linkedin_url: updateData.linkedin_url || "",
+        website_url: updateData.website_url || "",
+        availability_status: updateData.availability_status || "available",
+        profile_photo_url: updateData.profile_photo_url || "",
         cv_file_url: updateData.cv_file_url || null,
         cv_file_name: updateData.cv_file_name || null,
         cv_file_type: updateData.cv_file_type || null,
-        cv_file_size: updateData.cv_file_size || null
+        cv_file_size: updateData.cv_file_size || null,
       };
       const createResult = await db.insert(freelancer_profiles).values([newProfile]).returning();
       return createResult[0];
     }
-    
+
     return result[0];
   }
 
   async getRecruiterProfile(userId: number): Promise<RecruiterProfile | undefined> {
-    const result = await db.select().from(recruiter_profiles)
+    const result = await db
+      .select()
+      .from(recruiter_profiles)
       .where(eq(recruiter_profiles.user_id, userId))
       .orderBy(desc(recruiter_profiles.id))
       .limit(1);
@@ -674,9 +815,12 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateRecruiterProfile(userId: number, profile: Partial<InsertRecruiterProfile>): Promise<RecruiterProfile | undefined> {
+  async updateRecruiterProfile(
+    userId: number,
+    profile: Partial<InsertRecruiterProfile>
+  ): Promise<RecruiterProfile | undefined> {
     const updateData: any = { updated_at: new Date() };
-    
+
     // Only include defined fields
     if (profile.company_name !== undefined) updateData.company_name = profile.company_name;
     if (profile.contact_name !== undefined) updateData.contact_name = profile.contact_name;
@@ -685,9 +829,11 @@ export class DatabaseStorage implements IStorage {
     if (profile.description !== undefined) updateData.description = profile.description;
     if (profile.website_url !== undefined) updateData.website_url = profile.website_url;
     if (profile.linkedin_url !== undefined) updateData.linkedin_url = profile.linkedin_url;
-    if (profile.company_logo_url !== undefined) updateData.company_logo_url = profile.company_logo_url;
-    
-    const result = await db.update(recruiter_profiles)
+    if (profile.company_logo_url !== undefined)
+      updateData.company_logo_url = profile.company_logo_url;
+
+    const result = await db
+      .update(recruiter_profiles)
       .set(updateData)
       .where(eq(recruiter_profiles.user_id, userId))
       .returning();
@@ -697,42 +843,46 @@ export class DatabaseStorage implements IStorage {
   async getAllFreelancerProfiles(): Promise<FreelancerProfile[]> {
     // CRITICAL: Triple-check to ensure NO deleted user data appears anywhere
     // Join with users table to filter out deleted users with multiple safety checks
-    const result = await db.select({
-      id: freelancer_profiles.id,
-      user_id: freelancer_profiles.user_id,
-      first_name: freelancer_profiles.first_name,
-      last_name: freelancer_profiles.last_name,
-      title: freelancer_profiles.title,
-      bio: freelancer_profiles.bio,
-      location: freelancer_profiles.location,
-      experience_years: freelancer_profiles.experience_years,
-      skills: freelancer_profiles.skills,
-      portfolio_url: freelancer_profiles.portfolio_url,
-      linkedin_url: freelancer_profiles.linkedin_url,
-      website_url: freelancer_profiles.website_url,
-      availability_status: freelancer_profiles.availability_status,
-      profile_photo_url: freelancer_profiles.profile_photo_url,
-      cv_file_url: freelancer_profiles.cv_file_url,
-      cv_file_name: freelancer_profiles.cv_file_name,
-      cv_file_type: freelancer_profiles.cv_file_type,
-      cv_file_size: freelancer_profiles.cv_file_size,
-      created_at: freelancer_profiles.created_at,
-      updated_at: freelancer_profiles.updated_at
-    })
-    .from(freelancer_profiles)
-    .innerJoin(users, eq(freelancer_profiles.user_id, users.id))
-    .where(
-      and(
-        isNull(users.deleted_at), // Primary check: user not marked as deleted
-        sql`${users.email} NOT LIKE 'deleted_%'` // Secondary check: email not anonymized
-      )
-    );
+    const result = await db
+      .select({
+        id: freelancer_profiles.id,
+        user_id: freelancer_profiles.user_id,
+        first_name: freelancer_profiles.first_name,
+        last_name: freelancer_profiles.last_name,
+        title: freelancer_profiles.title,
+        bio: freelancer_profiles.bio,
+        location: freelancer_profiles.location,
+        experience_years: freelancer_profiles.experience_years,
+        skills: freelancer_profiles.skills,
+        portfolio_url: freelancer_profiles.portfolio_url,
+        linkedin_url: freelancer_profiles.linkedin_url,
+        website_url: freelancer_profiles.website_url,
+        availability_status: freelancer_profiles.availability_status,
+        profile_photo_url: freelancer_profiles.profile_photo_url,
+        cv_file_url: freelancer_profiles.cv_file_url,
+        cv_file_name: freelancer_profiles.cv_file_name,
+        cv_file_type: freelancer_profiles.cv_file_type,
+        cv_file_size: freelancer_profiles.cv_file_size,
+        created_at: freelancer_profiles.created_at,
+        updated_at: freelancer_profiles.updated_at,
+      })
+      .from(freelancer_profiles)
+      .innerJoin(users, eq(freelancer_profiles.user_id, users.id))
+      .where(
+        and(
+          isNull(users.deleted_at), // Primary check: user not marked as deleted
+          sql`${users.email} NOT LIKE 'deleted_%'` // Secondary check: email not anonymized
+        )
+      );
 
     // Additional safeguard: Filter out any profiles with deleted user indicators
     const safeResult = result.filter(profile => {
-      return profile.first_name && profile.last_name && 
-             !profile.first_name.toLowerCase().includes('deleted') &&
-             !profile.last_name.toLowerCase().includes('deleted');
+      return (
+        profile.first_name &&
+        profile.last_name &&
+        !profile.first_name.toLowerCase().includes("deleted") &&
+        !profile.last_name.toLowerCase().includes("deleted")
+      );
     });
 
     return safeResult;
@@ -740,43 +890,49 @@ export class DatabaseStorage implements IStorage {
 
   async getAllRecruiterProfiles(): Promise<RecruiterProfile[]> {
     // Join with users table to filter out deleted users
-    const result = await db.select({
-      id: recruiter_profiles.id,
-      user_id: recruiter_profiles.user_id,
-      company_name: recruiter_profiles.company_name,
-      contact_name: recruiter_profiles.contact_name,
-      company_type: recruiter_profiles.company_type,
-      location: recruiter_profiles.location,
-      description: recruiter_profiles.description,
-      website_url: recruiter_profiles.website_url,
-      linkedin_url: recruiter_profiles.linkedin_url,
-      company_logo_url: recruiter_profiles.company_logo_url,
-      created_at: recruiter_profiles.created_at,
-      updated_at: recruiter_profiles.updated_at
-    })
-    .from(recruiter_profiles)
-    .innerJoin(users, eq(recruiter_profiles.user_id, users.id))
-    .where(isNull(users.deleted_at)); // Only non-deleted users
+    const result = await db
+      .select({
+        id: recruiter_profiles.id,
+        user_id: recruiter_profiles.user_id,
+        company_name: recruiter_profiles.company_name,
+        contact_name: recruiter_profiles.contact_name,
+        company_type: recruiter_profiles.company_type,
+        location: recruiter_profiles.location,
+        description: recruiter_profiles.description,
+        website_url: recruiter_profiles.website_url,
+        linkedin_url: recruiter_profiles.linkedin_url,
+        company_logo_url: recruiter_profiles.company_logo_url,
+        created_at: recruiter_profiles.created_at,
+        updated_at: recruiter_profiles.updated_at,
+      })
+      .from(recruiter_profiles)
+      .innerJoin(users, eq(recruiter_profiles.user_id, users.id))
+      .where(isNull(users.deleted_at)); // Only non-deleted users
 
     return result;
   }
 
-  async searchFreelancers(filters: { keyword?: string; location?: string; page?: number; limit?: number }): Promise<{ 
-    results: Array<FreelancerProfile & { average_rating: number; rating_count: number }>; 
-    total: number; 
-    page: number; 
-    totalPages: number 
+  async searchFreelancers(filters: {
+    keyword?: string;
+    location?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    results: Array<FreelancerProfile & { average_rating: number; rating_count: number }>;
+    total: number;
+    page: number;
+    totalPages: number;
   }> {
     try {
       const { keyword, location, page = 1, limit = 20 } = filters;
       const offset = (page - 1) * limit;
-      
+
       // Build conditions array
       const conditions = [];
-      
+
       // Only show profiles from non-deleted users
       conditions.push(isNull(users.deleted_at));
-      
+
       // Keyword search: title, name, bio, or skills (case-insensitive)
       if (keyword && keyword.trim()) {
         const searchTerm = `%${keyword.toLowerCase()}%`;
@@ -792,23 +948,23 @@ export class DatabaseStorage implements IStorage {
           )
         );
       }
-      
+
       // Location filter (case-insensitive partial match)
       if (location && location.trim()) {
         const locationTerm = `%${location.toLowerCase()}%`;
         conditions.push(sql`LOWER(${freelancer_profiles.location}) LIKE ${locationTerm}`);
       }
-      
+
       // First, get total count for pagination
       const countResult = await db
         .select({ count: sql<number>`COUNT(*)::int` })
         .from(freelancer_profiles)
         .innerJoin(users, eq(freelancer_profiles.user_id, users.id))
         .where(and(...conditions));
-      
+
       const total = countResult[0]?.count || 0;
       const totalPages = Math.ceil(total / limit);
-      
+
       // Fetch results with freelancer data and average rating
       const results = await db
         .select({
@@ -831,26 +987,26 @@ export class DatabaseStorage implements IStorage {
           cv_file_type: freelancer_profiles.cv_file_type,
           cv_file_size: freelancer_profiles.cv_file_size,
           created_at: freelancer_profiles.created_at,
-          updated_at: freelancer_profiles.updated_at
+          updated_at: freelancer_profiles.updated_at,
         })
         .from(freelancer_profiles)
         .innerJoin(users, eq(freelancer_profiles.user_id, users.id))
         .where(and(...conditions))
         .limit(limit)
         .offset(offset);
-      
+
       // Get ratings for all returned freelancers
       const resultsWithRatings = await Promise.all(
-        results.map(async (profile) => {
+        results.map(async profile => {
           const ratingStats = await this.getFreelancerAverageRating(profile.user_id);
           return {
             ...profile,
             average_rating: ratingStats.average ?? 0,
-            rating_count: ratingStats.count ?? 0
+            rating_count: ratingStats.count ?? 0,
           };
         })
       );
-      
+
       // Sort results by relevance and rating
       const sortedResults = resultsWithRatings.sort((a, b) => {
         if (!keyword) {
@@ -859,63 +1015,67 @@ export class DatabaseStorage implements IStorage {
           const bRating = b.average_rating ?? 0;
           return bRating - aRating;
         }
-        
+
         // Calculate relevance scores with rating integration
         const searchTerm = keyword.toLowerCase();
         const aScore = this.calculateRelevanceScore(a, searchTerm, a.average_rating ?? 0);
         const bScore = this.calculateRelevanceScore(b, searchTerm, b.average_rating ?? 0);
-        
+
         if (aScore !== bScore) {
           return bScore - aScore; // Higher score first
         }
-        
+
         // If same relevance, sort by rating as tiebreaker
         const aRating = a.average_rating ?? 0;
         const bRating = b.average_rating ?? 0;
         return bRating - aRating;
       });
-      
+
       return {
         results: sortedResults,
         total,
         page,
-        totalPages
+        totalPages,
       };
     } catch (error) {
-      console.error('Search freelancers error:', error);
+      console.error("Search freelancers error:", error);
       return {
         results: [],
         total: 0,
         page: 1,
-        totalPages: 0
+        totalPages: 0,
       };
     }
   }
 
   // Helper method to calculate relevance score with weighted components
   // Weighting: 40% title, 30% skills, 20% bio, 10% rating (out of 100)
-  private calculateRelevanceScore(profile: FreelancerProfile, searchTerm: string, rating: number): number {
+  private calculateRelevanceScore(
+    profile: FreelancerProfile,
+    searchTerm: string,
+    rating: number
+  ): number {
     let score = 0;
-    
+
     // Title match: 40 points (40% weight)
     if (profile.title && profile.title.toLowerCase().includes(searchTerm)) {
       score += 40;
     }
-    
+
     // Skills match: 30 points (30% weight)
     if (profile.skills && profile.skills.some(skill => skill.toLowerCase().includes(searchTerm))) {
       score += 30;
     }
-    
+
     // Bio match: 20 points (20% weight)
     if (profile.bio && profile.bio.toLowerCase().includes(searchTerm)) {
       score += 20;
     }
-    
+
     // Rating contribution: 10 points max (10% weight)
     // Rating is 0-5 scale, so normalize to 0-10 points
     score += (rating / 5) * 10;
-    
+
     return score;
   }
 
@@ -929,7 +1089,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getJobsByRecruiterId(recruiterId: number): Promise<Job[]> {
-    return await db.select().from(jobs).where(eq(jobs.recruiter_id, recruiterId)).orderBy(desc(jobs.created_at));
+    return await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.recruiter_id, recruiterId))
+      .orderBy(desc(jobs.created_at));
   }
 
   async getJobById(jobId: number): Promise<Job | undefined> {
@@ -938,13 +1102,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    const result = await db.insert(jobs).values([job as any]).returning();
+    const result = await db
+      .insert(jobs)
+      .values([job as any])
+      .returning();
     return result[0];
   }
 
   async updateJob(jobId: number, job: Partial<InsertJob>): Promise<Job | undefined> {
     const updateData: any = { updated_at: new Date() };
-    
+
     // Only include defined fields
     if (job.title !== undefined) updateData.title = job.title;
     if (job.company !== undefined) updateData.company = job.company;
@@ -953,31 +1120,33 @@ export class DatabaseStorage implements IStorage {
     if (job.rate !== undefined) updateData.rate = job.rate;
     if (job.description !== undefined) updateData.description = job.description;
     if (job.status !== undefined) updateData.status = job.status;
-    
-    const result = await db.update(jobs)
-      .set(updateData)
-      .where(eq(jobs.id, jobId))
-      .returning();
+
+    const result = await db.update(jobs).set(updateData).where(eq(jobs.id, jobId)).returning();
     return result[0];
   }
 
   async deleteJob(jobId: number): Promise<void> {
     await db.delete(jobs).where(eq(jobs.id, jobId));
-    
+
     // Clear cached job and application lists
     cache.clear();
   }
 
-  async searchJobs(filters: { keyword?: string; location?: string; startDate?: string; endDate?: string }): Promise<Job[]> {
+  async searchJobs(filters: {
+    keyword?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Job[]> {
     try {
       const { keyword, location, startDate, endDate } = filters;
-      
+
       // Build conditions array
       const conditions = [];
-      
+
       // Only show active jobs
-      conditions.push(or(eq(jobs.status, 'active'), isNull(jobs.status)));
-      
+      conditions.push(or(eq(jobs.status, "active"), isNull(jobs.status)));
+
       // Keyword search: title, description, or company (case-insensitive)
       if (keyword && keyword.trim()) {
         const searchTerm = `%${keyword.toLowerCase()}%`;
@@ -989,22 +1158,19 @@ export class DatabaseStorage implements IStorage {
           )
         );
       }
-      
+
       // Location filter (case-insensitive partial match)
       if (location && location.trim()) {
         const locationTerm = `%${location.toLowerCase()}%`;
         conditions.push(sql`LOWER(${jobs.location}) LIKE ${locationTerm}`);
       }
-      
+
       // Date range filter on event_date
       if (startDate || endDate) {
         if (startDate && endDate) {
           // Both dates provided - find jobs within range
           conditions.push(
-            and(
-              sql`${jobs.event_date} >= ${startDate}`,
-              sql`${jobs.event_date} <= ${endDate}`
-            )
+            and(sql`${jobs.event_date} >= ${startDate}`, sql`${jobs.event_date} <= ${endDate}`)
           );
         } else if (startDate) {
           // Only start date - find jobs on or after this date
@@ -1014,33 +1180,33 @@ export class DatabaseStorage implements IStorage {
           conditions.push(sql`${jobs.event_date} <= ${endDate}`);
         }
       }
-      
+
       // Fetch ALL jobs (both EventLink and external) with filters
       const results = await db
         .select()
         .from(jobs)
         .where(and(...conditions));
-      
+
       // Sort with EventLink jobs first (external_source IS NULL), then external jobs
       // Within each group, sort by created_at or posted_date DESC (most recent first)
       const sortedResults = results.sort((a, b) => {
         // First priority: EventLink jobs (no external_source) come first
         const aIsEventLink = !a.external_source;
         const bIsEventLink = !b.external_source;
-        
+
         if (aIsEventLink && !bIsEventLink) return -1;
         if (!aIsEventLink && bIsEventLink) return 1;
-        
+
         // Second priority: sort by date (most recent first)
         // Use posted_date for external jobs, created_at for EventLink jobs
         const aDate = a.posted_date ? new Date(a.posted_date) : new Date(a.created_at);
         const bDate = b.posted_date ? new Date(b.posted_date) : new Date(b.created_at);
         return bDate.getTime() - aDate.getTime();
       });
-      
+
       return sortedResults;
     } catch (error) {
-      console.error('Search jobs error:', error);
+      console.error("Search jobs error:", error);
       return [];
     }
   }
@@ -1056,197 +1222,221 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExternalJobs(): Promise<Job[]> {
-    return await db.select().from(jobs).where(
-      and(
-        isNull(jobs.recruiter_id), 
-        eq(jobs.type, 'external')
-      )
-    ); // External jobs have recruiter_id = null and type = 'external'
+    return await db
+      .select()
+      .from(jobs)
+      .where(and(isNull(jobs.recruiter_id), eq(jobs.type, "external"))); // External jobs have recruiter_id = null and type = 'external'
   }
 
   // Job application methods
   async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
-    const result = await db.insert(job_applications).values([application as any]).returning();
-    
+    const result = await db
+      .insert(job_applications)
+      .values([application as any])
+      .returning();
+
     // Clear cached application lists so new application appears immediately
-    cache.clearPattern('freelancer-applications-');
-    cache.clearPattern('recruiter-applications-');
-    
+    cache.clearPattern("freelancer-applications-");
+    cache.clearPattern("recruiter-applications-");
+
     return result[0];
   }
 
   async getFreelancerApplications(freelancerId: number): Promise<JobApplication[]> {
-    const result = await db.select({
-      id: job_applications.id,
-      job_id: job_applications.job_id,
-      freelancer_id: job_applications.freelancer_id,
-      status: job_applications.status,
-      cover_letter: job_applications.cover_letter,
-      rejection_message: job_applications.rejection_message,
-      applied_at: job_applications.applied_at,
-      updated_at: job_applications.updated_at,
-      freelancer_deleted: job_applications.freelancer_deleted,
-      recruiter_deleted: job_applications.recruiter_deleted,
-      job_title: jobs.title,
-      job_company: jobs.company,
-      recruiter_id: jobs.recruiter_id,
-    })
-    .from(job_applications)
-    .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
-    .where(
-      and(
-        eq(job_applications.freelancer_id, freelancerId),
-        eq(job_applications.freelancer_deleted, false)
+    const result = await db
+      .select({
+        id: job_applications.id,
+        job_id: job_applications.job_id,
+        freelancer_id: job_applications.freelancer_id,
+        status: job_applications.status,
+        cover_letter: job_applications.cover_letter,
+        rejection_message: job_applications.rejection_message,
+        applied_at: job_applications.applied_at,
+        updated_at: job_applications.updated_at,
+        freelancer_deleted: job_applications.freelancer_deleted,
+        recruiter_deleted: job_applications.recruiter_deleted,
+        job_title: jobs.title,
+        job_company: jobs.company,
+        recruiter_id: jobs.recruiter_id,
+      })
+      .from(job_applications)
+      .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
+      .where(
+        and(
+          eq(job_applications.freelancer_id, freelancerId),
+          eq(job_applications.freelancer_deleted, false)
+        )
       )
-    )
-    .orderBy(desc(job_applications.applied_at));
+      .orderBy(desc(job_applications.applied_at));
     return result as JobApplication[];
   }
 
   async getJobApplications(jobId: number): Promise<JobApplication[]> {
-    const result = await db.select({
-      id: job_applications.id,
-      job_id: job_applications.job_id,
-      freelancer_id: job_applications.freelancer_id,
-      status: job_applications.status,
-      cover_letter: job_applications.cover_letter,
-      rejection_message: job_applications.rejection_message,
-      applied_at: job_applications.applied_at,
-      updated_at: job_applications.updated_at,
-      freelancer_deleted: job_applications.freelancer_deleted,
-      recruiter_deleted: job_applications.recruiter_deleted,
-      job_title: jobs.title,
-      job_company: jobs.company,
-    })
-    .from(job_applications)
-    .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
-    .where(
-      and(
-        eq(job_applications.job_id, jobId),
-        eq(job_applications.recruiter_deleted, false)
-      )
-    );
+    const result = await db
+      .select({
+        id: job_applications.id,
+        job_id: job_applications.job_id,
+        freelancer_id: job_applications.freelancer_id,
+        status: job_applications.status,
+        cover_letter: job_applications.cover_letter,
+        rejection_message: job_applications.rejection_message,
+        applied_at: job_applications.applied_at,
+        updated_at: job_applications.updated_at,
+        freelancer_deleted: job_applications.freelancer_deleted,
+        recruiter_deleted: job_applications.recruiter_deleted,
+        job_title: jobs.title,
+        job_company: jobs.company,
+      })
+      .from(job_applications)
+      .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
+      .where(
+        and(eq(job_applications.job_id, jobId), eq(job_applications.recruiter_deleted, false))
+      );
     return result as JobApplication[];
   }
 
   async getJobApplicationsByFreelancer(freelancerId: number): Promise<JobApplication[]> {
-    return await db.select().from(job_applications).where(
-      and(
-        eq(job_applications.freelancer_id, freelancerId),
-        eq(job_applications.freelancer_deleted, false)
-      )
-    );
+    return await db
+      .select()
+      .from(job_applications)
+      .where(
+        and(
+          eq(job_applications.freelancer_id, freelancerId),
+          eq(job_applications.freelancer_deleted, false)
+        )
+      );
   }
 
   // Soft delete methods for applications
-  async softDeleteApplication(applicationId: number, userRole: 'freelancer' | 'recruiter'): Promise<void> {
-    const fieldToUpdate = userRole === 'freelancer' ? 'freelancer_deleted' : 'recruiter_deleted';
-    await db.update(job_applications)
+  async softDeleteApplication(
+    applicationId: number,
+    userRole: "freelancer" | "recruiter"
+  ): Promise<void> {
+    const fieldToUpdate = userRole === "freelancer" ? "freelancer_deleted" : "recruiter_deleted";
+    await db
+      .update(job_applications)
       .set({ [fieldToUpdate]: true, updated_at: new Date() })
       .where(eq(job_applications.id, applicationId));
-    
+
     // Clear cached application lists
     cache.clear();
   }
 
   async getRecruiterApplications(recruiterId: number): Promise<JobApplication[]> {
-    const result = await db.select({
-      id: job_applications.id,
-      job_id: job_applications.job_id,
-      freelancer_id: job_applications.freelancer_id,
-      status: job_applications.status,
-      cover_letter: job_applications.cover_letter,
-      rejection_message: job_applications.rejection_message,
-      applied_at: job_applications.applied_at,
-      updated_at: job_applications.updated_at,
-      freelancer_deleted: job_applications.freelancer_deleted,
-      recruiter_deleted: job_applications.recruiter_deleted,
-      recruiter_id: jobs.recruiter_id,
-      job_title: jobs.title,
-      job_company: jobs.company,
-      freelancer_profile: {
-        id: freelancer_profiles.id,
-        user_id: freelancer_profiles.user_id,
-        first_name: freelancer_profiles.first_name,
-        last_name: freelancer_profiles.last_name,
-        title: freelancer_profiles.title,
-        bio: freelancer_profiles.bio,
-        location: freelancer_profiles.location,
-        experience_years: freelancer_profiles.experience_years,
-        skills: freelancer_profiles.skills,
-        portfolio_url: freelancer_profiles.portfolio_url,
-        linkedin_url: freelancer_profiles.linkedin_url,
-        website_url: freelancer_profiles.website_url,
-        availability_status: freelancer_profiles.availability_status,
-        profile_photo_url: freelancer_profiles.profile_photo_url,
-      },
-    })
-    .from(job_applications)
-    .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
-    .leftJoin(freelancer_profiles, eq(freelancer_profiles.user_id, job_applications.freelancer_id))
-    .where(
-      and(
-        eq(jobs.recruiter_id, recruiterId),
-        eq(job_applications.recruiter_deleted, false)
+    const result = await db
+      .select({
+        id: job_applications.id,
+        job_id: job_applications.job_id,
+        freelancer_id: job_applications.freelancer_id,
+        status: job_applications.status,
+        cover_letter: job_applications.cover_letter,
+        rejection_message: job_applications.rejection_message,
+        applied_at: job_applications.applied_at,
+        updated_at: job_applications.updated_at,
+        freelancer_deleted: job_applications.freelancer_deleted,
+        recruiter_deleted: job_applications.recruiter_deleted,
+        recruiter_id: jobs.recruiter_id,
+        job_title: jobs.title,
+        job_company: jobs.company,
+        freelancer_profile: {
+          id: freelancer_profiles.id,
+          user_id: freelancer_profiles.user_id,
+          first_name: freelancer_profiles.first_name,
+          last_name: freelancer_profiles.last_name,
+          title: freelancer_profiles.title,
+          bio: freelancer_profiles.bio,
+          location: freelancer_profiles.location,
+          experience_years: freelancer_profiles.experience_years,
+          skills: freelancer_profiles.skills,
+          portfolio_url: freelancer_profiles.portfolio_url,
+          linkedin_url: freelancer_profiles.linkedin_url,
+          website_url: freelancer_profiles.website_url,
+          availability_status: freelancer_profiles.availability_status,
+          profile_photo_url: freelancer_profiles.profile_photo_url,
+        },
+      })
+      .from(job_applications)
+      .innerJoin(jobs, eq(jobs.id, job_applications.job_id))
+      .leftJoin(
+        freelancer_profiles,
+        eq(freelancer_profiles.user_id, job_applications.freelancer_id)
       )
-    )
-    .orderBy(desc(job_applications.applied_at));
+      .where(and(eq(jobs.recruiter_id, recruiterId), eq(job_applications.recruiter_deleted, false)))
+      .orderBy(desc(job_applications.applied_at));
     return result as JobApplication[];
   }
 
   async getJobApplicationById(applicationId: number): Promise<JobApplication | undefined> {
-    const result = await db.select().from(job_applications).where(eq(job_applications.id, applicationId)).limit(1);
+    const result = await db
+      .select()
+      .from(job_applications)
+      .where(eq(job_applications.id, applicationId))
+      .limit(1);
     return result[0];
   }
 
-  async updateApplicationStatus(applicationId: number, status: 'applied' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired', rejectionMessage?: string): Promise<JobApplication> {
-    const updateData: any = { 
+  async updateApplicationStatus(
+    applicationId: number,
+    status: "applied" | "reviewed" | "shortlisted" | "rejected" | "hired",
+    rejectionMessage?: string
+  ): Promise<JobApplication> {
+    const updateData: any = {
       status: status,
-      updated_at: sql`now()`
+      updated_at: sql`now()`,
     };
-    
-    if (status === 'rejected' && rejectionMessage) {
+
+    if (status === "rejected" && rejectionMessage) {
       updateData.rejection_message = rejectionMessage;
     }
-    
+
     // If hiring, un-delete from freelancer's view so they can see they were hired
-    if (status === 'hired') {
+    if (status === "hired") {
       updateData.freelancer_deleted = false;
     }
-    
-    const result = await db.update(job_applications)
+
+    const result = await db
+      .update(job_applications)
       .set(updateData)
       .where(eq(job_applications.id, applicationId))
       .returning();
 
     // If hiring a freelancer, close the job posting
-    if (status === 'hired') {
+    if (status === "hired") {
       const application = result[0];
       if (application?.job_id) {
-        await db.update(jobs)
-          .set({ 
-            status: 'closed',
-            updated_at: sql`now()`
+        await db
+          .update(jobs)
+          .set({
+            status: "closed",
+            updated_at: sql`now()`,
           })
           .where(eq(jobs.id, application.job_id));
       }
     }
-    
+
     // Clear cached application lists so refetches get fresh data
-    cache.clearPattern('freelancer-applications-');
-    cache.clearPattern('recruiter-applications-');
-    
+    cache.clearPattern("freelancer-applications-");
+    cache.clearPattern("recruiter-applications-");
+
     return result[0];
   }
 
   // Messaging methods
   async getOrCreateConversation(userOneId: number, userTwoId: number): Promise<Conversation> {
     // Find existing conversation (including soft-deleted ones)
-    const existing = await db.select().from(conversations)
+    const existing = await db
+      .select()
+      .from(conversations)
       .where(
         or(
-          and(eq(conversations.participant_one_id, userOneId), eq(conversations.participant_two_id, userTwoId)),
-          and(eq(conversations.participant_one_id, userTwoId), eq(conversations.participant_two_id, userOneId))
+          and(
+            eq(conversations.participant_one_id, userOneId),
+            eq(conversations.participant_two_id, userTwoId)
+          ),
+          and(
+            eq(conversations.participant_one_id, userTwoId),
+            eq(conversations.participant_two_id, userOneId)
+          )
         )
       )
       .limit(1);
@@ -1256,107 +1446,127 @@ export class DatabaseStorage implements IStorage {
       // Keep the deletion timestamp to hide old messages - only clear the flag
       let needsRestore = false;
       const updates: any = { updated_at: sql`now()` };
-      
+
       if (existing[0].participant_one_id === userOneId && existing[0].participant_one_deleted) {
         updates.participant_one_deleted = false;
         // Keep participant_one_deleted_at intact to filter old messages
         needsRestore = true;
-      } else if (existing[0].participant_two_id === userOneId && existing[0].participant_two_deleted) {
+      } else if (
+        existing[0].participant_two_id === userOneId &&
+        existing[0].participant_two_deleted
+      ) {
         updates.participant_two_deleted = false;
         // Keep participant_two_deleted_at intact to filter old messages
         needsRestore = true;
       }
-      
+
       if (needsRestore) {
-        await db.update(conversations)
-          .set(updates)
-          .where(eq(conversations.id, existing[0].id));
-        
+        await db.update(conversations).set(updates).where(eq(conversations.id, existing[0].id));
+
         // Update local object to reflect changes
         Object.assign(existing[0], updates);
-        
+
         // Clear targeted caches for both participants
         cache.clearPattern(`conversations-${userOneId}`);
         cache.clearPattern(`conversations-${userTwoId}`);
         cache.clearPattern(`unread-messages-${userOneId}`);
         cache.clearPattern(`unread-messages-${userTwoId}`);
       }
-      
+
       return existing[0];
     }
 
     // Create new conversation
-    const result = await db.insert(conversations).values({
-      participant_one_id: userOneId,
-      participant_two_id: userTwoId
-    }).returning();
-    
+    const result = await db
+      .insert(conversations)
+      .values({
+        participant_one_id: userOneId,
+        participant_two_id: userTwoId,
+      })
+      .returning();
+
     // Clear caches for both participants
     cache.clearPattern(`conversations-${userOneId}`);
     cache.clearPattern(`conversations-${userTwoId}`);
-    
+
     return result[0];
   }
 
-  async getConversationsByUserId(userId: number): Promise<Array<Conversation & { otherUser: User }>> {
-    const result = await db.select({
-      id: conversations.id,
-      participant_one_id: conversations.participant_one_id,
-      participant_two_id: conversations.participant_two_id,
-      participant_one_deleted: conversations.participant_one_deleted,
-      participant_two_deleted: conversations.participant_two_deleted,
-      last_message_at: conversations.last_message_at,
-      created_at: conversations.created_at,
-      otherUserId: sql<number>`CASE 
+  async getConversationsByUserId(
+    userId: number
+  ): Promise<Array<Conversation & { otherUser: User }>> {
+    const result = await db
+      .select({
+        id: conversations.id,
+        participant_one_id: conversations.participant_one_id,
+        participant_two_id: conversations.participant_two_id,
+        participant_one_deleted: conversations.participant_one_deleted,
+        participant_two_deleted: conversations.participant_two_deleted,
+        participant_one_deleted_at: conversations.participant_one_deleted_at,
+        participant_two_deleted_at: conversations.participant_two_deleted_at,
+        last_message_at: conversations.last_message_at,
+        created_at: conversations.created_at,
+        otherUserId: sql<number>`CASE
         WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
         ELSE ${conversations.participant_one_id}
       END`,
-      otherUserEmail: users.email,
-      otherUserRole: users.role,
-      otherUserDeleted: users.deleted_at,
-      // Profile data for freelancers
-      freelancerFirstName: freelancer_profiles.first_name,
-      freelancerLastName: freelancer_profiles.last_name,
-      // Profile data for recruiters
-      recruiterCompanyName: recruiter_profiles.company_name
-    })
-    .from(conversations)
-    .leftJoin(
-      users,
-      sql`${users.id} = CASE 
+        otherUserEmail: users.email,
+        otherUserRole: users.role,
+        otherUserDeleted: users.deleted_at,
+        // Profile data for freelancers
+        freelancerFirstName: freelancer_profiles.first_name,
+        freelancerLastName: freelancer_profiles.last_name,
+        // Profile data for recruiters
+        recruiterCompanyName: recruiter_profiles.company_name,
+      })
+      .from(conversations)
+      .leftJoin(
+        users,
+        sql`${users.id} = CASE
         WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
         ELSE ${conversations.participant_one_id}
       END`
-    )
-    .leftJoin(
-      freelancer_profiles,
-      eq(freelancer_profiles.user_id, sql`CASE 
-        WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
-        ELSE ${conversations.participant_one_id}
-      END`)
-    )
-    .leftJoin(
-      recruiter_profiles,
-      eq(recruiter_profiles.user_id, sql`CASE 
-        WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
-        ELSE ${conversations.participant_one_id}
-      END`)
-    )
-    .where(
-      and(
-        or(
-          eq(conversations.participant_one_id, userId),
-          eq(conversations.participant_two_id, userId)
-        ),
-        // Only show if this user hasn't deleted it (ignore the other participant's status)
-        sql`CASE 
-          WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_one_deleted} = false
-          WHEN ${conversations.participant_two_id} = ${userId} THEN ${conversations.participant_two_deleted} = false
-          ELSE false
-        END`
       )
-    )
-    .orderBy(desc(conversations.last_message_at));
+      .leftJoin(
+        freelancer_profiles,
+        eq(
+          freelancer_profiles.user_id,
+          sql`CASE
+        WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
+        ELSE ${conversations.participant_one_id}
+      END`
+        )
+      )
+      .leftJoin(
+        recruiter_profiles,
+        eq(
+          recruiter_profiles.user_id,
+          sql`CASE
+        WHEN ${conversations.participant_one_id} = ${userId} THEN ${conversations.participant_two_id}
+        ELSE ${conversations.participant_one_id}
+      END`
+        )
+      )
+      .where(
+        and(
+          or(
+            eq(conversations.participant_one_id, userId),
+            eq(conversations.participant_two_id, userId)
+          ),
+          // Only show if this user hasn't deleted it (ignore the other participant's status)
+          or(
+            and(
+              eq(conversations.participant_one_id, userId),
+              eq(conversations.participant_one_deleted, false)
+            ),
+            and(
+              eq(conversations.participant_two_id, userId),
+              eq(conversations.participant_two_deleted, false)
+            )
+          )
+        )
+      )
+      .orderBy(desc(conversations.last_message_at));
 
     return result.map(row => ({
       id: row.id,
@@ -1364,13 +1574,15 @@ export class DatabaseStorage implements IStorage {
       participant_two_id: row.participant_two_id,
       participant_one_deleted: row.participant_one_deleted,
       participant_two_deleted: row.participant_two_deleted,
+      participant_one_deleted_at: row.participant_one_deleted_at,
+      participant_two_deleted_at: row.participant_two_deleted_at,
       last_message_at: row.last_message_at,
       created_at: row.created_at,
       otherUser: {
         id: row.otherUserId,
-        email: row.otherUserEmail || '',
-        role: (row.otherUserRole as 'freelancer' | 'recruiter' | 'admin') || 'freelancer',
-        password: '',
+        email: row.otherUserEmail || "",
+        role: (row.otherUserRole as "freelancer" | "recruiter" | "admin") || "freelancer",
+        password: "",
         first_name: row.freelancerFirstName,
         last_name: row.freelancerLastName,
         company_name: row.recruiterCompanyName,
@@ -1379,7 +1591,7 @@ export class DatabaseStorage implements IStorage {
         email_verification_expires: null,
         password_reset_token: null,
         password_reset_expires: null,
-        auth_provider: 'email' as const,
+        auth_provider: "email" as const,
         google_id: null,
         facebook_id: null,
         linkedin_id: null,
@@ -1388,8 +1600,8 @@ export class DatabaseStorage implements IStorage {
         last_login_at: null,
         deleted_at: row.otherUserDeleted,
         created_at: new Date(),
-        updated_at: new Date()
-      }
+        updated_at: new Date(),
+      },
     }));
   }
 
@@ -1398,29 +1610,55 @@ export class DatabaseStorage implements IStorage {
     // 1. Insert message
     // 2. Update conversation last_message_at
     // 3. Restore soft-deleted conversation ONLY for the sender
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async tx => {
       // Insert the message
       const result = await tx.insert(messages).values(message).returning();
-      
+
       // Get conversation to determine sender's position
-      const conversation = await tx.select()
+      const conversation = await tx
+        .select()
         .from(conversations)
         .where(eq(conversations.id, message.conversation_id))
         .limit(1);
-      
+
       if (conversation[0] && message.sender_id) {
         const updates: any = { last_message_at: new Date() };
-        
-        // Only restore the SENDER's deleted flag, leave recipient's untouched
+
+        // Restore the SENDER's deleted flag
         if (conversation[0].participant_one_id === message.sender_id) {
           updates.participant_one_deleted = false;
         } else if (conversation[0].participant_two_id === message.sender_id) {
           updates.participant_two_deleted = false;
         }
-        
-        await tx.update(conversations)
+
+        // Also restore the RECEIVER's deleted flag so they can see the new message
+        // This ensures that when a message is sent, both participants can see the conversation
+        const receiverId =
+          conversation[0].participant_one_id === message.sender_id
+            ? conversation[0].participant_two_id
+            : conversation[0].participant_one_id;
+
+        if (
+          conversation[0].participant_one_id === receiverId &&
+          conversation[0].participant_one_deleted
+        ) {
+          updates.participant_one_deleted = false;
+        } else if (
+          conversation[0].participant_two_id === receiverId &&
+          conversation[0].participant_two_deleted
+        ) {
+          updates.participant_two_deleted = false;
+        }
+
+        await tx
+          .update(conversations)
           .set(updates)
           .where(eq(conversations.id, message.conversation_id));
+
+        console.log(
+          `✅ Conversation ${message.conversation_id} restored for sender ${message.sender_id} and receiver ${receiverId}`,
+          updates
+        );
       }
 
       return result[0];
@@ -1428,11 +1666,12 @@ export class DatabaseStorage implements IStorage {
 
     // Clear caches immediately after message is sent
     // Get conversation to find both participants
-    const conversation = await db.select()
+    const conversation = await db
+      .select()
       .from(conversations)
       .where(eq(conversations.id, message.conversation_id))
       .limit(1);
-    
+
     if (conversation.length > 0) {
       const conv = conversation[0];
       // Clear message cache for this conversation
@@ -1442,33 +1681,38 @@ export class DatabaseStorage implements IStorage {
       cache.clearPattern(`conversations-${conv.participant_two_id}`);
       cache.clearPattern(`unread-messages-${conv.participant_one_id}`);
       cache.clearPattern(`unread-messages-${conv.participant_two_id}`);
-      
-      console.log(`✅ Cache cleared for conversation ${message.conversation_id} and users ${conv.participant_one_id}, ${conv.participant_two_id}`);
+
+      console.log(
+        `✅ Cache cleared for conversation ${message.conversation_id} and users ${conv.participant_one_id}, ${conv.participant_two_id}`
+      );
     }
 
     return result;
   }
 
-  async getConversationMessages(conversationId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
-    const result = await db.select({
-      id: messages.id,
-      conversation_id: messages.conversation_id,
-      sender_id: messages.sender_id,
-      content: messages.content,
-      is_read: messages.is_read,
-      is_system_message: messages.is_system_message,
-      created_at: messages.created_at,
-      senderEmail: users.email,
-      senderRole: users.role
-    })
-    .from(messages)
-    .leftJoin(users, eq(messages.sender_id, users.id))
-    .where(eq(messages.conversation_id, conversationId))
-    .orderBy(messages.created_at);
+  async getConversationMessages(
+    conversationId: number
+  ): Promise<Array<Message & { sender: User; attachments?: MessageAttachment[] }>> {
+    const result = await db
+      .select({
+        id: messages.id,
+        conversation_id: messages.conversation_id,
+        sender_id: messages.sender_id,
+        content: messages.content,
+        is_read: messages.is_read,
+        is_system_message: messages.is_system_message,
+        created_at: messages.created_at,
+        senderEmail: users.email,
+        senderRole: users.role,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.sender_id, users.id))
+      .where(eq(messages.conversation_id, conversationId))
+      .orderBy(messages.created_at);
 
     // Load attachments for each message
     const messagesWithAttachments = await Promise.all(
-      result.map(async (row) => {
+      result.map(async row => {
         const attachments = await this.getMessageAttachments(row.id);
         return {
           id: row.id,
@@ -1480,9 +1724,9 @@ export class DatabaseStorage implements IStorage {
           created_at: row.created_at,
           sender: {
             id: row.sender_id || 0, // Use 0 for system messages with null sender_id
-            email: row.senderEmail || '',
-            role: row.senderRole || ('freelancer' as const),
-            password: '',
+            email: row.senderEmail || "",
+            role: row.senderRole || ("freelancer" as const),
+            password: "",
             first_name: null,
             last_name: null,
             email_verified: false,
@@ -1490,7 +1734,7 @@ export class DatabaseStorage implements IStorage {
             email_verification_expires: null,
             password_reset_token: null,
             password_reset_expires: null,
-            auth_provider: 'email' as const,
+            auth_provider: "email" as const,
             google_id: null,
             facebook_id: null,
             linkedin_id: null,
@@ -1499,9 +1743,9 @@ export class DatabaseStorage implements IStorage {
             last_login_at: null,
             deleted_at: null,
             created_at: new Date(),
-            updated_at: new Date()
+            updated_at: new Date(),
           },
-          attachments: attachments.length > 0 ? attachments : undefined
+          attachments: attachments.length > 0 ? attachments : undefined,
         };
       })
     );
@@ -1509,14 +1753,17 @@ export class DatabaseStorage implements IStorage {
     return messagesWithAttachments;
   }
 
-
-  async getConversationMessagesForUser(conversationId: number, userId: number): Promise<Array<Message & { sender: User, attachments?: MessageAttachment[] }>> {
+  async getConversationMessagesForUser(
+    conversationId: number,
+    userId: number
+  ): Promise<Array<Message & { sender: User; attachments?: MessageAttachment[] }>> {
     // First, get the conversation to check if user deleted it and when
-    const conversation = await db.select()
+    const conversation = await db
+      .select()
       .from(conversations)
       .where(eq(conversations.id, conversationId))
       .limit(1);
-    
+
     let deletedAt: Date | null = null;
     if (conversation[0]) {
       // Determine which participant is viewing and get their deletion timestamp
@@ -1526,41 +1773,45 @@ export class DatabaseStorage implements IStorage {
         deletedAt = conversation[0].participant_two_deleted_at;
       }
     }
-    
+
     // Build the where conditions
     const whereConditions = [
       eq(messages.conversation_id, conversationId),
-      isNull(message_user_states.id) // Exclude messages individually deleted by this user
+      isNull(message_user_states.id), // Exclude messages individually deleted by this user
     ];
-    
+
     // If user deleted the conversation, only show messages created AFTER that deletion
     if (deletedAt) {
       whereConditions.push(gt(messages.created_at, deletedAt));
     }
-    
-    const result = await db.select({
-      id: messages.id,
-      conversation_id: messages.conversation_id,
-      sender_id: messages.sender_id,
-      content: messages.content,
-      is_read: messages.is_read,
-      is_system_message: messages.is_system_message,
-      created_at: messages.created_at,
-      senderEmail: users.email,
-      senderRole: users.role
-    })
-    .from(messages)
-    .leftJoin(users, eq(messages.sender_id, users.id))
-    .leftJoin(message_user_states, and(
-      eq(message_user_states.message_id, messages.id),
-      eq(message_user_states.user_id, userId)
-    ))
-    .where(and(...whereConditions))
-    .orderBy(messages.created_at);
+
+    const result = await db
+      .select({
+        id: messages.id,
+        conversation_id: messages.conversation_id,
+        sender_id: messages.sender_id,
+        content: messages.content,
+        is_read: messages.is_read,
+        is_system_message: messages.is_system_message,
+        created_at: messages.created_at,
+        senderEmail: users.email,
+        senderRole: users.role,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.sender_id, users.id))
+      .leftJoin(
+        message_user_states,
+        and(
+          eq(message_user_states.message_id, messages.id),
+          eq(message_user_states.user_id, userId)
+        )
+      )
+      .where(and(...whereConditions))
+      .orderBy(messages.created_at);
 
     // Load attachments for each message
     const messagesWithAttachments = await Promise.all(
-      result.map(async (row) => {
+      result.map(async row => {
         const attachments = await this.getMessageAttachments(row.id);
         return {
           id: row.id,
@@ -1572,9 +1823,9 @@ export class DatabaseStorage implements IStorage {
           created_at: row.created_at,
           sender: {
             id: row.sender_id || 0, // Use 0 for system messages with null sender_id
-            email: row.senderEmail || '',
-            role: (row.senderRole as 'freelancer' | 'recruiter' | 'admin') || 'freelancer',
-            password: '',
+            email: row.senderEmail || "",
+            role: (row.senderRole as "freelancer" | "recruiter" | "admin") || "freelancer",
+            password: "",
             first_name: null,
             last_name: null,
             email_verified: false,
@@ -1582,7 +1833,7 @@ export class DatabaseStorage implements IStorage {
             email_verification_expires: null,
             password_reset_token: null,
             password_reset_expires: null,
-            auth_provider: 'email' as const,
+            auth_provider: "email" as const,
             google_id: null,
             facebook_id: null,
             linkedin_id: null,
@@ -1591,9 +1842,9 @@ export class DatabaseStorage implements IStorage {
             last_login_at: null,
             deleted_at: null,
             created_at: new Date(),
-            updated_at: new Date()
+            updated_at: new Date(),
           },
-          attachments: attachments.length > 0 ? attachments : undefined
+          attachments: attachments.length > 0 ? attachments : undefined,
         };
       })
     );
@@ -1605,50 +1856,54 @@ export class DatabaseStorage implements IStorage {
   async markMessageDeletedForUser(messageId: number, userId: number): Promise<void> {
     await db.insert(message_user_states).values({
       message_id: messageId,
-      user_id: userId
+      user_id: userId,
     });
-    
+
     // Clear cached message lists
     cache.clear();
   }
 
   async deleteConversation(conversationId: number, userId: number): Promise<void> {
     // Get the conversation to determine which participant is deleting
-    const conversation = await db.select()
+    const conversation = await db
+      .select()
       .from(conversations)
       .where(eq(conversations.id, conversationId))
       .limit(1);
-    
+
     if (!conversation[0]) {
-      throw new Error('Conversation not found');
+      throw new Error("Conversation not found");
     }
-    
+
     const now = new Date();
-    
+
     // Determine which field to update based on the user
     // Set both the boolean flag AND the timestamp
     if (conversation[0].participant_one_id === userId) {
-      await db.update(conversations)
-        .set({ 
+      await db
+        .update(conversations)
+        .set({
           participant_one_deleted: true,
-          participant_one_deleted_at: now
+          participant_one_deleted_at: now,
         })
         .where(eq(conversations.id, conversationId));
     } else if (conversation[0].participant_two_id === userId) {
-      await db.update(conversations)
-        .set({ 
+      await db
+        .update(conversations)
+        .set({
           participant_two_deleted: true,
-          participant_two_deleted_at: now
+          participant_two_deleted_at: now,
         })
         .where(eq(conversations.id, conversationId));
     }
-    
+
     // Clear cached conversation lists
     cache.clear();
   }
 
   async markMessagesAsRead(conversationId: number, userId: number): Promise<void> {
-    await db.update(messages)
+    await db
+      .update(messages)
       .set({ is_read: true })
       .where(
         and(
@@ -1662,15 +1917,21 @@ export class DatabaseStorage implements IStorage {
   async createMessageAttachment(attachment: InsertMessageAttachment): Promise<MessageAttachment> {
     const attachmentData = {
       ...attachment,
-      scan_status: attachment.scan_status as 'pending' | 'safe' | 'unsafe' | 'error' | null,
-      moderation_status: attachment.moderation_status as 'pending' | 'approved' | 'rejected' | 'error' | null
+      scan_status: attachment.scan_status as "pending" | "safe" | "unsafe" | "error" | null,
+      moderation_status: attachment.moderation_status as
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "error"
+        | null,
     };
     const result = await db.insert(message_attachments).values([attachmentData]).returning();
     return result[0];
   }
 
   async getMessageAttachments(messageId: number): Promise<MessageAttachment[]> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(message_attachments)
       .where(eq(message_attachments.message_id, messageId))
       .orderBy(message_attachments.created_at);
@@ -1678,7 +1939,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAttachmentById(attachmentId: number): Promise<MessageAttachment | undefined> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(message_attachments)
       .where(eq(message_attachments.id, attachmentId))
       .limit(1);
@@ -1686,10 +1948,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessageById(messageId: number): Promise<Message | undefined> {
-    const result = await db.select()
-      .from(messages)
-      .where(eq(messages.id, messageId))
-      .limit(1);
+    const result = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
     return result[0];
   }
 
@@ -1697,19 +1956,25 @@ export class DatabaseStorage implements IStorage {
     return this.getAttachmentById(attachmentId);
   }
 
-  async createFileReport(report: { attachment_id: number, reporter_id: number, report_reason: string, report_details: string | null }): Promise<any> {
+  async createFileReport(report: {
+    attachment_id: number;
+    reporter_id: number;
+    report_reason: string;
+    report_details: string | null;
+  }): Promise<any> {
     // For now, just log the report - in production would save to a reports table
-    console.log('File report received:', report);
-    return { 
-      id: Date.now(), 
+    console.log("File report received:", report);
+    return {
+      id: Date.now(),
       ...report,
       created_at: new Date(),
-      status: 'pending'
+      status: "pending",
     };
   }
 
   async getUnreadMessageCount(userId: number): Promise<number> {
-    const userConversations = await db.select({ id: conversations.id })
+    const userConversations = await db
+      .select({ id: conversations.id })
       .from(conversations)
       .where(
         or(
@@ -1721,8 +1986,9 @@ export class DatabaseStorage implements IStorage {
     if (userConversations.length === 0) return 0;
 
     const conversationIds = userConversations.map(c => c.id);
-    
-    const result = await db.select({ count: sql<number>`count(*)::int` })
+
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
       .from(messages)
       .where(
         and(
@@ -1736,38 +2002,55 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const result = await db.insert(notifications).values([{
-      ...notification,
-      type: notification.type as "application_update" | "new_message" | "job_update" | "profile_view" | "system",
-      priority: notification.priority as "low" | "normal" | "high" | "urgent" | null | undefined
-    }]).returning();
-    
+    const result = await db
+      .insert(notifications)
+      .values([
+        {
+          ...notification,
+          type: notification.type as
+            | "application_update"
+            | "new_message"
+            | "job_update"
+            | "profile_view"
+            | "system",
+          priority: notification.priority as
+            | "low"
+            | "normal"
+            | "high"
+            | "urgent"
+            | null
+            | undefined,
+        },
+      ])
+      .returning();
+
     // Broadcast real-time notification to the user
     const newNotification = result[0];
     if (notification.user_id) {
       // Broadcast asynchronously (non-blocking)
       setImmediate(async () => {
         try {
-          const { wsService } = await import('./websocketService');
-          
+          const { wsService } = await import("./websocketService");
+
           // Send new_notification event
           wsService.broadcastNotification(notification.user_id!, newNotification);
-          
+
           // Also send updated badge counts
           const counts = await this.getCategoryUnreadCounts(notification.user_id!);
           wsService.broadcastBadgeCounts(notification.user_id!, counts);
         } catch (error) {
-          console.error('Failed to broadcast notification via WebSocket:', error);
+          console.error("Failed to broadcast notification via WebSocket:", error);
           // Don't fail the notification creation if WebSocket broadcast fails
         }
       });
     }
-    
+
     return newNotification;
   }
 
   async getNotification(notificationId: number): Promise<Notification | undefined> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(notifications)
       .where(eq(notifications.id, notificationId))
       .limit(1);
@@ -1775,31 +2058,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserNotifications(userId: number, limit: number = 50): Promise<Notification[]> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(notifications)
-      .where(and(
-        eq(notifications.user_id, userId),
-        or(
-          isNull(notifications.expires_at),
-          sql`${notifications.expires_at} > NOW()`
+      .where(
+        and(
+          eq(notifications.user_id, userId),
+          or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
         )
-      ))
+      )
       .orderBy(desc(notifications.created_at))
       .limit(limit);
     return result;
   }
 
   async getUnreadNotificationCount(userId: number): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)::int` })
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
       .from(notifications)
-      .where(and(
-        eq(notifications.user_id, userId),
-        eq(notifications.is_read, false),
-        or(
-          isNull(notifications.expires_at),
-          sql`${notifications.expires_at} > NOW()`
+      .where(
+        and(
+          eq(notifications.user_id, userId),
+          eq(notifications.is_read, false),
+          or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
         )
-      ));
+      );
     return Number(result[0]?.count || 0);
   }
 
@@ -1813,59 +2096,56 @@ export class DatabaseStorage implements IStorage {
     // Get counts for each category
     const [messagesResult, applicationsResult, jobsResult, ratingsResult] = await Promise.all([
       // Messages count
-      db.select({ count: sql<number>`count(*)::int` })
+      db
+        .select({ count: sql<number>`count(*)::int` })
         .from(notifications)
-        .where(and(
-          eq(notifications.user_id, userId),
-          eq(notifications.is_read, false),
-          eq(notifications.type, 'new_message'),
-          or(
-            isNull(notifications.expires_at),
-            sql`${notifications.expires_at} > NOW()`
+        .where(
+          and(
+            eq(notifications.user_id, userId),
+            eq(notifications.is_read, false),
+            eq(notifications.type, "new_message"),
+            or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
           )
-        )),
-      
+        ),
+
       // Applications count
-      db.select({ count: sql<number>`count(*)::int` })
+      db
+        .select({ count: sql<number>`count(*)::int` })
         .from(notifications)
-        .where(and(
-          eq(notifications.user_id, userId),
-          eq(notifications.is_read, false),
-          eq(notifications.type, 'application_update'),
-          or(
-            isNull(notifications.expires_at),
-            sql`${notifications.expires_at} > NOW()`
+        .where(
+          and(
+            eq(notifications.user_id, userId),
+            eq(notifications.is_read, false),
+            eq(notifications.type, "application_update"),
+            or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
           )
-        )),
-      
+        ),
+
       // Jobs count
-      db.select({ count: sql<number>`count(*)::int` })
+      db
+        .select({ count: sql<number>`count(*)::int` })
         .from(notifications)
-        .where(and(
-          eq(notifications.user_id, userId),
-          eq(notifications.is_read, false),
-          eq(notifications.type, 'job_update'),
-          or(
-            isNull(notifications.expires_at),
-            sql`${notifications.expires_at} > NOW()`
+        .where(
+          and(
+            eq(notifications.user_id, userId),
+            eq(notifications.is_read, false),
+            eq(notifications.type, "job_update"),
+            or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
           )
-        )),
-      
+        ),
+
       // Ratings count (rating_received + rating_request)
-      db.select({ count: sql<number>`count(*)::int` })
+      db
+        .select({ count: sql<number>`count(*)::int` })
         .from(notifications)
-        .where(and(
-          eq(notifications.user_id, userId),
-          eq(notifications.is_read, false),
-          or(
-            eq(notifications.type, 'rating_received'),
-            eq(notifications.type, 'rating_request')
-          ),
-          or(
-            isNull(notifications.expires_at),
-            sql`${notifications.expires_at} > NOW()`
+        .where(
+          and(
+            eq(notifications.user_id, userId),
+            eq(notifications.is_read, false),
+            or(eq(notifications.type, "rating_received"), eq(notifications.type, "rating_request")),
+            or(isNull(notifications.expires_at), sql`${notifications.expires_at} > NOW()`)
           )
-        ))
+        ),
     ]);
 
     const messages = Number(messagesResult[0]?.count || 0);
@@ -1879,85 +2159,88 @@ export class DatabaseStorage implements IStorage {
       applications,
       jobs,
       ratings,
-      total
+      total,
     };
   }
 
   async markNotificationAsRead(notificationId: number): Promise<void> {
-    await db.update(notifications)
+    await db
+      .update(notifications)
       .set({ is_read: true })
       .where(eq(notifications.id, notificationId));
   }
 
   async markAllNotificationsAsRead(userId: number): Promise<void> {
-    await db.update(notifications)
+    await db
+      .update(notifications)
       .set({ is_read: true })
-      .where(and(
-        eq(notifications.user_id, userId),
-        eq(notifications.is_read, false)
-      ));
+      .where(and(eq(notifications.user_id, userId), eq(notifications.is_read, false)));
   }
 
-  async markCategoryNotificationsAsRead(userId: number, category: 'messages' | 'applications' | 'jobs' | 'ratings'): Promise<void> {
+  async markCategoryNotificationsAsRead(
+    userId: number,
+    category: "messages" | "applications" | "jobs" | "ratings"
+  ): Promise<void> {
     let notificationTypes: string[] = [];
-    
+
     switch (category) {
-      case 'messages':
-        notificationTypes = ['new_message'];
+      case "messages":
+        notificationTypes = ["new_message"];
         break;
-      case 'applications':
-        notificationTypes = ['application_update'];
+      case "applications":
+        notificationTypes = ["application_update"];
         break;
-      case 'jobs':
-        notificationTypes = ['job_update'];
+      case "jobs":
+        notificationTypes = ["job_update"];
         break;
-      case 'ratings':
-        notificationTypes = ['rating_received', 'rating_request'];
+      case "ratings":
+        notificationTypes = ["rating_received", "rating_request"];
         break;
     }
 
     if (notificationTypes.length === 0) return;
 
-    await db.update(notifications)
+    await db
+      .update(notifications)
       .set({ is_read: true })
-      .where(and(
-        eq(notifications.user_id, userId),
-        eq(notifications.is_read, false),
-        or(
-          ...notificationTypes.map(type => eq(notifications.type, type as any))
+      .where(
+        and(
+          eq(notifications.user_id, userId),
+          eq(notifications.is_read, false),
+          or(...notificationTypes.map(type => eq(notifications.type, type as any)))
         )
-      ));
+      );
   }
 
   async deleteNotification(notificationId: number): Promise<void> {
     await db.delete(notifications).where(eq(notifications.id, notificationId));
-    
+
     // Clear cached notification lists
     cache.clear();
   }
 
   async deleteExpiredNotifications(): Promise<void> {
-    await db.delete(notifications)
+    await db
+      .delete(notifications)
       .where(
-        and(
-          sql`${notifications.expires_at} IS NOT NULL`,
-          sql`${notifications.expires_at} < NOW()`
-        )
+        and(sql`${notifications.expires_at} IS NOT NULL`, sql`${notifications.expires_at} < NOW()`)
       );
   }
 
   async deleteUserAccount(userId: number): Promise<void> {
     try {
       // Start a transaction to ensure all operations succeed or all fail
-      await db.transaction(async (tx) => {
+      await db.transaction(async tx => {
         // 1. Get user info before soft deletion
         const user = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
         if (!user.length) {
-          throw new Error('User not found');
+          throw new Error("User not found");
         }
 
         // 2. Get all conversations where this user is a participant
-        const userConversations = await tx.select().from(conversations)
+        const userConversations = await tx
+          .select()
+          .from(conversations)
           .where(
             or(
               eq(conversations.participant_one_id, userId),
@@ -1972,44 +2255,42 @@ export class DatabaseStorage implements IStorage {
             sender_id: null, // null for system messages
             content: "Account Deleted",
             is_read: false,
-            is_system_message: true
+            is_system_message: true,
           });
 
           // Update conversation's last_message_at timestamp
-          await tx.update(conversations)
+          await tx
+            .update(conversations)
             .set({ last_message_at: new Date() })
             .where(eq(conversations.id, conversation.id));
         }
 
         // 4. Soft delete user profiles (keep data but mark as deleted)
-        await tx.delete(freelancer_profiles)
-          .where(eq(freelancer_profiles.user_id, userId));
-        
-        await tx.delete(recruiter_profiles)
-          .where(eq(recruiter_profiles.user_id, userId));
+        await tx.delete(freelancer_profiles).where(eq(freelancer_profiles.user_id, userId));
+
+        await tx.delete(recruiter_profiles).where(eq(recruiter_profiles.user_id, userId));
 
         // 5. Delete job applications by this user (hard delete as these become invalid)
-        await tx.delete(job_applications)
-          .where(eq(job_applications.freelancer_id, userId));
+        await tx.delete(job_applications).where(eq(job_applications.freelancer_id, userId));
 
         // 6. Delete jobs posted by this user (hard delete as these become invalid)
-        await tx.delete(jobs)
-          .where(eq(jobs.recruiter_id, userId));
+        await tx.delete(jobs).where(eq(jobs.recruiter_id, userId));
 
         // 7. Delete notifications for this user (hard delete as they're no longer needed)
-        await tx.delete(notifications)
-          .where(eq(notifications.user_id, userId));
+        await tx.delete(notifications).where(eq(notifications.user_id, userId));
 
         // 8. Soft delete the user record (mark as deleted instead of removing)
-        await tx.update(users)
-          .set({ 
+        await tx
+          .update(users)
+          .set({
             deleted_at: new Date(),
-            email: `deleted_${userId}_${user[0].email}` // Prevent email conflicts for new registrations
+            email: `deleted_${userId}_${user[0].email}`, // Prevent email conflicts for new registrations
           })
           .where(eq(users.id, userId));
 
         // 9. Create system messages in all conversations where this user was a participant
-        const allUserConversations = await tx.select()
+        const allUserConversations = await tx
+          .select()
           .from(conversations)
           .where(
             or(
@@ -2024,42 +2305,46 @@ export class DatabaseStorage implements IStorage {
             sender_id: null, // System message
             content: "This user has deleted their account and can no longer receive messages.",
             is_read: false,
-            is_system_message: true
+            is_system_message: true,
           });
         }
       });
 
       console.log(`Successfully soft-deleted user account for user ID: ${userId}`);
     } catch (error) {
-      console.error('Error during account deletion:', error);
-      throw new Error('Failed to delete user account. Please try again.');
+      console.error("Error during account deletion:", error);
+      throw new Error("Failed to delete user account. Please try again.");
     }
   }
 
   // User deletion helper methods
   async isUserDeleted(userId: number): Promise<boolean> {
-    const user = await db.select({ deleted_at: users.deleted_at })
+    const user = await db
+      .select({ deleted_at: users.deleted_at })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    
+
     return user.length > 0 && user[0].deleted_at !== null;
   }
 
-  async canSendMessageToUser(senderId: number, recipientId: number): Promise<{ canSend: boolean; error?: string }> {
+  async canSendMessageToUser(
+    senderId: number,
+    recipientId: number
+  ): Promise<{ canSend: boolean; error?: string }> {
     // Check if recipient is deleted
     if (await this.isUserDeleted(recipientId)) {
-      return { 
-        canSend: false, 
-        error: "This account has been deleted and can no longer receive messages." 
+      return {
+        canSend: false,
+        error: "This account has been deleted and can no longer receive messages.",
       };
     }
 
     // Check if sender is deleted (shouldn't happen if auth is working, but for safety)
     if (await this.isUserDeleted(senderId)) {
-      return { 
-        canSend: false, 
-        error: "You cannot send messages from a deleted account." 
+      return {
+        canSend: false,
+        error: "You cannot send messages from a deleted account.",
       };
     }
 
@@ -2068,76 +2353,96 @@ export class DatabaseStorage implements IStorage {
 
   // Rating management methods
   async createRating(rating: InsertRating): Promise<Rating> {
-    const result = await db.insert(ratings).values([rating as any]).returning();
+    const result = await db
+      .insert(ratings)
+      .values([rating as any])
+      .returning();
     return result[0];
   }
 
   async getRatingByJobApplication(jobApplicationId: number): Promise<Rating | undefined> {
-    const result = await db.select().from(ratings).where(eq(ratings.job_application_id, jobApplicationId)).limit(1);
+    const result = await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.job_application_id, jobApplicationId))
+      .limit(1);
     return result[0];
   }
 
-  async getFreelancerRatings(freelancerId: number): Promise<Array<Rating & { recruiter: User; job_title?: string }>> {
-    const result = await db.select({
-      id: ratings.id,
-      job_application_id: ratings.job_application_id,
-      recruiter_id: ratings.recruiter_id,
-      freelancer_id: ratings.freelancer_id,
-      rating: ratings.rating,
-      created_at: ratings.created_at,
-      updated_at: ratings.updated_at,
-      recruiter: {
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        email_verified: users.email_verified,
-        email_verification_token: users.email_verification_token,
-        email_verification_expires: users.email_verification_expires,
-        password_reset_token: users.password_reset_token,
-        password_reset_expires: users.password_reset_expires,
-        created_at: users.created_at,
-        updated_at: users.updated_at,
-        password: users.password
-      },
-      job_title: jobs.title
-    })
-    .from(ratings)
-    .leftJoin(users, eq(ratings.recruiter_id, users.id))
-    .leftJoin(job_applications, eq(ratings.job_application_id, job_applications.id))
-    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
-    .where(eq(ratings.freelancer_id, freelancerId))
-    .orderBy(desc(ratings.created_at));
+  async getFreelancerRatings(
+    freelancerId: number
+  ): Promise<Array<Rating & { recruiter: User; job_title?: string }>> {
+    const result = await db
+      .select({
+        id: ratings.id,
+        job_application_id: ratings.job_application_id,
+        recruiter_id: ratings.recruiter_id,
+        freelancer_id: ratings.freelancer_id,
+        rating: ratings.rating,
+        created_at: ratings.created_at,
+        updated_at: ratings.updated_at,
+        recruiter: {
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          email_verified: users.email_verified,
+          email_verification_token: users.email_verification_token,
+          email_verification_expires: users.email_verification_expires,
+          password_reset_token: users.password_reset_token,
+          password_reset_expires: users.password_reset_expires,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+          password: users.password,
+        },
+        job_title: jobs.title,
+      })
+      .from(ratings)
+      .leftJoin(users, eq(ratings.recruiter_id, users.id))
+      .leftJoin(job_applications, eq(ratings.job_application_id, job_applications.id))
+      .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+      .where(eq(ratings.freelancer_id, freelancerId))
+      .orderBy(desc(ratings.created_at));
 
     return result as Array<Rating & { recruiter: User; job_title?: string }>;
   }
 
-  async getFreelancerAverageRating(freelancerId: number): Promise<{ average: number; count: number }> {
-    const result = await db.select({
-      average: sql<number>`ROUND(AVG(${ratings.rating}), 1)`,
-      count: sql<number>`count(*)::int`
-    })
-    .from(ratings)
-    .where(eq(ratings.freelancer_id, freelancerId));
+  async getFreelancerAverageRating(
+    freelancerId: number
+  ): Promise<{ average: number; count: number }> {
+    const result = await db
+      .select({
+        average: sql<number>`ROUND(AVG(${ratings.rating}), 1)`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(ratings)
+      .where(eq(ratings.freelancer_id, freelancerId));
 
     return {
       average: Number(result[0]?.average || 0),
-      count: Number(result[0]?.count || 0)
+      count: Number(result[0]?.count || 0),
     };
   }
 
-  async canRecruiterRateFreelancer(recruiterId: number, freelancerId: number, jobApplicationId: number): Promise<boolean> {
+  async canRecruiterRateFreelancer(
+    recruiterId: number,
+    freelancerId: number,
+    jobApplicationId: number
+  ): Promise<boolean> {
     // Check if this is a valid hired job application
-    const application = await db.select()
+    const application = await db
+      .select()
       .from(job_applications)
       .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
-      .where(and(
-        eq(job_applications.id, jobApplicationId),
-        eq(job_applications.freelancer_id, freelancerId),
-        eq(job_applications.status, 'hired'),
-        eq(jobs.recruiter_id, recruiterId)
-      ))
+      .where(
+        and(
+          eq(job_applications.id, jobApplicationId),
+          eq(job_applications.freelancer_id, freelancerId),
+          eq(job_applications.status, "hired"),
+          eq(jobs.recruiter_id, recruiterId)
+        )
+      )
       .limit(1);
 
     if (!application.length) return false;
@@ -2149,97 +2454,116 @@ export class DatabaseStorage implements IStorage {
 
   // Rating request management methods
   async createRatingRequest(request: InsertRatingRequest): Promise<RatingRequest> {
-    const result = await db.insert(rating_requests).values([request as any]).returning();
+    const result = await db
+      .insert(rating_requests)
+      .values([request as any])
+      .returning();
     return result[0];
   }
 
-  async getRatingRequestByJobApplication(jobApplicationId: number): Promise<RatingRequest | undefined> {
-    const result = await db.select().from(rating_requests).where(eq(rating_requests.job_application_id, jobApplicationId)).limit(1);
+  async getRatingRequestByJobApplication(
+    jobApplicationId: number
+  ): Promise<RatingRequest | undefined> {
+    const result = await db
+      .select()
+      .from(rating_requests)
+      .where(eq(rating_requests.job_application_id, jobApplicationId))
+      .limit(1);
     return result[0];
   }
 
-  async getRecruiterRatingRequests(recruiterId: number): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>> {
-    const result = await db.select({
-      id: rating_requests.id,
-      job_application_id: rating_requests.job_application_id,
-      freelancer_id: rating_requests.freelancer_id,
-      recruiter_id: rating_requests.recruiter_id,
-      status: rating_requests.status,
-      requested_at: rating_requests.requested_at,
-      responded_at: rating_requests.responded_at,
-      created_at: rating_requests.created_at,
-      updated_at: rating_requests.updated_at,
-      freelancer: {
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        email_verified: users.email_verified,
-        email_verification_token: users.email_verification_token,
-        email_verification_expires: users.email_verification_expires,
-        password_reset_token: users.password_reset_token,
-        password_reset_expires: users.password_reset_expires,
-        created_at: users.created_at,
-        updated_at: users.updated_at,
-        password: users.password
-      },
-      job_title: jobs.title
-    })
-    .from(rating_requests)
-    .leftJoin(users, eq(rating_requests.freelancer_id, users.id))
-    .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
-    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
-    .where(eq(rating_requests.recruiter_id, recruiterId))
-    .orderBy(desc(rating_requests.requested_at));
+  async getRecruiterRatingRequests(
+    recruiterId: number
+  ): Promise<Array<RatingRequest & { freelancer: User; job_title?: string }>> {
+    const result = await db
+      .select({
+        id: rating_requests.id,
+        job_application_id: rating_requests.job_application_id,
+        freelancer_id: rating_requests.freelancer_id,
+        recruiter_id: rating_requests.recruiter_id,
+        status: rating_requests.status,
+        requested_at: rating_requests.requested_at,
+        responded_at: rating_requests.responded_at,
+        created_at: rating_requests.created_at,
+        updated_at: rating_requests.updated_at,
+        freelancer: {
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          email_verified: users.email_verified,
+          email_verification_token: users.email_verification_token,
+          email_verification_expires: users.email_verification_expires,
+          password_reset_token: users.password_reset_token,
+          password_reset_expires: users.password_reset_expires,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+          password: users.password,
+        },
+        job_title: jobs.title,
+      })
+      .from(rating_requests)
+      .leftJoin(users, eq(rating_requests.freelancer_id, users.id))
+      .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
+      .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+      .where(eq(rating_requests.recruiter_id, recruiterId))
+      .orderBy(desc(rating_requests.requested_at));
 
     return result as Array<RatingRequest & { freelancer: User; job_title?: string }>;
   }
 
-  async getFreelancerRatingRequests(freelancerId: number): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>> {
-    const result = await db.select({
-      id: rating_requests.id,
-      job_application_id: rating_requests.job_application_id,
-      freelancer_id: rating_requests.freelancer_id,
-      recruiter_id: rating_requests.recruiter_id,
-      status: rating_requests.status,
-      requested_at: rating_requests.requested_at,
-      responded_at: rating_requests.responded_at,
-      created_at: rating_requests.created_at,
-      updated_at: rating_requests.updated_at,
-      recruiter: {
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        email_verified: users.email_verified,
-        email_verification_token: users.email_verification_token,
-        email_verification_expires: users.email_verification_expires,
-        password_reset_token: users.password_reset_token,
-        password_reset_expires: users.password_reset_expires,
-        created_at: users.created_at,
-        updated_at: users.updated_at,
-        password: users.password
-      },
-      job_title: jobs.title
-    })
-    .from(rating_requests)
-    .leftJoin(users, eq(rating_requests.recruiter_id, users.id))
-    .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
-    .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
-    .where(eq(rating_requests.freelancer_id, freelancerId))
-    .orderBy(desc(rating_requests.requested_at));
+  async getFreelancerRatingRequests(
+    freelancerId: number
+  ): Promise<Array<RatingRequest & { recruiter: User; job_title?: string }>> {
+    const result = await db
+      .select({
+        id: rating_requests.id,
+        job_application_id: rating_requests.job_application_id,
+        freelancer_id: rating_requests.freelancer_id,
+        recruiter_id: rating_requests.recruiter_id,
+        status: rating_requests.status,
+        requested_at: rating_requests.requested_at,
+        responded_at: rating_requests.responded_at,
+        created_at: rating_requests.created_at,
+        updated_at: rating_requests.updated_at,
+        recruiter: {
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          email_verified: users.email_verified,
+          email_verification_token: users.email_verification_token,
+          email_verification_expires: users.email_verification_expires,
+          password_reset_token: users.password_reset_token,
+          password_reset_expires: users.password_reset_expires,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+          password: users.password,
+        },
+        job_title: jobs.title,
+      })
+      .from(rating_requests)
+      .leftJoin(users, eq(rating_requests.recruiter_id, users.id))
+      .leftJoin(job_applications, eq(rating_requests.job_application_id, job_applications.id))
+      .leftJoin(jobs, eq(job_applications.job_id, jobs.id))
+      .where(eq(rating_requests.freelancer_id, freelancerId))
+      .orderBy(desc(rating_requests.requested_at));
 
     return result as Array<RatingRequest & { recruiter: User; job_title?: string }>;
   }
 
-  async updateRatingRequestStatus(requestId: number, status: 'completed' | 'declined'): Promise<RatingRequest> {
-    const result = await db.update(rating_requests)
-      .set({ 
+  async updateRatingRequestStatus(
+    requestId: number,
+    status: "completed" | "declined"
+  ): Promise<RatingRequest> {
+    const result = await db
+      .update(rating_requests)
+      .set({
         status: status,
         responded_at: new Date(),
-        updated_at: sql`now()`
+        updated_at: sql`now()`,
       })
       .where(eq(rating_requests.id, requestId))
       .returning();
@@ -2248,53 +2572,57 @@ export class DatabaseStorage implements IStorage {
 
   // Feedback management methods for admin dashboard
   async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
-    const result = await db.insert(feedback).values([feedbackData as any]).returning();
+    const result = await db
+      .insert(feedback)
+      .values([feedbackData as any])
+      .returning();
     return result[0];
   }
 
   async getAllFeedback(): Promise<Array<Feedback & { user?: User }>> {
-    const result = await db.select({
-      id: feedback.id,
-      user_id: feedback.user_id,
-      feedback_type: feedback.feedback_type,
-      message: feedback.message,
-      page_url: feedback.page_url,
-      source: feedback.source,
-      user_email: feedback.user_email,
-      user_name: feedback.user_name,
-      status: feedback.status,
-      admin_response: feedback.admin_response,
-      admin_user_id: feedback.admin_user_id,
-      priority: feedback.priority,
-      created_at: feedback.created_at,
-      updated_at: feedback.updated_at,
-      resolved_at: feedback.resolved_at,
-      user: {
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        email_verified: users.email_verified,
-        email_verification_token: users.email_verification_token,
-        email_verification_expires: users.email_verification_expires,
-        password_reset_token: users.password_reset_token,
-        password_reset_expires: users.password_reset_expires,
-        created_at: users.created_at,
-        updated_at: users.updated_at,
-        password: users.password,
-        auth_provider: users.auth_provider,
-        google_id: users.google_id,
-        facebook_id: users.facebook_id,
-        linkedin_id: users.linkedin_id,
-        profile_photo_url: users.profile_photo_url,
-        last_login_method: users.last_login_method,
-        last_login_at: users.last_login_at,
-      }
-    })
-    .from(feedback)
-    .leftJoin(users, eq(feedback.user_id, users.id))
-    .orderBy(desc(feedback.created_at));
+    const result = await db
+      .select({
+        id: feedback.id,
+        user_id: feedback.user_id,
+        feedback_type: feedback.feedback_type,
+        message: feedback.message,
+        page_url: feedback.page_url,
+        source: feedback.source,
+        user_email: feedback.user_email,
+        user_name: feedback.user_name,
+        status: feedback.status,
+        admin_response: feedback.admin_response,
+        admin_user_id: feedback.admin_user_id,
+        priority: feedback.priority,
+        created_at: feedback.created_at,
+        updated_at: feedback.updated_at,
+        resolved_at: feedback.resolved_at,
+        user: {
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          email_verified: users.email_verified,
+          email_verification_token: users.email_verification_token,
+          email_verification_expires: users.email_verification_expires,
+          password_reset_token: users.password_reset_token,
+          password_reset_expires: users.password_reset_expires,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+          password: users.password,
+          auth_provider: users.auth_provider,
+          google_id: users.google_id,
+          facebook_id: users.facebook_id,
+          linkedin_id: users.linkedin_id,
+          profile_photo_url: users.profile_photo_url,
+          last_login_method: users.last_login_method,
+          last_login_at: users.last_login_at,
+        },
+      })
+      .from(feedback)
+      .leftJoin(users, eq(feedback.user_id, users.id))
+      .orderBy(desc(feedback.created_at));
 
     return result as Array<Feedback & { user?: User }>;
   }
@@ -2304,7 +2632,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateFeedbackStatus(id: number, status: 'pending' | 'in_review' | 'resolved' | 'closed', adminUserId?: number): Promise<Feedback> {
+  async updateFeedbackStatus(
+    id: number,
+    status: "pending" | "in_review" | "resolved" | "closed",
+    adminUserId?: number
+  ): Promise<Feedback> {
     const updateData: any = {
       status: status,
       updated_at: sql`now()`,
@@ -2314,96 +2646,104 @@ export class DatabaseStorage implements IStorage {
       updateData.admin_user_id = adminUserId;
     }
 
-    if (status === 'resolved' || status === 'closed') {
+    if (status === "resolved" || status === "closed") {
       updateData.resolved_at = new Date();
     }
 
-    const result = await db.update(feedback)
-      .set(updateData)
-      .where(eq(feedback.id, id))
-      .returning();
+    const result = await db.update(feedback).set(updateData).where(eq(feedback.id, id)).returning();
     return result[0];
   }
 
   async addAdminResponse(id: number, response: string, adminUserId: number): Promise<Feedback> {
-    const result = await db.update(feedback)
-      .set({ 
+    const result = await db
+      .update(feedback)
+      .set({
         admin_response: response,
         admin_user_id: adminUserId,
-        status: 'in_review',
-        updated_at: sql`now()`
+        status: "in_review",
+        updated_at: sql`now()`,
       })
       .where(eq(feedback.id, id))
       .returning();
     return result[0];
   }
 
-  async getFeedbackByStatus(status: 'pending' | 'in_review' | 'resolved' | 'closed'): Promise<Array<Feedback & { user?: User }>> {
-    const result = await db.select({
-      id: feedback.id,
-      user_id: feedback.user_id,
-      feedback_type: feedback.feedback_type,
-      message: feedback.message,
-      page_url: feedback.page_url,
-      source: feedback.source,
-      user_email: feedback.user_email,
-      user_name: feedback.user_name,
-      status: feedback.status,
-      admin_response: feedback.admin_response,
-      admin_user_id: feedback.admin_user_id,
-      priority: feedback.priority,
-      created_at: feedback.created_at,
-      updated_at: feedback.updated_at,
-      resolved_at: feedback.resolved_at,
-      user: {
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        email_verified: users.email_verified,
-        email_verification_token: users.email_verification_token,
-        email_verification_expires: users.email_verification_expires,
-        password_reset_token: users.password_reset_token,
-        password_reset_expires: users.password_reset_expires,
-        created_at: users.created_at,
-        updated_at: users.updated_at,
-        password: users.password,
-        auth_provider: users.auth_provider,
-        google_id: users.google_id,
-        facebook_id: users.facebook_id,
-        linkedin_id: users.linkedin_id,
-        profile_photo_url: users.profile_photo_url,
-        last_login_method: users.last_login_method,
-        last_login_at: users.last_login_at,
-      }
-    })
-    .from(feedback)
-    .leftJoin(users, eq(feedback.user_id, users.id))
-    .where(eq(feedback.status, status))
-    .orderBy(desc(feedback.created_at));
+  async getFeedbackByStatus(
+    status: "pending" | "in_review" | "resolved" | "closed"
+  ): Promise<Array<Feedback & { user?: User }>> {
+    const result = await db
+      .select({
+        id: feedback.id,
+        user_id: feedback.user_id,
+        feedback_type: feedback.feedback_type,
+        message: feedback.message,
+        page_url: feedback.page_url,
+        source: feedback.source,
+        user_email: feedback.user_email,
+        user_name: feedback.user_name,
+        status: feedback.status,
+        admin_response: feedback.admin_response,
+        admin_user_id: feedback.admin_user_id,
+        priority: feedback.priority,
+        created_at: feedback.created_at,
+        updated_at: feedback.updated_at,
+        resolved_at: feedback.resolved_at,
+        user: {
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          email_verified: users.email_verified,
+          email_verification_token: users.email_verification_token,
+          email_verification_expires: users.email_verification_expires,
+          password_reset_token: users.password_reset_token,
+          password_reset_expires: users.password_reset_expires,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+          password: users.password,
+          auth_provider: users.auth_provider,
+          google_id: users.google_id,
+          facebook_id: users.facebook_id,
+          linkedin_id: users.linkedin_id,
+          profile_photo_url: users.profile_photo_url,
+          last_login_method: users.last_login_method,
+          last_login_at: users.last_login_at,
+        },
+      })
+      .from(feedback)
+      .leftJoin(users, eq(feedback.user_id, users.id))
+      .where(eq(feedback.status, status))
+      .orderBy(desc(feedback.created_at));
 
     return result as Array<Feedback & { user?: User }>;
   }
 
-  async getFeedbackStats(): Promise<{ total: number; pending: number; resolved: number; byType: Record<string, number> }> {
+  async getFeedbackStats(): Promise<{
+    total: number;
+    pending: number;
+    resolved: number;
+    byType: Record<string, number>;
+  }> {
     // Get total count and status counts
-    const statusStats = await db.select({
-      total: sql<number>`count(*)::int`,
-      pending: sql<number>`count(case when status = 'pending' then 1 end)::int`,
-      in_review: sql<number>`count(case when status = 'in_review' then 1 end)::int`,
-      resolved: sql<number>`count(case when status = 'resolved' then 1 end)::int`,
-      closed: sql<number>`count(case when status = 'closed' then 1 end)::int`,
-    })
-    .from(feedback);
+    const statusStats = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        pending: sql<number>`count(case when status = 'pending' then 1 end)::int`,
+        in_review: sql<number>`count(case when status = 'in_review' then 1 end)::int`,
+        resolved: sql<number>`count(case when status = 'resolved' then 1 end)::int`,
+        closed: sql<number>`count(case when status = 'closed' then 1 end)::int`,
+      })
+      .from(feedback);
 
     // Get type breakdown
-    const typeStats = await db.select({
-      feedback_type: feedback.feedback_type,
-      count: sql<number>`count(*)::int`
-    })
-    .from(feedback)
-    .groupBy(feedback.feedback_type);
+    const typeStats = await db
+      .select({
+        feedback_type: feedback.feedback_type,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(feedback)
+      .groupBy(feedback.feedback_type);
 
     const byType: Record<string, number> = {};
     typeStats.forEach(stat => {
@@ -2417,85 +2757,82 @@ export class DatabaseStorage implements IStorage {
       total: Number(stats?.total || 0),
       pending: Number(stats?.pending || 0),
       resolved: Number((stats?.resolved || 0) + (stats?.closed || 0)),
-      byType
+      byType,
     };
   }
 
   // Admin management methods
-  async updateUserRole(userId: number, role: 'freelancer' | 'recruiter' | 'admin'): Promise<User> {
-    const result = await db.update(users)
-      .set({ role })
-      .where(eq(users.id, userId))
-      .returning();
-    
+  async updateUserRole(userId: number, role: "freelancer" | "recruiter" | "admin"): Promise<User> {
+    const result = await db.update(users).set({ role }).where(eq(users.id, userId)).returning();
+
     if (!result[0]) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Clear cache for this user
     cache.delete(`user:${userId}`);
     cache.clearPattern(`user_with_profile:${userId}`);
-    
+
     // Clear admin users cache when admin roles change
-    cache.delete('admin_users');
+    cache.delete("admin_users");
 
     return result[0];
   }
 
   async getAdminUsers(): Promise<User[]> {
-    const cacheKey = 'admin_users';
+    const cacheKey = "admin_users";
     const cached = cache.get<User[]>(cacheKey);
     if (cached) return cached;
 
     // Get users with admin role from database
-    const dbAdmins = await db.select({
-      id: users.id,
-      email: users.email,
-      role: users.role,
-      first_name: users.first_name,
-      last_name: users.last_name,
-      email_verified: users.email_verified,
-      auth_provider: users.auth_provider,
-      created_at: users.created_at,
-      last_login_at: users.last_login_at
-    })
-    .from(users)
-    .where(eq(users.role, 'admin'))
-    .orderBy(desc(users.created_at));
+    const dbAdmins = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        auth_provider: users.auth_provider,
+        created_at: users.created_at,
+        last_login_at: users.last_login_at,
+      })
+      .from(users)
+      .where(eq(users.role, "admin"))
+      .orderBy(desc(users.created_at));
 
     // Get admin emails from environment variable (same as auth.ts)
-    const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
-      ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim().toLowerCase())
+    const ADMIN_EMAILS = process.env.ADMIN_EMAILS
+      ? process.env.ADMIN_EMAILS.split(",").map(email => email.trim().toLowerCase())
       : [];
 
     // Get admin users from environment variable list (regardless of their role column)
-    const hardcodedAdmins = await db.select({
-      id: users.id,
-      email: users.email,
-      role: users.role,
-      first_name: users.first_name,
-      last_name: users.last_name,
-      email_verified: users.email_verified,
-      auth_provider: users.auth_provider,
-      created_at: users.created_at,
-      last_login_at: users.last_login_at
-    })
-    .from(users)
-    .where(or(
-      ...ADMIN_EMAILS.map(email => eq(sql`LOWER(${users.email})`, email.toLowerCase()))
-    ))
-    .orderBy(desc(users.created_at));
+    const hardcodedAdmins = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        first_name: users.first_name,
+        last_name: users.last_name,
+        email_verified: users.email_verified,
+        auth_provider: users.auth_provider,
+        created_at: users.created_at,
+        last_login_at: users.last_login_at,
+      })
+      .from(users)
+      .where(or(...ADMIN_EMAILS.map(email => eq(sql`LOWER(${users.email})`, email.toLowerCase()))))
+      .orderBy(desc(users.created_at));
 
     // Combine and deduplicate admin users
     const allAdmins = [...dbAdmins, ...hardcodedAdmins];
-    const uniqueAdmins = allAdmins.filter((admin, index, arr) => 
-      arr.findIndex(a => a.id === admin.id) === index
+    const uniqueAdmins = allAdmins.filter(
+      (admin, index, arr) => arr.findIndex(a => a.id === admin.id) === index
     );
 
     // Apply computed role for hardcoded admins
     const adminUsers = uniqueAdmins.map(admin => ({
       ...admin,
-      role: ADMIN_EMAILS.includes(admin.email.toLowerCase()) ? 'admin' as const : admin.role
+      role: ADMIN_EMAILS.includes(admin.email.toLowerCase()) ? ("admin" as const) : admin.role,
     })) as User[];
 
     cache.set(cacheKey, adminUsers, 60); // Cache for 1 minute
@@ -2508,11 +2845,12 @@ export class DatabaseStorage implements IStorage {
     const cached = cache.get<NotificationPreferences>(cacheKey);
     if (cached) return cached;
 
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(notification_preferences)
       .where(eq(notification_preferences.user_id, userId))
       .limit(1);
-    
+
     if (result[0]) {
       cache.set(cacheKey, result[0], 300);
     }
@@ -2520,12 +2858,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotificationPreferences(userId: number): Promise<NotificationPreferences> {
-    const result = await db.insert(notification_preferences)
+    const result = await db
+      .insert(notification_preferences)
       .values({ user_id: userId })
       .returning();
-    
+
     if (!result[0]) {
-      throw new Error('Failed to create notification preferences');
+      throw new Error("Failed to create notification preferences");
     }
 
     const cacheKey = `notification_preferences:${userId}`;
@@ -2533,15 +2872,19 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateNotificationPreferences(userId: number, preferences: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences> {
+  async updateNotificationPreferences(
+    userId: number,
+    preferences: Partial<InsertNotificationPreferences>
+  ): Promise<NotificationPreferences> {
     const updateData: any = { ...preferences, updated_at: new Date() };
-    const result = await db.update(notification_preferences)
+    const result = await db
+      .update(notification_preferences)
       .set(updateData)
       .where(eq(notification_preferences.user_id, userId))
       .returning();
-    
+
     if (!result[0]) {
-      throw new Error('Failed to update notification preferences');
+      throw new Error("Failed to update notification preferences");
     }
 
     const cacheKey = `notification_preferences:${userId}`;
@@ -2551,61 +2894,62 @@ export class DatabaseStorage implements IStorage {
 
   // Job alert filters management
   async getJobAlertFilters(userId: number): Promise<JobAlertFilter[]> {
-    return db.select()
+    return db
+      .select()
       .from(job_alert_filters)
-      .where(and(
-        eq(job_alert_filters.user_id, userId),
-        eq(job_alert_filters.is_active, true)
-      ))
+      .where(and(eq(job_alert_filters.user_id, userId), eq(job_alert_filters.is_active, true)))
       .orderBy(desc(job_alert_filters.created_at));
   }
 
   async createJobAlertFilter(filter: InsertJobAlertFilter): Promise<JobAlertFilter> {
-    const result = await db.insert(job_alert_filters)
-      .values(filter)
-      .returning();
-    
+    const result = await db.insert(job_alert_filters).values(filter).returning();
+
     if (!result[0]) {
-      throw new Error('Failed to create job alert filter');
+      throw new Error("Failed to create job alert filter");
     }
 
     return result[0];
   }
 
-  async updateJobAlertFilter(filterId: number, filter: Partial<InsertJobAlertFilter>): Promise<JobAlertFilter> {
-    const result = await db.update(job_alert_filters)
+  async updateJobAlertFilter(
+    filterId: number,
+    filter: Partial<InsertJobAlertFilter>
+  ): Promise<JobAlertFilter> {
+    const result = await db
+      .update(job_alert_filters)
       .set({ ...filter, updated_at: new Date() })
       .where(eq(job_alert_filters.id, filterId))
       .returning();
-    
+
     if (!result[0]) {
-      throw new Error('Failed to update job alert filter');
+      throw new Error("Failed to update job alert filter");
     }
 
     return result[0];
   }
 
   async deleteJobAlertFilter(filterId: number): Promise<void> {
-    await db.delete(job_alert_filters)
-      .where(eq(job_alert_filters.id, filterId));
+    await db.delete(job_alert_filters).where(eq(job_alert_filters.id, filterId));
   }
 
   // Email notification logging
   async logEmailNotification(log: InsertEmailNotificationLog): Promise<EmailNotificationLog> {
     const logData: any = log;
-    const result = await db.insert(email_notification_logs)
-      .values(logData)
-      .returning();
-    
+    const result = await db.insert(email_notification_logs).values(logData).returning();
+
     if (!result[0]) {
-      throw new Error('Failed to log email notification');
+      throw new Error("Failed to log email notification");
     }
 
     return result[0];
   }
 
-  async getEmailNotificationLogs(userId: number, limit: number = 50): Promise<EmailNotificationLog[]> {
-    return db.select()
+  async getEmailNotificationLogs(
+    userId: number,
+    limit: number = 50
+  ): Promise<EmailNotificationLog[]> {
+    return db
+      .select()
       .from(email_notification_logs)
       .where(eq(email_notification_logs.user_id, userId))
       .orderBy(desc(email_notification_logs.sent_at))
@@ -2613,34 +2957,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   clearCache(): void {
-    console.log('🧹 Clearing server-side SimpleCache...');
+    console.log("🧹 Clearing server-side SimpleCache...");
     cache.clear();
-    console.log('✅ Server-side cache cleared');
+    console.log("✅ Server-side cache cleared");
   }
 
   // Contact Messages
-  async createContactMessage(data: { name: string; email: string; subject: string; message: string; ip_address?: string; user_agent?: string }): Promise<ContactMessage> {
-    const result = await db.insert(contact_messages)
-      .values(data)
-      .returning();
-    
+  async createContactMessage(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    ip_address?: string;
+    user_agent?: string;
+  }): Promise<ContactMessage> {
+    const result = await db.insert(contact_messages).values(data).returning();
+
     if (!result[0]) {
-      throw new Error('Failed to create contact message');
+      throw new Error("Failed to create contact message");
     }
 
     return result[0];
   }
 
   async getAllContactMessages(): Promise<ContactMessage[]> {
-    return db.select()
-      .from(contact_messages)
-      .orderBy(desc(contact_messages.created_at));
+    return db.select().from(contact_messages).orderBy(desc(contact_messages.created_at));
   }
 
-  async updateContactMessageStatus(id: number, status: 'pending' | 'replied' | 'resolved'): Promise<void> {
-    await db.update(contact_messages)
-      .set({ status })
-      .where(eq(contact_messages.id, id));
+  async updateContactMessageStatus(
+    id: number,
+    status: "pending" | "replied" | "resolved"
+  ): Promise<void> {
+    await db.update(contact_messages).set({ status }).where(eq(contact_messages.id, id));
   }
 }
 

@@ -1,9 +1,9 @@
-import { useLocation } from 'wouter';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { Layout } from '@/components/Layout';
-import { SettingsForm } from '@/components/SettingsForm';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { useLocation } from "wouter";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { Layout } from "@/components/Layout";
+import { SettingsForm } from "@/components/SettingsForm";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 
 export default function Settings() {
   const [, setLocation] = useLocation();
@@ -12,7 +12,7 @@ export default function Settings() {
   // Fix React state update error: move redirect to useEffect
   useEffect(() => {
     if (!loading && !user) {
-      setLocation('/auth');
+      setLocation("/auth");
     }
   }, [loading, user, setLocation]);
 

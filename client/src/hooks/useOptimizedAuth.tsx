@@ -1,13 +1,17 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { apiRequest } from '@/lib/queryClient';
-import type { User } from '@shared/types';
+import { apiRequest } from "@/lib/queryClient";
+import type { User } from "@shared/types";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 // OPTIMIZED AUTH HOOK: Simplified authentication with essential features only
 
 interface OptimizedAuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string }>;
+  signUp: (
+    email: string,
+    password: string,
+    role: "freelancer" | "recruiter"
+  ) => Promise<{ error: any; message?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
@@ -28,48 +32,52 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       }
 
       // Version-based cache clearing - COMPLETELY DISABLED for session persistence
-      const APP_VERSION = "2025-09-24-jwt-fixed"; 
-      const storedVersion = localStorage.getItem('app_version');
-      
+      const APP_VERSION = "2025-09-24-jwt-fixed";
+      const storedVersion = localStorage.getItem("app_version");
+
       // Only update version, never clear cache to preserve sessions
       if (storedVersion !== APP_VERSION) {
-        console.log('App version updated, preserving authentication state');
-        localStorage.setItem('app_version', APP_VERSION);
+        console.log("App version updated, preserving authentication state");
+        localStorage.setItem("app_version", APP_VERSION);
       }
-      
-      const storedUser = localStorage.getItem('user');
-      const storedToken = localStorage.getItem('auth_token');
-      
+
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("auth_token");
+
       if (storedUser && storedToken) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          
+
           // CRITICAL FIX: Validate token with server before trusting it
-          apiRequest('/api/auth/session', { skipAuthRedirect: true })
-            .then((sessionData) => {
+          apiRequest("/api/auth/session", { skipAuthRedirect: true })
+            .then(sessionData => {
               if (sessionData && sessionData.user) {
                 // Token is valid, use fresh data from server
                 setUser(sessionData.user);
-                localStorage.setItem('user', JSON.stringify(sessionData.user));
-                console.log('✅ Token validated, user restored:', sessionData.user.email);
+                localStorage.setItem("user", JSON.stringify(sessionData.user));
+                console.log("✅ Token validated, user restored:", {
+                  email: sessionData.user.email,
+                  id: sessionData.user.id,
+                  role: sessionData.user.role,
+                });
               } else {
-                throw new Error('Invalid session response');
+                throw new Error("Invalid session response");
               }
               setLoading(false);
             })
-            .catch((error) => {
-              console.log('❌ Token validation failed, clearing auth state:', error.message);
-              localStorage.removeItem('user');
-              localStorage.removeItem('auth_token');
+            .catch(error => {
+              console.log("❌ Token validation failed, clearing auth state:", error.message);
+              localStorage.removeItem("user");
+              localStorage.removeItem("auth_token");
               setUser(null);
               setLoading(false);
             });
-          
+
           return; // Exit early, let validation complete async
         } catch (error) {
-          console.log('❌ Failed to parse stored user, clearing cache');
-          localStorage.removeItem('user');
-          localStorage.removeItem('auth_token');
+          console.log("❌ Failed to parse stored user, clearing cache");
+          localStorage.removeItem("user");
+          localStorage.removeItem("auth_token");
           setUser(null);
         }
       } else {
@@ -78,93 +86,95 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
       }
       setLoading(false);
     };
-    
+
     restoreStoredUser();
   }, []); // Remove user dependency to prevent infinite loops
 
   // Listen for auth:invalid events and handle logout
   useEffect(() => {
     const handleAuthInvalid = () => {
-      console.log('🔄 Invalid session detected, clearing authentication');
+      console.log("🔄 Invalid session detected, clearing authentication");
       setUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem("user");
+      localStorage.removeItem("auth_token");
       sessionStorage.clear();
-      
+
       // Navigate to auth page if not already there
-      if (window.location.pathname !== '/auth') {
-        window.location.href = '/auth';
+      if (window.location.pathname !== "/auth") {
+        window.location.href = "/auth";
       }
     };
 
-    window.addEventListener('auth:invalid', handleAuthInvalid);
-    
+    window.addEventListener("auth:invalid", handleAuthInvalid);
+
     return () => {
-      window.removeEventListener('auth:invalid', handleAuthInvalid);
+      window.removeEventListener("auth:invalid", handleAuthInvalid);
     };
   }, []);
 
-  const signUp = async (email: string, password: string, role: 'freelancer' | 'recruiter') => {
+  const signUp = async (email: string, password: string, role: "freelancer" | "recruiter") => {
     try {
-      const result = await apiRequest('/api/auth/signup', {
-        method: 'POST',
+      const result = await apiRequest("/api/auth/signup", {
+        method: "POST",
         body: JSON.stringify({ email, password, role }),
       });
       return { error: null, message: result.message };
     } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Signup failed' } };
+      return { error: { message: error instanceof Error ? error.message : "Signup failed" } };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const result = await apiRequest('/api/auth/signin', {
-        method: 'POST',
+      const result = await apiRequest("/api/auth/signin", {
+        method: "POST",
         body: JSON.stringify({ email, password }),
         skipAuthRedirect: true,
       });
-      
+
       // Store JWT token and user data from signin response
       if (result && result.user && result.token) {
-        localStorage.setItem('auth_token', result.token);
+        localStorage.setItem("auth_token", result.token);
         setUser(result.user);
-        localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem("user", JSON.stringify(result.user));
       }
-      
+
       return { error: null };
     } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Sign in failed' } };
+      return { error: { message: error instanceof Error ? error.message : "Sign in failed" } };
     }
   };
 
   const signOut = async () => {
     try {
       // Call server signout to clear session
-      await apiRequest('/api/auth/signout', { method: 'POST' });
+      await apiRequest("/api/auth/signout", { method: "POST" });
     } catch (error) {
-      console.log('Server signout failed, clearing local state anyway');
+      console.log("Server signout failed, clearing local state anyway");
     }
-    
+
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth_token'); // Clear JWT token
+    localStorage.removeItem("user");
+    localStorage.removeItem("auth_token"); // Clear JWT token
     sessionStorage.clear();
   };
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   return (
-    <OptimizedAuthContext.Provider value={{
-      user,
-      loading,
-      signUp,
-      signIn,
-      signOut,
-      updateUser
-    }}>
+    <OptimizedAuthContext.Provider
+      value={{
+        user,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        updateUser,
+      }}
+    >
       {children}
     </OptimizedAuthContext.Provider>
   );
@@ -173,7 +183,7 @@ export const OptimizedAuthProvider = ({ children }: { children: React.ReactNode 
 export const useOptimizedAuth = () => {
   const context = useContext(OptimizedAuthContext);
   if (context === undefined) {
-    throw new Error('useOptimizedAuth must be used within an OptimizedAuthProvider');
+    throw new Error("useOptimizedAuth must be used within an OptimizedAuthProvider");
   }
   return context;
 };

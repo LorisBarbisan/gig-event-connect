@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'wouter';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect, useRef } from "react";
+import { useLocation } from "wouter";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -17,26 +17,26 @@ export function AdminGuard({ children }: AdminGuardProps) {
   useEffect(() => {
     // Prevent multiple toasts and redirects
     if (hasToasted.current || isLoading) return;
-    
+
     if (!user) {
       hasToasted.current = true;
       toast({
-        title: 'Authentication Required',
-        description: 'Please sign in to access the admin dashboard.',
-        variant: 'destructive',
+        title: "Authentication Required",
+        description: "Please sign in to access the admin dashboard.",
+        variant: "destructive",
       });
-      setLocation('/auth');
-    } else if (user.role !== 'admin') {
+      setLocation("/auth");
+    } else if (user.role !== "admin") {
       hasToasted.current = true;
-      console.log('Admin access denied for user:', user.email, 'Role:', user.role);
+      console.log("Admin access denied for user:", user.email, "Role:", user.role);
       toast({
-        title: 'Access Denied',
-        description: 'Admin privileges are required to access this page.',
-        variant: 'destructive',
+        title: "Access Denied",
+        description: "Admin privileges are required to access this page.",
+        variant: "destructive",
       });
-      setLocation('/dashboard');
-    } else if (user.role === 'admin') {
-      console.log('Admin access granted for user:', user.email, 'Role:', user.role);
+      setLocation("/dashboard");
+    } else if (user.role === "admin") {
+      console.log("Admin access granted for user:", user.email, "Role:", user.role);
     }
   }, [user, isLoading]); // Removed toast and setLocation from dependencies
 
@@ -65,7 +65,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
   }
 
   // Handle non-admin users
-  if (user.role !== 'admin') {
+  if (user.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">

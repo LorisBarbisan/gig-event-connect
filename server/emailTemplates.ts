@@ -147,13 +147,16 @@ export function applicationUpdateEmail(data: {
   applicationUrl: string;
 }): { subject: string; html: string } {
   const statusMessages: Record<string, { emoji: string; message: string }> = {
-    reviewed: { emoji: '👀', message: 'Your application is being reviewed' },
-    shortlisted: { emoji: '⭐', message: 'You have been shortlisted' },
-    rejected: { emoji: '📋', message: 'Application status update' },
-    hired: { emoji: '🎉', message: 'Congratulations! You have been hired' },
+    reviewed: { emoji: "👀", message: "Your application is being reviewed" },
+    shortlisted: { emoji: "⭐", message: "You have been shortlisted" },
+    rejected: { emoji: "📋", message: "Application status update" },
+    hired: { emoji: "🎉", message: "Congratulations! You have been hired" },
   };
 
-  const statusInfo = statusMessages[data.status] || { emoji: '🔔', message: 'Application status update' };
+  const statusInfo = statusMessages[data.status] || {
+    emoji: "🔔",
+    message: "Application status update",
+  };
 
   const content = `
     <h2>${statusInfo.emoji} ${statusInfo.message}</h2>
@@ -162,14 +165,18 @@ export function applicationUpdateEmail(data: {
       Your application for <strong>${data.jobTitle}</strong> at <strong>${data.companyName}</strong> 
       has been updated to: <strong>${data.status.charAt(0).toUpperCase() + data.status.slice(1)}</strong>.
     </p>
-    ${data.status === 'hired' ? `
+    ${
+      data.status === "hired"
+        ? `
       <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 16px 0; border-radius: 4px;">
         <p style="margin: 0; color: #166534;">
           <strong>Congratulations!</strong> The recruiter has selected you for this position. 
           Check your dashboard for next steps.
         </p>
       </div>
-    ` : ''}
+    `
+        : ""
+    }
     <p>
       <a href="${data.applicationUrl}" class="button">View Application</a>
     </p>
@@ -195,7 +202,7 @@ export function newApplicationEmail(data: {
     <h2>📥 New application for ${data.jobTitle}</h2>
     <p>Hi ${data.recipientName},</p>
     <p>
-      <strong>${data.freelancerName}</strong>${data.freelancerTitle ? ` (${data.freelancerTitle})` : ''} 
+      <strong>${data.freelancerName}</strong>${data.freelancerTitle ? ` (${data.freelancerTitle})` : ""} 
       has applied to your job posting <strong>"${data.jobTitle}"</strong>.
     </p>
     <p>
@@ -301,11 +308,15 @@ export function systemUpdateEmail(data: {
     <div style="line-height: 1.8;">
       ${data.message}
     </div>
-    ${data.actionUrl && data.actionText ? `
+    ${
+      data.actionUrl && data.actionText
+        ? `
       <p>
         <a href="${data.actionUrl}" class="button">${data.actionText}</a>
       </p>
-    ` : ''}
+    `
+        : ""
+    }
   `;
 
   return {
@@ -317,10 +328,10 @@ export function systemUpdateEmail(data: {
 /**
  * Email Verification Template
  */
-export function emailVerificationEmail(data: {
-  recipientName: string;
-  verificationUrl: string;
-}): { subject: string; html: string } {
+export function emailVerificationEmail(data: { recipientName: string; verificationUrl: string }): {
+  subject: string;
+  html: string;
+} {
   const content = `
     <h2>✅ Verify your email address</h2>
     <p>Hi ${data.recipientName},</p>
@@ -334,7 +345,7 @@ export function emailVerificationEmail(data: {
   `;
 
   return {
-    subject: '✅ Verify your EventLink account',
+    subject: "✅ Verify your EventLink account",
     html: masterTemplate(content),
   };
 }
@@ -342,10 +353,10 @@ export function emailVerificationEmail(data: {
 /**
  * Password Reset Template
  */
-export function passwordResetEmail(data: {
-  recipientName: string;
-  resetUrl: string;
-}): { subject: string; html: string } {
+export function passwordResetEmail(data: { recipientName: string; resetUrl: string }): {
+  subject: string;
+  html: string;
+} {
   const content = `
     <h2>🔐 Reset your password</h2>
     <p>Hi ${data.recipientName},</p>
@@ -359,7 +370,7 @@ export function passwordResetEmail(data: {
   `;
 
   return {
-    subject: '🔐 Reset your EventLink password',
+    subject: "🔐 Reset your EventLink password",
     html: masterTemplate(content),
   };
 }

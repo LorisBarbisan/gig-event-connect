@@ -1,20 +1,42 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { User, MapPin, Coins, Calendar, Plus, X, UserCheck, Camera, Upload, MessageCircle, Briefcase, BookOpen, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import {
+  User,
+  MapPin,
+  Coins,
+  Calendar,
+  Plus,
+  X,
+  UserCheck,
+  Camera,
+  Upload,
+  MessageCircle,
+  Briefcase,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 
 interface Profile {
   id: string;
-  role: 'freelancer' | 'recruiter';
+  role: "freelancer" | "recruiter";
   email: string;
 }
 
@@ -30,7 +52,7 @@ interface FreelancerProfile {
   portfolio_url: string;
   linkedin_url: string;
   website_url: string;
-  availability_status: 'available' | 'busy' | 'unavailable';
+  availability_status: "available" | "busy" | "unavailable";
   profile_photo_url?: string;
 }
 
@@ -42,24 +64,24 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile>({
-    first_name: '',
-    last_name: '',
-    title: '',
-    bio: '',
-    location: '',
+    first_name: "",
+    last_name: "",
+    title: "",
+    bio: "",
+    location: "",
     experience_years: null,
     skills: [],
-    portfolio_url: '',
-    linkedin_url: '',
-    website_url: '',
-    availability_status: 'available',
-    profile_photo_url: ''
+    portfolio_url: "",
+    linkedin_url: "",
+    website_url: "",
+    availability_status: "available",
+    profile_photo_url: "",
   });
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newSkill, setNewSkill] = useState('');
-  const [activeTab, setActiveTab] = useState('profile');
+  const [newSkill, setNewSkill] = useState("");
+  const [activeTab, setActiveTab] = useState("profile");
 
   useEffect(() => {
     fetchFreelancerProfile();
@@ -68,24 +90,27 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
   const fetchFreelancerProfile = async () => {
     try {
       const data = await apiRequest(`/api/freelancer/${profile.id}`);
-      
+
       if (data) {
-        console.log('Profile loaded, photo URL length:', data.profile_photo_url ? data.profile_photo_url.length : 0);
+        console.log(
+          "Profile loaded, photo URL length:",
+          data.profile_photo_url ? data.profile_photo_url.length : 0
+        );
         setFreelancerProfile({
           ...data,
-          availability_status: data.availability_status as 'available' | 'busy' | 'unavailable',
-          profile_photo_url: data.profile_photo_url || ''
+          availability_status: data.availability_status as "available" | "busy" | "unavailable",
+          profile_photo_url: data.profile_photo_url || "",
         });
         setHasProfile(true);
       }
     } catch (error: any) {
       // Only show error toast if it's not a "Profile not found" error
       if (error?.message !== "Profile not found" && !error?.message?.includes("404")) {
-        console.error('Error fetching freelancer profile:', error);
+        console.error("Error fetching freelancer profile:", error);
         toast({
           title: "Error",
           description: "Failed to load your profile",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
       // For 404/not found errors, just continue without profile (new user case)
@@ -95,68 +120,68 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
   };
 
   const saveProfile = async () => {
-    console.log('🚀 SAVE PROFILE CLICKED! Starting save process...');
-    console.log('👤 Current user profile:', profile);
-    console.log('📝 Current freelancer profile:', freelancerProfile);
+    console.log("🚀 SAVE PROFILE CLICKED! Starting save process...");
+    console.log("👤 Current user profile:", profile);
+    console.log("📝 Current freelancer profile:", freelancerProfile);
     setSaving(true);
     try {
       const profileData = {
         ...freelancerProfile,
-        user_id: parseInt(profile.id)
+        user_id: parseInt(profile.id),
       };
-      console.log('📤 About to send profile data:', profileData);
+      console.log("📤 About to send profile data:", profileData);
 
       if (hasProfile) {
-        console.log('🔄 Updating existing profile via PUT request...');
+        console.log("🔄 Updating existing profile via PUT request...");
         const response = await apiRequest(`/api/freelancer/${profile.id}`, {
-          method: 'PUT',
+          method: "PUT",
           body: JSON.stringify(profileData),
         });
-        console.log('✅ PUT Response:', response);
+        console.log("✅ PUT Response:", response);
         // ✅ CRITICAL FIX: Update local state with saved data
         setFreelancerProfile({
           ...response,
-          availability_status: response.availability_status as 'available' | 'busy' | 'unavailable',
-          profile_photo_url: response.profile_photo_url || ''
+          availability_status: response.availability_status as "available" | "busy" | "unavailable",
+          profile_photo_url: response.profile_photo_url || "",
         });
       } else {
-        console.log('🆕 Creating new profile via POST request...');
-        const response = await apiRequest('/api/freelancer', {
-          method: 'POST',
+        console.log("🆕 Creating new profile via POST request...");
+        const response = await apiRequest("/api/freelancer", {
+          method: "POST",
           body: JSON.stringify(profileData),
         });
-        console.log('✅ POST Response:', response);
+        console.log("✅ POST Response:", response);
         // ✅ CRITICAL FIX: Update local state with saved data
         setFreelancerProfile({
           ...response,
-          availability_status: response.availability_status as 'available' | 'busy' | 'unavailable',
-          profile_photo_url: response.profile_photo_url || ''
+          availability_status: response.availability_status as "available" | "busy" | "unavailable",
+          profile_photo_url: response.profile_photo_url || "",
         });
         setHasProfile(true);
       }
 
       // ✅ CRITICAL FIX: Invalidate React Query cache to refresh data everywhere
-      await queryClient.invalidateQueries({ 
-        queryKey: ['/api/freelancer/profile', profile.id] 
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/freelancer/profile", profile.id],
       });
-      
-      console.log('🔄 Cache invalidated, UI should now show updated data');
+
+      console.log("🔄 Cache invalidated, UI should now show updated data");
 
       toast({
         title: "Success",
-        description: "Your profile has been saved"
+        description: "Your profile has been saved",
       });
     } catch (error) {
-      console.error('❌ SAVE PROFILE ERROR:', error);
-      console.error('❌ Error type:', typeof error);
-      console.error('❌ Error message:', error instanceof Error ? error.message : String(error));
+      console.error("❌ SAVE PROFILE ERROR:", error);
+      console.error("❌ Error type:", typeof error);
+      console.error("❌ Error message:", error instanceof Error ? error.message : String(error));
       toast({
         title: "Error",
         description: "Failed to save your profile",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      console.log('🏁 Save process completed, setting saving to false');
+      console.log("🏁 Save process completed, setting saving to false");
       setSaving(false);
     }
   };
@@ -165,16 +190,16 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
     if (newSkill.trim() && !freelancerProfile.skills.includes(newSkill.trim())) {
       setFreelancerProfile(prev => ({
         ...prev,
-        skills: [...prev.skills, newSkill.trim()]
+        skills: [...prev.skills, newSkill.trim()],
       }));
-      setNewSkill('');
+      setNewSkill("");
     }
   };
 
   const removeSkill = (skillToRemove: string) => {
     setFreelancerProfile(prev => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
+      skills: prev.skills.filter(skill => skill !== skillToRemove),
     }));
   };
 
@@ -198,12 +223,19 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold">
-            <span className="text-primary">Freelancer</span> <span className="text-accent">Dashboard</span>
+            <span className="text-primary">Freelancer</span>{" "}
+            <span className="text-accent">Dashboard</span>
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">Manage your professional profile and grow your career</p>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Manage your professional profile and grow your career
+          </p>
         </div>
         {hasProfile && (
-          <Button onClick={viewProfile} variant="outline" className="border-primary/20 hover:bg-primary/5">
+          <Button
+            onClick={viewProfile}
+            variant="outline"
+            className="border-primary/20 hover:bg-primary/5"
+          >
             <User className="h-4 w-4 mr-2" />
             View Public Profile
           </Button>
@@ -222,19 +254,22 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
           <div className="flex items-start gap-6 pb-6 border-b border-border/50">
             <div className="flex flex-col items-center gap-3">
               <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-primary/5 overflow-hidden">
-                {(freelancerProfile.profile_photo_url && 
-                  freelancerProfile.profile_photo_url.trim() !== '' && 
-                  freelancerProfile.profile_photo_url !== 'null' && 
-                  freelancerProfile.profile_photo_url.startsWith('data:')) ? (
-                  <img 
-                    src={freelancerProfile.profile_photo_url} 
-                    alt="Profile" 
+                {freelancerProfile.profile_photo_url &&
+                freelancerProfile.profile_photo_url.trim() !== "" &&
+                freelancerProfile.profile_photo_url !== "null" &&
+                freelancerProfile.profile_photo_url.startsWith("data:") ? (
+                  <img
+                    src={freelancerProfile.profile_photo_url}
+                    alt="Profile"
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('Image failed to load:', e);
-                      console.log('Photo URL starts with:', freelancerProfile.profile_photo_url?.substring(0, 50) || 'undefined');
+                    onError={e => {
+                      console.error("Image failed to load:", e);
+                      console.log(
+                        "Photo URL starts with:",
+                        freelancerProfile.profile_photo_url?.substring(0, 50) || "undefined"
+                      );
                     }}
-                    onLoad={() => console.log('Image loaded successfully')}
+                    onLoad={() => console.log("Image loaded successfully")}
                   />
                 ) : (
                   <Camera className="w-8 h-8 text-primary/50" />
@@ -244,7 +279,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) {
                       // Check file size (5MB limit)
@@ -252,20 +287,20 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
                         toast({
                           title: "Error",
                           description: "Image must be smaller than 5MB",
-                          variant: "destructive"
+                          variant: "destructive",
                         });
                         return;
                       }
-                      
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
+
+                      const canvas = document.createElement("canvas");
+                      const ctx = canvas.getContext("2d");
                       const img = new Image();
-                      
+
                       img.onload = () => {
                         // Resize to max 400x400 to reduce file size
                         const maxSize = 400;
                         let { width, height } = img;
-                        
+
                         if (width > height) {
                           if (width > maxSize) {
                             height = (height * maxSize) / width;
@@ -277,18 +312,21 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
                             height = maxSize;
                           }
                         }
-                        
+
                         canvas.width = width;
                         canvas.height = height;
                         ctx?.drawImage(img, 0, 0, width, height);
-                        
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        console.log('Photo compressed, size:', compressedDataUrl.length);
-                        setFreelancerProfile(prev => ({ ...prev, profile_photo_url: compressedDataUrl }));
+
+                        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+                        console.log("Photo compressed, size:", compressedDataUrl.length);
+                        setFreelancerProfile(prev => ({
+                          ...prev,
+                          profile_photo_url: compressedDataUrl,
+                        }));
                       };
-                      
+
                       const reader = new FileReader();
-                      reader.onload = (event) => {
+                      reader.onload = event => {
                         img.src = event.target?.result as string;
                       };
                       reader.readAsDataURL(file);
@@ -297,22 +335,23 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
                   className="hidden"
                   id="photo-upload"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => document.getElementById('photo-upload')?.click()}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById("photo-upload")?.click()}
                   className="text-xs"
                 >
                   <Upload className="w-3 h-3 mr-1" />
-                  {freelancerProfile.profile_photo_url ? 'Change' : 'Upload'}
+                  {freelancerProfile.profile_photo_url ? "Change" : "Upload"}
                 </Button>
               </div>
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">Profile Photo</h3>
               <p className="text-sm text-muted-foreground">
-                Upload a professional headshot to make your profile stand out. This will be visible to recruiters and on your public profile.
+                Upload a professional headshot to make your profile stand out. This will be visible
+                to recruiters and on your public profile.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Recommended: Square image, at least 400x400 pixels
@@ -326,7 +365,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="first_name"
                 value={freelancerProfile.first_name}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, first_name: e.target.value }))
+                }
                 placeholder="Your first name"
               />
             </div>
@@ -335,7 +376,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="last_name"
                 value={freelancerProfile.last_name}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, last_name: e.target.value }))
+                }
                 placeholder="Your last name"
               />
             </div>
@@ -346,7 +389,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
             <Input
               id="title"
               value={freelancerProfile.title}
-              onChange={(e) => setFreelancerProfile(prev => ({ ...prev, title: e.target.value }))}
+              onChange={e => setFreelancerProfile(prev => ({ ...prev, title: e.target.value }))}
               placeholder="e.g., Sound Engineer, Lighting Technician, AV Specialist"
             />
           </div>
@@ -356,7 +399,7 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
             <Textarea
               id="bio"
               value={freelancerProfile.bio}
-              onChange={(e) => setFreelancerProfile(prev => ({ ...prev, bio: e.target.value }))}
+              onChange={e => setFreelancerProfile(prev => ({ ...prev, bio: e.target.value }))}
               placeholder="Tell us about your experience and expertise..."
               rows={4}
             />
@@ -368,7 +411,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="location"
                 value={freelancerProfile.location}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, location: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, location: e.target.value }))
+                }
                 placeholder="City, Country"
               />
             </div>
@@ -377,8 +422,13 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="experience_years"
                 type="number"
-                value={freelancerProfile.experience_years || ''}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, experience_years: e.target.value ? parseInt(e.target.value) : null }))}
+                value={freelancerProfile.experience_years || ""}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({
+                    ...prev,
+                    experience_years: e.target.value ? parseInt(e.target.value) : null,
+                  }))
+                }
                 placeholder="5"
               />
             </div>
@@ -389,9 +439,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
             <div className="flex gap-2 mb-3">
               <Input
                 value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
+                onChange={e => setNewSkill(e.target.value)}
                 placeholder="Add a skill"
-                onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                onKeyPress={e => e.key === "Enter" && addSkill()}
               />
               <Button onClick={addSkill} size="sm">
                 <Plus className="h-4 w-4" />
@@ -416,7 +466,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="portfolio_url"
                 value={freelancerProfile.portfolio_url}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, portfolio_url: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, portfolio_url: e.target.value }))
+                }
                 placeholder="https://yourportfolio.com"
               />
             </div>
@@ -425,7 +477,9 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="linkedin_url"
                 value={freelancerProfile.linkedin_url}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, linkedin_url: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, linkedin_url: e.target.value }))
+                }
                 placeholder="https://linkedin.com/in/yourprofile"
               />
             </div>
@@ -434,14 +488,20 @@ export function FreelancerDashboard({ profile }: FreelancerDashboardProps) {
               <Input
                 id="website_url"
                 value={freelancerProfile.website_url}
-                onChange={(e) => setFreelancerProfile(prev => ({ ...prev, website_url: e.target.value }))}
+                onChange={e =>
+                  setFreelancerProfile(prev => ({ ...prev, website_url: e.target.value }))
+                }
                 placeholder="https://yourwebsite.com"
               />
             </div>
           </div>
 
-          <Button onClick={saveProfile} disabled={saving} className="w-full bg-gradient-primary hover:bg-primary-hover">
-            {saving ? 'Saving...' : 'Save Profile'}
+          <Button
+            onClick={saveProfile}
+            disabled={saving}
+            className="w-full bg-gradient-primary hover:bg-primary-hover"
+          >
+            {saving ? "Saving..." : "Save Profile"}
           </Button>
         </CardContent>
       </Card>

@@ -11,7 +11,7 @@ export const commonUKLocations = [
   { name: "Newcastle", county: "Tyne and Wear", postcode: "", type: "city" },
   { name: "Nottingham", county: "Nottinghamshire", postcode: "", type: "city" },
   { name: "Leicester", county: "Leicestershire", postcode: "", type: "city" },
-  
+
   // London Boroughs
   { name: "Westminster", county: "Greater London", postcode: "", type: "borough" },
   { name: "Camden", county: "Greater London", postcode: "", type: "borough" },
@@ -27,7 +27,7 @@ export const commonUKLocations = [
   { name: "Chelsea", county: "Greater London", postcode: "", type: "area" },
   { name: "Shoreditch", county: "Greater London", postcode: "", type: "area" },
   { name: "Canary Wharf", county: "Greater London", postcode: "", type: "area" },
-  
+
   // Major Towns
   { name: "Reading", county: "Berkshire", postcode: "", type: "town" },
   { name: "Oxford", county: "Oxfordshire", postcode: "", type: "city" },
@@ -53,25 +53,25 @@ export const commonUKLocations = [
   { name: "Watford", county: "Hertfordshire", postcode: "", type: "town" },
   { name: "Stevenage", county: "Hertfordshire", postcode: "", type: "town" },
   { name: "Harlow", county: "Essex", postcode: "", type: "town" },
-  
+
   // Scotland
   { name: "Edinburgh", county: "Scotland", postcode: "", type: "city" },
   { name: "Glasgow", county: "Scotland", postcode: "", type: "city" },
   { name: "Aberdeen", county: "Scotland", postcode: "", type: "city" },
   { name: "Dundee", county: "Scotland", postcode: "", type: "city" },
   { name: "Stirling", county: "Scotland", postcode: "", type: "city" },
-  
+
   // Wales
   { name: "Cardiff", county: "Wales", postcode: "", type: "city" },
   { name: "Swansea", county: "Wales", postcode: "", type: "city" },
   { name: "Newport", county: "Wales", postcode: "", type: "city" },
   { name: "Wrexham", county: "Wales", postcode: "", type: "town" },
-  
+
   // Northern Ireland
   { name: "Belfast", county: "Northern Ireland", postcode: "", type: "city" },
   { name: "Derry", county: "Northern Ireland", postcode: "", type: "city" },
   { name: "Lisburn", county: "Northern Ireland", postcode: "", type: "city" },
-  
+
   // Event Industry Locations
   { name: "Olympia", county: "Greater London", postcode: "", type: "venue" },
   { name: "ExCeL London", county: "Greater London", postcode: "", type: "venue" },
@@ -82,10 +82,10 @@ export const commonUKLocations = [
 
 export function searchLocalLocations(query: string, limit: number = 8) {
   if (!query || query.length < 2) return [];
-  
+
   const searchTerm = query.toLowerCase().trim();
   const results = [];
-  
+
   // Exact matches first
   for (const location of commonUKLocations) {
     if (location.name.toLowerCase() === searchTerm) {
@@ -93,37 +93,41 @@ export function searchLocalLocations(query: string, limit: number = 8) {
         name: location.name,
         county: location.county,
         formatted: location.county ? `${location.name}, ${location.county}` : location.name,
-        type: location.type
+        type: location.type,
       });
     }
   }
-  
+
   // Starts with matches
   for (const location of commonUKLocations) {
-    if (location.name.toLowerCase().startsWith(searchTerm) && 
-        !results.some(r => r.name === location.name)) {
+    if (
+      location.name.toLowerCase().startsWith(searchTerm) &&
+      !results.some(r => r.name === location.name)
+    ) {
       results.push({
         name: location.name,
         county: location.county,
         formatted: location.county ? `${location.name}, ${location.county}` : location.name,
-        type: location.type
+        type: location.type,
       });
     }
   }
-  
+
   // Contains matches
   for (const location of commonUKLocations) {
-    if (location.name.toLowerCase().includes(searchTerm) && 
-        !results.some(r => r.name === location.name)) {
+    if (
+      location.name.toLowerCase().includes(searchTerm) &&
+      !results.some(r => r.name === location.name)
+    ) {
       results.push({
         name: location.name,
         county: location.county,
         formatted: location.county ? `${location.name}, ${location.county}` : location.name,
-        type: location.type
+        type: location.type,
       });
     }
   }
-  
+
   return results.slice(0, limit);
 }
 
@@ -134,7 +138,7 @@ export function validateUKPostcode(postcode: string): boolean {
 }
 
 export function formatUKPostcode(postcode: string): string {
-  const cleaned = postcode.replace(/\s/g, '').toUpperCase();
+  const cleaned = postcode.replace(/\s/g, "").toUpperCase();
   if (cleaned.length === 6) {
     return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
   } else if (cleaned.length === 7) {

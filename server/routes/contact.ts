@@ -24,14 +24,14 @@ export function registerContactRoutes(app: Express) {
         email: req.body.email,
         subject: req.body.subject,
         message: req.body.message,
-        ip_address: req.ip || req.headers['x-forwarded-for'] || 'unknown',
-        user_agent: req.headers['user-agent'] || 'unknown'
+        ip_address: req.ip || req.headers["x-forwarded-for"] || "unknown",
+        user_agent: req.headers["user-agent"] || "unknown",
       });
 
       if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input", 
-          details: result.error.issues 
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues,
         });
       }
 
@@ -42,14 +42,14 @@ export function registerContactRoutes(app: Express) {
         subject: result.data.subject,
         message: result.data.message,
         ip_address: result.data.ip_address || undefined,
-        user_agent: result.data.user_agent || undefined
+        user_agent: result.data.user_agent || undefined,
       });
 
       // Send email notification to admin
       try {
         await sendEmail({
-          to: 'admin@eventlink.one',
-          from: 'noreply@eventlink.one',
+          to: "admin@eventlink.one",
+          from: "noreply@eventlink.one",
           subject: `New Contact Form Message — ${result.data.subject}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -78,10 +78,10 @@ export function registerContactRoutes(app: Express) {
         // Don't fail the request if email fails - message is still saved
       }
 
-      res.status(201).json({ 
+      res.status(201).json({
         success: true,
         message: "Your message has been sent successfully. Our team will be in touch soon.",
-        id: contactMessage.id
+        id: contactMessage.id,
       });
     } catch (error) {
       console.error("Contact form submission error:", error);
@@ -93,7 +93,7 @@ export function registerContactRoutes(app: Express) {
   app.get("/api/contact/messages", async (req, res) => {
     try {
       // Check if user is admin
-      if (!req.user || req.user.role !== 'admin') {
+      if (!req.user || req.user.role !== "admin") {
         return res.status(403).json({ error: "Only administrators can view contact messages" });
       }
 

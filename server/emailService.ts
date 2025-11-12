@@ -1,29 +1,31 @@
-import sgMail from '@sendgrid/mail';
+import sgMail from "@sendgrid/mail";
 
 let connectionSettings: any;
 
 async function getCredentials() {
   try {
     const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-    const xReplitToken = process.env.REPL_IDENTITY 
-      ? 'repl ' + process.env.REPL_IDENTITY 
-      : process.env.WEB_REPL_RENEWAL 
-      ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-      : null;
+    const xReplitToken = process.env.REPL_IDENTITY
+      ? "repl " + process.env.REPL_IDENTITY
+      : process.env.WEB_REPL_RENEWAL
+        ? "depl " + process.env.WEB_REPL_RENEWAL
+        : null;
 
     if (!xReplitToken) {
-      console.error('❌ X_REPLIT_TOKEN not found - REPL_IDENTITY and WEB_REPL_RENEWAL both missing');
-      throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+      console.error(
+        "❌ X_REPLIT_TOKEN not found - REPL_IDENTITY and WEB_REPL_RENEWAL both missing"
+      );
+      throw new Error("X_REPLIT_TOKEN not found for repl/depl");
     }
 
-    console.log('📧 Fetching SendGrid credentials from connector...');
+    console.log("📧 Fetching SendGrid credentials from connector...");
     const response = await fetch(
-      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+      "https://" + hostname + "/api/v2/connection?include_secrets=true&connector_names=sendgrid",
       {
         headers: {
-          'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
-        }
+          Accept: "application/json",
+          X_REPLIT_TOKEN: xReplitToken,
+        },
       }
     );
 
@@ -36,25 +38,30 @@ async function getCredentials() {
     connectionSettings = data.items?.[0];
 
     if (!connectionSettings) {
-      console.error('❌ No SendGrid connection found in connector response');
-      console.error('Response data:', JSON.stringify(data, null, 2));
-      throw new Error('SendGrid connection not found - please set up the SendGrid connector');
+      console.error("❌ No SendGrid connection found in connector response");
+      console.error("Response data:", JSON.stringify(data, null, 2));
+      throw new Error("SendGrid connection not found - please set up the SendGrid connector");
     }
 
     if (!connectionSettings.settings?.api_key) {
-      console.error('❌ SendGrid connector missing api_key');
-      throw new Error('SendGrid connector not properly configured - missing API key');
+      console.error("❌ SendGrid connector missing api_key");
+      throw new Error("SendGrid connector not properly configured - missing API key");
     }
 
     if (!connectionSettings.settings?.from_email) {
-      console.error('❌ SendGrid connector missing from_email');
-      throw new Error('SendGrid connector not properly configured - missing sender email');
+      console.error("❌ SendGrid connector missing from_email");
+      throw new Error("SendGrid connector not properly configured - missing sender email");
     }
 
-    console.log(`✅ SendGrid credentials fetched successfully - sender: ${connectionSettings.settings.from_email}`);
-    return {apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email};
+    console.log(
+      `✅ SendGrid credentials fetched successfully - sender: ${connectionSettings.settings.from_email}`
+    );
+    return {
+      apiKey: connectionSettings.settings.api_key,
+      email: connectionSettings.settings.from_email,
+    };
   } catch (error: any) {
-    console.error('❌ Failed to get SendGrid credentials:', error.message);
+    console.error("❌ Failed to get SendGrid credentials:", error.message);
     throw error;
   }
 }
@@ -63,11 +70,11 @@ async function getCredentials() {
 // Access tokens expire, so a new client must be created each time.
 // Always call this function again to get a fresh client.
 async function getUncachableSendGridClient() {
-  const {apiKey, email} = await getCredentials();
+  const { apiKey, email } = await getCredentials();
   sgMail.setApiKey(apiKey);
   return {
     client: sgMail,
-    fromEmail: email
+    fromEmail: email,
   };
 }
 
@@ -95,7 +102,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
   try {
     const { client, fromEmail } = await getUncachableSendGridClient();
-    
+
     // Use connector's verified email as sender
     const senderEmail = params.from || fromEmail;
 
@@ -103,34 +110,34 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: {
         email: senderEmail,
-        name: 'EventLink Team'
+        name: "EventLink Team",
       },
       subject: params.subject,
       tracking_settings: {
         click_tracking: {
           enable: false,
-          enable_text: false
+          enable_text: false,
         },
         open_tracking: {
-          enable: false
+          enable: false,
         },
         subscription_tracking: {
-          enable: false
-        }
+          enable: false,
+        },
       },
       mail_settings: {
         spam_check: {
-          enable: false
+          enable: false,
         },
         sandbox_mode: {
-          enable: false
-        }
+          enable: false,
+        },
       },
       headers: {
-        'X-Auto-Response-Suppress': 'All',
-        'X-Entity-Ref-ID': `eventlink-${Date.now()}`
+        "X-Auto-Response-Suppress": "All",
+        "X-Entity-Ref-ID": `eventlink-${Date.now()}`,
       },
-      categories: ['eventlink-platform']
+      categories: ["eventlink-platform"],
     };
 
     if (params.text) {
@@ -145,13 +152,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.log(`✅ Email sent successfully via SendGrid to: ${params.to}`);
     return true;
   } catch (error: any) {
-    console.error('📧 SendGrid send error:', error?.message || error);
-    
+    console.error("📧 SendGrid send error:", error?.message || error);
+
     // Enhanced error logging for debugging
     if (error.response && error.response.body && error.response.body.errors) {
-      console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+      console.error("SendGrid error details:", JSON.stringify(error.response.body.errors, null, 2));
     }
-    
+
     // Re-throw the error so calling code can handle it
     throw error;
   }
@@ -163,7 +170,7 @@ export async function sendVerificationEmail(
   baseUrl: string
 ): Promise<boolean> {
   const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
-  
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -287,7 +294,7 @@ export async function sendVerificationEmail(
       <div class="container">
         <div class="header">
           <div class="logo">
-            <img src="${baseUrl.replace(/\/$/, '')}/e8-logo.png" width="64" height="64" alt="EventLink Logo" style="display: block; margin: 0 auto 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(216, 105, 14, 0.3);" />
+            <img src="${baseUrl.replace(/\/$/, "")}/e8-logo.png" width="64" height="64" alt="EventLink Logo" style="display: block; margin: 0 auto 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(216, 105, 14, 0.3);" />
           </div>
           <h1>Welcome to EventLink!</h1>
         </div>
@@ -343,7 +350,7 @@ The EventLink Team
 
   return await sendEmail({
     to: email,
-    subject: 'Complete Your EventLink Registration - Verification Required',
+    subject: "Complete Your EventLink Registration - Verification Required",
     html: htmlContent,
     text: textContent,
   });
@@ -356,7 +363,7 @@ export async function sendPasswordResetEmail(
   firstName?: string | null
 ): Promise<boolean> {
   const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
-  
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -480,13 +487,13 @@ export async function sendPasswordResetEmail(
       <div class="container">
         <div class="header">
           <div class="logo">
-            <img src="${baseUrl.replace(/\/$/, '')}/e8-logo.png" width="64" height="64" alt="EventLink Logo" style="display: block; margin: 0 auto 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(216, 105, 14, 0.3);" />
+            <img src="${baseUrl.replace(/\/$/, "")}/e8-logo.png" width="64" height="64" alt="EventLink Logo" style="display: block; margin: 0 auto 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(216, 105, 14, 0.3);" />
           </div>
           <h1>Password Reset Request</h1>
         </div>
         
         <div class="content">
-          <p>${firstName ? `Hi ${firstName},` : 'Hello,'}</p>
+          <p>${firstName ? `Hi ${firstName},` : "Hello,"}</p>
           
           <p>We received a request to reset your password for your <strong>EventLink</strong> account.</p>
           
@@ -520,7 +527,7 @@ export async function sendPasswordResetEmail(
   const textContent = `
 Password Reset Request - EventLink
 
-${firstName ? `Hi ${firstName},` : 'Hello,'}
+${firstName ? `Hi ${firstName},` : "Hello,"}
 
 We received a request to reset your password for your EventLink account.
 
@@ -539,7 +546,7 @@ The EventLink Team
 
   return await sendEmail({
     to: email,
-    subject: 'Password Reset Request – EventLink',
+    subject: "Password Reset Request – EventLink",
     html: htmlContent,
     text: textContent,
   });
@@ -669,4 +676,4 @@ The EventLink Team
 }
 
 // Export the EmailNotificationService from the template module
-export { emailService } from './emailNotificationService';
+export { emailService } from "./emailNotificationService";

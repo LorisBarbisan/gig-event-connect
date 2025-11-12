@@ -9,7 +9,7 @@ export function registerProfileRoutes(app: Express) {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -28,7 +28,7 @@ export function registerProfileRoutes(app: Express) {
     try {
       const userId = parseInt(req.params.userId);
       const profile = await storage.getFreelancerProfile(userId);
-      
+
       if (!profile) {
         return res.status(404).json({ error: "Freelancer profile not found" });
       }
@@ -45,7 +45,7 @@ export function registerProfileRoutes(app: Express) {
     try {
       // Verify user is authorized to create profile for this user_id
       const requestedUserId = req.body.user_id;
-      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to create this profile" });
       }
 
@@ -67,9 +67,9 @@ export function registerProfileRoutes(app: Express) {
   app.put("/api/freelancer/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       // Check if user is authorized to update this profile
-      if (!req.user || (req.user.id !== userId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== userId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to update this profile" });
       }
 
@@ -94,8 +94,20 @@ export function registerProfileRoutes(app: Express) {
   app.get("/api/recruiter/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
+
+      // First check if user exists and is a recruiter
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // If user is not a recruiter, return 404 (not an error, just no profile)
+      if (user.role !== "recruiter" && user.role !== "admin") {
+        return res.status(404).json({ error: "Recruiter profile not found" });
+      }
+
       const profile = await storage.getRecruiterProfile(userId);
-      
+
       if (!profile) {
         return res.status(404).json({ error: "Recruiter profile not found" });
       }
@@ -112,7 +124,7 @@ export function registerProfileRoutes(app: Express) {
     try {
       // Verify user is authorized to create profile for this user_id
       const requestedUserId = req.body.user_id;
-      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== requestedUserId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to create this profile" });
       }
 
@@ -134,9 +146,9 @@ export function registerProfileRoutes(app: Express) {
   app.put("/api/recruiter/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       // Check if user is authorized to update this profile
-      if (!req.user || (req.user.id !== userId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== userId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to update this profile" });
       }
 
@@ -172,24 +184,26 @@ export function registerProfileRoutes(app: Express) {
   app.get("/api/freelancers/search", async (req, res) => {
     try {
       const { keyword, location, page, limit } = req.query;
-      
+
       const filters = {
         keyword: keyword as string | undefined,
         location: location as string | undefined,
         page: page ? parseInt(page as string) : 1,
-        limit: limit ? parseInt(limit as string) : 20
+        limit: limit ? parseInt(limit as string) : 20,
       };
-      
+
       // Validate page and limit
       if (filters.page < 1) filters.page = 1;
       if (filters.limit < 1 || filters.limit > 100) filters.limit = 20;
-      
-      console.log('🔍 Searching freelancers with filters:', filters);
-      
+
+      console.log("🔍 Searching freelancers with filters:", filters);
+
       const result = await storage.searchFreelancers(filters);
-      
-      console.log(`✅ Search returned ${result.results.length} of ${result.total} total freelancers`);
-      
+
+      console.log(
+        `✅ Search returned ${result.results.length} of ${result.total} total freelancers`
+      );
+
       res.json(result);
     } catch (error) {
       console.error("Search freelancers error:", error);

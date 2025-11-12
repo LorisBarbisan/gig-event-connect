@@ -1,6 +1,6 @@
-import { storage } from './storage';
-import * as emailTemplates from './emailTemplates';
-import { sendEmail } from './emailService';
+import { storage } from "./storage";
+import * as emailTemplates from "./emailTemplates";
+import { sendEmail } from "./emailService";
 
 /**
  * Email notification service
@@ -13,7 +13,7 @@ export class EmailNotificationService {
   private async canSendEmail(userId: number, notificationType: string): Promise<boolean> {
     try {
       const preferences = await storage.getNotificationPreferences(userId);
-      
+
       // If no preferences exist, create default (all enabled)
       if (!preferences) {
         await storage.createNotificationPreferences(userId);
@@ -22,18 +22,18 @@ export class EmailNotificationService {
 
       // Map notification types to preference fields
       const typeToField: Record<string, keyof typeof preferences> = {
-        'message': 'email_messages',
-        'application_update': 'email_application_updates',
-        'job_update': 'email_job_updates',
-        'job_alert': 'email_job_alerts',
-        'rating_request': 'email_rating_requests',
-        'system': 'email_system_updates',
+        message: "email_messages",
+        application_update: "email_application_updates",
+        job_update: "email_job_updates",
+        job_alert: "email_job_alerts",
+        rating_request: "email_rating_requests",
+        system: "email_system_updates",
       };
 
       const field = typeToField[notificationType];
       return field ? Boolean(preferences[field]) : false;
     } catch (error) {
-      console.error('Error checking email preferences:', error);
+      console.error("Error checking email preferences:", error);
       return false; // Default to not sending if there's an error
     }
   }
@@ -46,8 +46,14 @@ export class EmailNotificationService {
     subject: string;
     html: string;
     userId: number;
-    notificationType: 'message' | 'application_update' | 'job_update' | 'job_alert' | 'rating_request' | 'system';
-    relatedEntityType?: 'job' | 'application' | 'message' | 'rating' | null;
+    notificationType:
+      | "message"
+      | "application_update"
+      | "job_update"
+      | "job_alert"
+      | "rating_request"
+      | "system";
+    relatedEntityType?: "job" | "application" | "message" | "rating" | null;
     relatedEntityId?: number | null;
   }): Promise<boolean> {
     try {
@@ -63,7 +69,7 @@ export class EmailNotificationService {
         email: params.to,
         notification_type: params.notificationType,
         subject: params.subject,
-        status: 'sent',
+        status: "sent",
         related_entity_type: params.relatedEntityType || null,
         related_entity_id: params.relatedEntityId || null,
         metadata: null,
@@ -81,11 +87,11 @@ export class EmailNotificationService {
         email: params.to,
         notification_type: params.notificationType,
         subject: params.subject,
-        status: 'failed',
+        status: "failed",
         related_entity_type: params.relatedEntityType || null,
         related_entity_id: params.relatedEntityId || null,
         metadata: null,
-        error_message: error.message || 'Unknown error',
+        error_message: error.message || "Unknown error",
       });
 
       return false;
@@ -104,12 +110,12 @@ export class EmailNotificationService {
     conversationId: number;
   }): Promise<boolean> {
     // Check if user wants message notifications
-    if (!await this.canSendEmail(params.recipientId, 'message')) {
+    if (!(await this.canSendEmail(params.recipientId, "message"))) {
       console.log(`User ${params.recipientId} has message notifications disabled`);
       return false;
     }
 
-    const conversationUrl = `${process.env.FRONTEND_URL || 'https://eventlink.one'}/dashboard?tab=messages`;
+    const conversationUrl = `${process.env.FRONTEND_URL || "https://eventlink.one"}/dashboard?tab=messages`;
     const { subject, html } = emailTemplates.messageNotificationEmail({
       recipientName: params.recipientName,
       senderName: params.senderName,
@@ -122,8 +128,8 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'message',
-      relatedEntityType: 'message',
+      notificationType: "message",
+      relatedEntityType: "message",
       relatedEntityId: params.conversationId,
     });
   }
@@ -141,12 +147,12 @@ export class EmailNotificationService {
     applicationId: number;
   }): Promise<boolean> {
     // Check if user wants application update notifications
-    if (!await this.canSendEmail(params.recipientId, 'application_update')) {
+    if (!(await this.canSendEmail(params.recipientId, "application_update"))) {
       console.log(`User ${params.recipientId} has application update notifications disabled`);
       return false;
     }
 
-    const applicationUrl = `${process.env.FRONTEND_URL || 'https://eventlink.one'}/dashboard?tab=applications`;
+    const applicationUrl = `${process.env.FRONTEND_URL || "https://eventlink.one"}/dashboard?tab=applications`;
     const { subject, html } = emailTemplates.applicationUpdateEmail({
       recipientName: params.recipientName,
       jobTitle: params.jobTitle,
@@ -160,8 +166,8 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'application_update',
-      relatedEntityType: 'application',
+      notificationType: "application_update",
+      relatedEntityType: "application",
       relatedEntityId: params.applicationId,
     });
   }
@@ -180,12 +186,12 @@ export class EmailNotificationService {
     applicationId: number;
   }): Promise<boolean> {
     // Check if user wants job update notifications
-    if (!await this.canSendEmail(params.recipientId, 'job_update')) {
+    if (!(await this.canSendEmail(params.recipientId, "job_update"))) {
       console.log(`User ${params.recipientId} has job update notifications disabled`);
       return false;
     }
 
-    const applicationUrl = `${process.env.FRONTEND_URL || 'https://eventlink.one'}/dashboard?tab=applications`;
+    const applicationUrl = `${process.env.FRONTEND_URL || "https://eventlink.one"}/dashboard?tab=applications`;
     const { subject, html } = emailTemplates.newApplicationEmail({
       recipientName: params.recipientName,
       jobTitle: params.jobTitle,
@@ -199,8 +205,8 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'job_update',
-      relatedEntityType: 'application',
+      notificationType: "job_update",
+      relatedEntityType: "application",
       relatedEntityId: params.applicationId,
     });
   }
@@ -218,9 +224,10 @@ export class EmailNotificationService {
     if (filter.skills && filter.skills.length > 0) {
       const jobSkills = job.skills || [];
       const hasMatchingSkill = filter.skills.some((filterSkill: string) =>
-        jobSkills.some((jobSkill: string) =>
-          jobSkill.toLowerCase().includes(filterSkill.toLowerCase()) ||
-          filterSkill.toLowerCase().includes(jobSkill.toLowerCase())
+        jobSkills.some(
+          (jobSkill: string) =>
+            jobSkill.toLowerCase().includes(filterSkill.toLowerCase()) ||
+            filterSkill.toLowerCase().includes(jobSkill.toLowerCase())
         )
       );
       if (!hasMatchingSkill) {
@@ -230,10 +237,11 @@ export class EmailNotificationService {
 
     // Location matching - case-insensitive partial match
     if (filter.locations && filter.locations.length > 0) {
-      const jobLocation = (job.location || '').toLowerCase();
-      const hasMatchingLocation = filter.locations.some((filterLocation: string) =>
-        jobLocation.includes(filterLocation.toLowerCase()) ||
-        filterLocation.toLowerCase().includes(jobLocation)
+      const jobLocation = (job.location || "").toLowerCase();
+      const hasMatchingLocation = filter.locations.some(
+        (filterLocation: string) =>
+          jobLocation.includes(filterLocation.toLowerCase()) ||
+          filterLocation.toLowerCase().includes(jobLocation)
       );
       if (!hasMatchingLocation) {
         return false;
@@ -242,10 +250,10 @@ export class EmailNotificationService {
 
     // Keywords matching - check in title and description
     if (filter.keywords && filter.keywords.length > 0) {
-      const jobTitle = (job.title || '').toLowerCase();
-      const jobDescription = (job.description || '').toLowerCase();
+      const jobTitle = (job.title || "").toLowerCase();
+      const jobDescription = (job.description || "").toLowerCase();
       const searchText = `${jobTitle} ${jobDescription}`;
-      
+
       const hasMatchingKeyword = filter.keywords.some((keyword: string) =>
         searchText.includes(keyword.toLowerCase())
       );
@@ -257,7 +265,7 @@ export class EmailNotificationService {
     // Date range matching - job start date should be within filter date range
     if (filter.date_from || filter.date_to) {
       const jobStartDate = job.start_date ? new Date(job.start_date) : null;
-      
+
       if (!jobStartDate) {
         // If job has no start date and filter has date criteria, don't match
         return false;
@@ -289,15 +297,15 @@ export class EmailNotificationService {
     try {
       // Get all freelancer users
       const freelancers = await storage.getAllFreelancerProfiles();
-      
+
       for (const freelancerProfile of freelancers) {
         try {
           // Get their job alert filters
           const filters = await storage.getJobAlertFilters(freelancerProfile.user_id);
-          
+
           // Check if job matches any of their filters
           const matchesFilter = filters.some(filter => this.jobMatchesFilters(job, filter));
-          
+
           if (!matchesFilter) {
             continue; // Skip if no filter matches
           }
@@ -311,24 +319,24 @@ export class EmailNotificationService {
           // Prepare freelancer display name
           let freelancerDisplayName = user.email;
           if (freelancerProfile.first_name || freelancerProfile.last_name) {
-            const firstName = freelancerProfile.first_name || '';
-            const lastName = freelancerProfile.last_name || '';
+            const firstName = freelancerProfile.first_name || "";
+            const lastName = freelancerProfile.last_name || "";
             freelancerDisplayName = `${firstName} ${lastName}`.trim() || user.email;
           }
 
           // Format job details for email
-          const eventDate = job.start_date 
-            ? new Date(job.start_date).toLocaleDateString('en-GB', { 
-                weekday: 'short', 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
+          const eventDate = job.start_date
+            ? new Date(job.start_date).toLocaleDateString("en-GB", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
               })
-            : 'Date TBC';
+            : "Date TBC";
 
-          const rate = job.pay_rate 
-            ? `£${job.pay_rate}${job.pay_type === 'hourly' ? '/hr' : job.pay_type === 'daily' ? '/day' : ''}`
-            : 'Competitive';
+          const rate = job.pay_rate
+            ? `£${job.pay_rate}${job.pay_type === "hourly" ? "/hr" : job.pay_type === "daily" ? "/day" : ""}`
+            : "Competitive";
 
           // Send job alert email (non-blocking)
           this.sendJobAlertNotification({
@@ -337,7 +345,7 @@ export class EmailNotificationService {
             recipientName: freelancerDisplayName,
             jobTitle: job.title,
             companyName: job.company,
-            location: job.location || 'Location TBC',
+            location: job.location || "Location TBC",
             rate: rate,
             eventDate: eventDate,
             jobId: job.id,
@@ -345,11 +353,14 @@ export class EmailNotificationService {
             console.error(`Failed to send job alert to user ${freelancerProfile.user_id}:`, error);
           });
         } catch (error) {
-          console.error(`Error processing job alerts for freelancer ${freelancerProfile.user_id}:`, error);
+          console.error(
+            `Error processing job alerts for freelancer ${freelancerProfile.user_id}:`,
+            error
+          );
         }
       }
     } catch (error) {
-      console.error('Error sending job alerts to matching freelancers:', error);
+      console.error("Error sending job alerts to matching freelancers:", error);
     }
   }
 
@@ -368,12 +379,12 @@ export class EmailNotificationService {
     jobId: number;
   }): Promise<boolean> {
     // Check if user wants job alert notifications
-    if (!await this.canSendEmail(params.recipientId, 'job_alert')) {
+    if (!(await this.canSendEmail(params.recipientId, "job_alert"))) {
       console.log(`User ${params.recipientId} has job alert notifications disabled`);
       return false;
     }
 
-    const jobUrl = `${process.env.FRONTEND_URL || 'https://eventlink.one'}/jobs`;
+    const jobUrl = `${process.env.FRONTEND_URL || "https://eventlink.one"}/jobs`;
     const { subject, html } = emailTemplates.jobAlertEmail({
       recipientName: params.recipientName,
       jobTitle: params.jobTitle,
@@ -389,8 +400,8 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'job_alert',
-      relatedEntityType: 'job',
+      notificationType: "job_alert",
+      relatedEntityType: "job",
       relatedEntityId: params.jobId,
     });
   }
@@ -407,12 +418,12 @@ export class EmailNotificationService {
     ratingRequestId: number;
   }): Promise<boolean> {
     // Check if user wants rating request notifications
-    if (!await this.canSendEmail(params.recipientId, 'rating_request')) {
+    if (!(await this.canSendEmail(params.recipientId, "rating_request"))) {
       console.log(`User ${params.recipientId} has rating request notifications disabled`);
       return false;
     }
 
-    const ratingUrl = `${process.env.FRONTEND_URL || 'https://eventlink.one'}/ratings`;
+    const ratingUrl = `${process.env.FRONTEND_URL || "https://eventlink.one"}/ratings`;
     const { subject, html } = emailTemplates.ratingRequestEmail({
       recipientName: params.recipientName,
       requesterName: params.requesterName,
@@ -425,8 +436,8 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'rating_request',
-      relatedEntityType: 'rating',
+      notificationType: "rating_request",
+      relatedEntityType: "rating",
       relatedEntityId: params.ratingRequestId,
     });
   }
@@ -444,7 +455,7 @@ export class EmailNotificationService {
     actionText?: string;
   }): Promise<boolean> {
     // Check if user wants system update notifications
-    if (!await this.canSendEmail(params.recipientId, 'system')) {
+    if (!(await this.canSendEmail(params.recipientId, "system"))) {
       console.log(`User ${params.recipientId} has system update notifications disabled`);
       return false;
     }
@@ -462,7 +473,7 @@ export class EmailNotificationService {
       subject,
       html,
       userId: params.recipientId,
-      notificationType: 'system',
+      notificationType: "system",
       relatedEntityType: null,
       relatedEntityId: null,
     });

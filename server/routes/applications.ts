@@ -9,16 +9,16 @@ export function registerApplicationRoutes(app: Express) {
   app.get("/api/freelancer/:freelancerId/bookings", authenticateJWT, async (req, res) => {
     try {
       const freelancerId = parseInt(req.params.freelancerId);
-      
+
       // Check authorization - user can only view their own bookings or admin can view all
-      if (!req.user || (req.user.id !== freelancerId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== freelancerId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to view these bookings" });
       }
 
       const applications = await storage.getFreelancerApplications(freelancerId);
       // Filter only hired applications for bookings
-      const bookings = applications.filter(app => app.status === 'hired');
-      
+      const bookings = applications.filter(app => app.status === "hired");
+
       res.json(bookings);
     } catch (error) {
       console.error("Get freelancer bookings error:", error);
@@ -31,15 +31,15 @@ export function registerApplicationRoutes(app: Express) {
     try {
       // Extract numeric ID from job ID (handles both "123" and "real-123" formats)
       const jobIdStr = req.params.jobId;
-      const jobId = parseInt(jobIdStr.replace(/^real-/, ''));
-      
+      const jobId = parseInt(jobIdStr.replace(/^real-/, ""));
+
       if (!req.user) {
         return res.status(401).json({ error: "Please log in to apply for jobs" });
       }
-      
-      if (req.user.role !== 'freelancer') {
-        return res.status(403).json({ 
-          error: `You are logged in as a ${req.user.role}. Only freelancers can apply to jobs. Please log in with a freelancer account.`
+
+      if (req.user.role !== "freelancer") {
+        return res.status(403).json({
+          error: `You are logged in as a ${req.user.role}. Only freelancers can apply to jobs. Please log in with a freelancer account.`,
         });
       }
 
@@ -57,9 +57,9 @@ export function registerApplicationRoutes(app: Express) {
         console.error("Error fetching existing applications:", appError);
         // Continue with empty array if fetch fails - allow application to proceed
       }
-      
+
       const alreadyApplied = existingApplications.some(app => app.job_id === jobId);
-      
+
       if (alreadyApplied) {
         return res.status(400).json({ error: "You have already applied to this job" });
       }
@@ -67,8 +67,8 @@ export function registerApplicationRoutes(app: Express) {
       const applicationData = {
         job_id: jobId,
         freelancer_id: req.user.id,
-        cover_letter: req.body.cover_letter || '',
-        status: 'applied' as const
+        cover_letter: req.body.cover_letter || "",
+        status: "applied" as const,
       };
 
       const result = insertJobApplicationSchema.safeParse(applicationData);
@@ -77,20 +77,20 @@ export function registerApplicationRoutes(app: Express) {
       }
 
       const application = await storage.createJobApplication(result.data);
-      
+
       // Create notification for recruiter (non-blocking)
       if (job.recruiter_id) {
         try {
           await storage.createNotification({
             user_id: job.recruiter_id,
-            type: 'application_update',
-            title: 'New Job Application',
+            type: "application_update",
+            title: "New Job Application",
             message: `A freelancer has applied to your job: ${job.title}`,
-            priority: 'high',
-            related_entity_type: 'application',
+            priority: "high",
+            related_entity_type: "application",
             related_entity_id: application.id,
-            action_url: '/dashboard?tab=applications',
-            metadata: JSON.stringify({ application_id: application.id, job_id: jobId })
+            action_url: "/dashboard?tab=applications",
+            metadata: JSON.stringify({ application_id: application.id, job_id: jobId }),
           });
 
           // Send email notification to recruiter
@@ -103,39 +103,41 @@ export function registerApplicationRoutes(app: Express) {
               if (recruiterProfile?.company_name) {
                 recruiterDisplayName = recruiterProfile.company_name;
               } else if (recruiter.first_name || recruiter.last_name) {
-                const firstName = recruiter.first_name || '';
-                const lastName = recruiter.last_name || '';
+                const firstName = recruiter.first_name || "";
+                const lastName = recruiter.last_name || "";
                 recruiterDisplayName = `${firstName} ${lastName}`.trim() || recruiter.email;
               }
 
               // Get freelancer's display name
-              let freelancerDisplayName = 'A freelancer';
+              let freelancerDisplayName = "A freelancer";
               let freelancerTitle: string | undefined;
               const freelancerProfile = await storage.getFreelancerProfile(req.user.id);
               if (freelancerProfile) {
                 if (freelancerProfile.first_name || freelancerProfile.last_name) {
-                  const firstName = freelancerProfile.first_name || '';
-                  const lastName = freelancerProfile.last_name || '';
+                  const firstName = freelancerProfile.first_name || "";
+                  const lastName = freelancerProfile.last_name || "";
                   freelancerDisplayName = `${firstName} ${lastName}`.trim();
                 }
                 freelancerTitle = freelancerProfile.title || undefined;
               }
 
-              emailService.sendNewApplicationNotification({
-                recipientId: job.recruiter_id,
-                recipientEmail: recruiter.email,
-                recipientName: recruiterDisplayName,
-                jobTitle: job.title,
-                freelancerName: freelancerDisplayName,
-                freelancerTitle: freelancerTitle,
-                jobId: jobId,
-                applicationId: application.id,
-              }).catch(error => {
-                console.error('Failed to send new application email:', error);
-              });
+              emailService
+                .sendNewApplicationNotification({
+                  recipientId: job.recruiter_id,
+                  recipientEmail: recruiter.email,
+                  recipientName: recruiterDisplayName,
+                  jobTitle: job.title,
+                  freelancerName: freelancerDisplayName,
+                  freelancerTitle: freelancerTitle,
+                  jobId: jobId,
+                  applicationId: application.id,
+                })
+                .catch(error => {
+                  console.error("Failed to send new application email:", error);
+                });
             }
           } catch (emailError) {
-            console.error('Error preparing new application email:', emailError);
+            console.error("Error preparing new application email:", emailError);
           }
         } catch (notifError) {
           console.error("Failed to create notification (non-critical):", notifError);
@@ -147,13 +149,13 @@ export function registerApplicationRoutes(app: Express) {
     } catch (error) {
       console.error("Apply to job error:", error);
       console.error("Error details:", error instanceof Error ? error.message : String(error));
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
-      
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+
       // Return more detailed error in development
-      if (process.env.NODE_ENV === 'development') {
-        res.status(500).json({ 
+      if (process.env.NODE_ENV === "development") {
+        res.status(500).json({
           error: "Internal server error",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         });
       } else {
         res.status(500).json({ error: "Internal server error" });
@@ -165,9 +167,9 @@ export function registerApplicationRoutes(app: Express) {
   app.get("/api/freelancer/:freelancerId/applications", authenticateJWT, async (req, res) => {
     try {
       const freelancerId = parseInt(req.params.freelancerId);
-      
+
       // Check authorization
-      if (!req.user || (req.user.id !== freelancerId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== freelancerId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to view these applications" });
       }
 
@@ -183,7 +185,7 @@ export function registerApplicationRoutes(app: Express) {
   app.get("/api/jobs/:jobId/applications", authenticateJWT, async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
-      
+
       // Check if user is authorized to view applications for this job
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -194,7 +196,7 @@ export function registerApplicationRoutes(app: Express) {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      if (req.user.role !== 'admin' && job.recruiter_id !== req.user.id) {
+      if (req.user.role !== "admin" && job.recruiter_id !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to view applications for this job" });
       }
 
@@ -210,9 +212,9 @@ export function registerApplicationRoutes(app: Express) {
   app.get("/api/recruiter/:recruiterId/applications", authenticateJWT, async (req, res) => {
     try {
       const recruiterId = parseInt(req.params.recruiterId);
-      
+
       // Check authorization
-      if (!req.user || (req.user.id !== recruiterId && req.user.role !== 'admin')) {
+      if (!req.user || (req.user.id !== recruiterId && req.user.role !== "admin")) {
         return res.status(403).json({ error: "Not authorized to view these applications" });
       }
 
@@ -230,7 +232,7 @@ export function registerApplicationRoutes(app: Express) {
   app.put("/api/applications/:applicationId/accept", authenticateJWT, async (req, res) => {
     try {
       const applicationId = parseInt(req.params.applicationId);
-      
+
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -242,24 +244,28 @@ export function registerApplicationRoutes(app: Express) {
       }
 
       const job = await storage.getJobById(application.job_id);
-      if (!job || (req.user.role !== 'admin' && job.recruiter_id !== req.user.id)) {
+      if (!job || (req.user.role !== "admin" && job.recruiter_id !== req.user.id)) {
         return res.status(403).json({ error: "Not authorized to accept this application" });
       }
 
       // Mark application as hired (this also automatically closes the job)
-      await storage.updateApplicationStatus(applicationId, 'hired');
-      
+      await storage.updateApplicationStatus(applicationId, "hired");
+
       // Create notification for freelancer
       await storage.createNotification({
         user_id: application.freelancer_id,
-        type: 'application_update',
-        title: 'Application Accepted!',
+        type: "application_update",
+        title: "Application Accepted!",
         message: `Congratulations! Your application for "${job.title}" at ${job.company} has been accepted. The recruiter will contact you soon.`,
-        priority: 'high',
-        related_entity_type: 'application',
+        priority: "high",
+        related_entity_type: "application",
         related_entity_id: applicationId,
-        action_url: '/dashboard?tab=jobs',
-        metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'hired' })
+        action_url: "/dashboard?tab=jobs",
+        metadata: JSON.stringify({
+          application_id: applicationId,
+          job_id: job.id,
+          status: "hired",
+        }),
       });
 
       // Send email notification (non-blocking)
@@ -269,37 +275,39 @@ export function registerApplicationRoutes(app: Express) {
           let freelancerDisplayName = freelancer.email;
           const freelancerProfile = await storage.getFreelancerProfile(application.freelancer_id);
           if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
-            const firstName = freelancerProfile.first_name || '';
-            const lastName = freelancerProfile.last_name || '';
+            const firstName = freelancerProfile.first_name || "";
+            const lastName = freelancerProfile.last_name || "";
             freelancerDisplayName = `${firstName} ${lastName}`.trim() || freelancer.email;
           }
 
-          emailService.sendApplicationUpdateNotification({
-            recipientId: application.freelancer_id,
-            recipientEmail: freelancer.email,
-            recipientName: freelancerDisplayName,
-            jobTitle: job.title,
-            companyName: job.company,
-            status: 'Accepted',
-            applicationId: applicationId,
-          }).catch(error => {
-            console.error('Failed to send application update email:', error);
-          });
+          emailService
+            .sendApplicationUpdateNotification({
+              recipientId: application.freelancer_id,
+              recipientEmail: freelancer.email,
+              recipientName: freelancerDisplayName,
+              jobTitle: job.title,
+              companyName: job.company,
+              status: "Accepted",
+              applicationId: applicationId,
+            })
+            .catch(error => {
+              console.error("Failed to send application update email:", error);
+            });
         }
       } catch (error) {
-        console.error('Error preparing application update email:', error);
+        console.error("Error preparing application update email:", error);
       }
 
       // Broadcast live notification to freelancer if connected
       if ((global as any).broadcastToUser) {
         (global as any).broadcastToUser(application.freelancer_id, {
-          type: 'application_update',
+          type: "application_update",
           application: {
             id: applicationId,
             job_title: job.title,
-            company: job.company
+            company: job.company,
           },
-          status: 'hired'
+          status: "hired",
         });
       }
 
@@ -314,7 +322,7 @@ export function registerApplicationRoutes(app: Express) {
   app.put("/api/applications/:applicationId/reject", authenticateJWT, async (req, res) => {
     try {
       const applicationId = parseInt(req.params.applicationId);
-      
+
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -326,23 +334,28 @@ export function registerApplicationRoutes(app: Express) {
       }
 
       const job = await storage.getJobById(application.job_id);
-      if (!job || (req.user.role !== 'admin' && job.recruiter_id !== req.user.id)) {
+      if (!job || (req.user.role !== "admin" && job.recruiter_id !== req.user.id)) {
         return res.status(403).json({ error: "Not authorized to reject this application" });
       }
 
-      await storage.updateApplicationStatus(applicationId, 'rejected', req.body.message);
-      
+      await storage.updateApplicationStatus(applicationId, "rejected", req.body.message);
+
       // Create notification for freelancer
       await storage.createNotification({
         user_id: application.freelancer_id,
-        type: 'application_update',
-        title: 'Application Update',
-        message: `Your application for "${job.title}" at ${job.company} was not selected this time. ${req.body.message ? 'The recruiter left you feedback.' : ''}`,
-        priority: 'normal',
-        related_entity_type: 'application',
+        type: "application_update",
+        title: "Application Update",
+        message: `Your application for "${job.title}" at ${job.company} was not selected this time. ${req.body.message ? "The recruiter left you feedback." : ""}`,
+        priority: "normal",
+        related_entity_type: "application",
         related_entity_id: applicationId,
-        action_url: '/dashboard?tab=jobs',
-        metadata: JSON.stringify({ application_id: applicationId, job_id: job.id, status: 'rejected', has_feedback: !!req.body.message })
+        action_url: "/dashboard?tab=jobs",
+        metadata: JSON.stringify({
+          application_id: applicationId,
+          job_id: job.id,
+          status: "rejected",
+          has_feedback: !!req.body.message,
+        }),
       });
 
       // Send email notification (non-blocking)
@@ -352,37 +365,39 @@ export function registerApplicationRoutes(app: Express) {
           let freelancerDisplayName = freelancer.email;
           const freelancerProfile = await storage.getFreelancerProfile(application.freelancer_id);
           if (freelancerProfile?.first_name || freelancerProfile?.last_name) {
-            const firstName = freelancerProfile.first_name || '';
-            const lastName = freelancerProfile.last_name || '';
+            const firstName = freelancerProfile.first_name || "";
+            const lastName = freelancerProfile.last_name || "";
             freelancerDisplayName = `${firstName} ${lastName}`.trim() || freelancer.email;
           }
 
-          emailService.sendApplicationUpdateNotification({
-            recipientId: application.freelancer_id,
-            recipientEmail: freelancer.email,
-            recipientName: freelancerDisplayName,
-            jobTitle: job.title,
-            companyName: job.company,
-            status: 'Not Selected',
-            applicationId: applicationId,
-          }).catch(error => {
-            console.error('Failed to send application update email:', error);
-          });
+          emailService
+            .sendApplicationUpdateNotification({
+              recipientId: application.freelancer_id,
+              recipientEmail: freelancer.email,
+              recipientName: freelancerDisplayName,
+              jobTitle: job.title,
+              companyName: job.company,
+              status: "Not Selected",
+              applicationId: applicationId,
+            })
+            .catch(error => {
+              console.error("Failed to send application update email:", error);
+            });
         }
       } catch (error) {
-        console.error('Error preparing application update email:', error);
+        console.error("Error preparing application update email:", error);
       }
 
       // Broadcast live notification to freelancer if connected
       if ((global as any).broadcastToUser) {
         (global as any).broadcastToUser(application.freelancer_id, {
-          type: 'application_update',
+          type: "application_update",
           application: {
             id: applicationId,
             job_title: job.title,
-            company: job.company
+            company: job.company,
           },
-          status: 'rejected'
+          status: "rejected",
         });
       }
 
@@ -397,11 +412,11 @@ export function registerApplicationRoutes(app: Express) {
   app.delete("/api/applications/:applicationId", authenticateJWT, async (req, res) => {
     try {
       const applicationId = parseInt(req.params.applicationId);
-      
+
       if (Number.isNaN(applicationId)) {
         return res.status(400).json({ error: "Invalid application ID" });
       }
-      
+
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -413,20 +428,20 @@ export function registerApplicationRoutes(app: Express) {
       }
 
       // Check authorization and determine delete type
-      let userRole: 'freelancer' | 'recruiter';
-      
-      if (req.user.role === 'freelancer' && application.freelancer_id === req.user.id) {
+      let userRole: "freelancer" | "recruiter";
+
+      if (req.user.role === "freelancer" && application.freelancer_id === req.user.id) {
         // Freelancer can delete their own applications
-        userRole = 'freelancer';
-      } else if (req.user.role === 'recruiter' || req.user.role === 'admin') {
+        userRole = "freelancer";
+      } else if (req.user.role === "recruiter" || req.user.role === "admin") {
         // Recruiter/admin can hide applications from jobs they own
         const job = await storage.getJobById(application.job_id);
         if (!job) {
           return res.status(404).json({ error: "Job not found" });
         }
-        
-        if (req.user.role === 'admin' || job.recruiter_id === req.user.id) {
-          userRole = 'recruiter';
+
+        if (req.user.role === "admin" || job.recruiter_id === req.user.id) {
+          userRole = "recruiter";
         } else {
           return res.status(403).json({ error: "Not authorized to delete this application" });
         }
@@ -436,13 +451,13 @@ export function registerApplicationRoutes(app: Express) {
 
       // Perform soft delete
       await storage.softDeleteApplication(applicationId, userRole);
-      
-      res.set('Cache-Control', 'no-store');
-      res.json({ 
-        success: true, 
+
+      res.set("Cache-Control", "no-store");
+      res.json({
+        success: true,
         deletedFor: userRole,
         applicationId: applicationId,
-        message: `Application ${userRole === 'freelancer' ? 'removed' : 'hidden'} successfully`
+        message: `Application ${userRole === "freelancer" ? "removed" : "hidden"} successfully`,
       });
     } catch (error) {
       console.error("Delete application error:", error);

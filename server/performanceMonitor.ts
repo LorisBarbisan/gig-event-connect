@@ -1,7 +1,7 @@
 // Comprehensive performance monitoring and alerting system for EventLink
-import { performance } from 'perf_hooks';
-import { Request, Response, NextFunction } from 'express';
-import { memoryManager } from './memoryOptimization';
+import { NextFunction, Request, Response } from "express";
+import { performance } from "perf_hooks";
+import { memoryManager } from "./memoryOptimization";
 
 interface PerformanceMetrics {
   timestamp: number;
@@ -25,10 +25,10 @@ export class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
   private maxMetricsHistory = 1000;
   private alertThresholds: AlertThresholds = {
-    slowRequestMs: 2000,     // 2 seconds
-    highMemoryMB: 512,       // 512MB
-    errorRate: 0.05,         // 5% error rate
-    cpuPercent: 80           // 80% CPU usage
+    slowRequestMs: 2000, // 2 seconds
+    highMemoryMB: 512, // 512MB
+    errorRate: 0.05, // 5% error rate
+    cpuPercent: 80, // 80% CPU usage
   };
   private alertCooldown = new Map<string, number>();
   private readonly COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
@@ -53,8 +53,8 @@ export class PerformanceMonitor {
 
       // Override res.end to capture response data
       const originalEnd = res.end.bind(res);
-      
-      res.end = function(chunk?: any, encoding?: any, cb?: any) {
+
+      res.end = function (chunk?: any, encoding?: any, cb?: any) {
         const endTime = performance.now();
         const responseTime = endTime - startTime;
         const endMemory = process.memoryUsage().heapUsed;
@@ -67,7 +67,7 @@ export class PerformanceMonitor {
           responseTime,
           statusCode: res.statusCode,
           memoryUsed: Math.round(endMemory / 1024 / 1024),
-          cpuUsage: 0 // CPU percentage will be calculated separately by CPU monitoring
+          cpuUsage: 0, // CPU percentage will be calculated separately by CPU monitoring
         };
 
         PerformanceMonitor.getInstance().recordMetric(metric);
@@ -82,7 +82,7 @@ export class PerformanceMonitor {
 
   private recordMetric(metric: PerformanceMetrics) {
     this.metrics.push(metric);
-    
+
     // Keep metrics history limited
     if (this.metrics.length > this.maxMetricsHistory) {
       this.metrics.shift();
@@ -97,19 +97,19 @@ export class PerformanceMonitor {
 
     // Slow request alert
     if (metric.responseTime > this.alertThresholds.slowRequestMs) {
-      this.sendAlert('slow_request', {
+      this.sendAlert("slow_request", {
         message: `Slow request detected: ${metric.endpoint} took ${Math.round(metric.responseTime)}ms`,
-        severity: 'warning',
-        metric
+        severity: "warning",
+        metric,
       });
     }
 
     // High memory alert
     if (metric.memoryUsed > this.alertThresholds.highMemoryMB) {
-      this.sendAlert('high_memory', {
+      this.sendAlert("high_memory", {
         message: `High memory usage: ${metric.memoryUsed}MB`,
-        severity: 'warning',
-        metric
+        severity: "warning",
+        metric,
       });
     }
 
@@ -117,12 +117,12 @@ export class PerformanceMonitor {
     const recentMetrics = this.metrics.slice(-50);
     const errorCount = recentMetrics.filter(m => m.statusCode >= 400).length;
     const errorRate = errorCount / recentMetrics.length;
-    
+
     if (errorRate > this.alertThresholds.errorRate && recentMetrics.length >= 10) {
-      this.sendAlert('high_error_rate', {
+      this.sendAlert("high_error_rate", {
         message: `High error rate: ${Math.round(errorRate * 100)}% of recent requests failed`,
-        severity: 'critical',
-        metric
+        severity: "critical",
+        metric,
       });
     }
   }
@@ -140,10 +140,10 @@ export class PerformanceMonitor {
 
     // In production, you'd send this to a monitoring service
     console.warn(`🚨 ALERT [${alert.severity.toUpperCase()}] ${alert.message}`);
-    
+
     // For now, just log. In production, integrate with:
     // - Email notifications
-    // - Slack webhooks  
+    // - Slack webhooks
     // - PagerDuty
     // - DataDog/New Relic
   }
@@ -151,45 +151,49 @@ export class PerformanceMonitor {
   private startCpuMonitoring() {
     let lastCpuUsage = process.cpuUsage();
     let lastTime = Date.now();
-    
+
     setInterval(() => {
       const currentTime = Date.now();
       const currentCpuUsage = process.cpuUsage(lastCpuUsage);
       const timeDiff = (currentTime - lastTime) / 1000; // Convert to seconds
-      
+
       // Calculate CPU percentage properly over the time interval
       const cpuTimeUsed = (currentCpuUsage.user + currentCpuUsage.system) / 1000000; // Convert to seconds
       const cpuPercent = (cpuTimeUsed / timeDiff) * 100;
-      
+
       // Only alert if CPU usage is genuinely high (above 80% and realistic)
       if (cpuPercent > this.alertThresholds.cpuPercent && cpuPercent <= 100) {
-        this.sendAlert('high_cpu', {
+        this.sendAlert("high_cpu", {
           message: `High CPU usage: ${Math.round(cpuPercent)}%`,
-          severity: 'warning',
-          cpuPercent
+          severity: "warning",
+          cpuPercent,
         });
       }
-      
+
       lastCpuUsage = process.cpuUsage();
       lastTime = currentTime;
     }, 60000); // Check every minute
   }
 
   private startPeriodicReporting() {
-    setInterval(() => {
-      const report = this.generateReport();
-      console.log(`📊 Performance Report: ${JSON.stringify(report, null, 2)}`);
-    }, 15 * 60 * 1000); // Every 15 minutes
+    setInterval(
+      () => {
+        const report = this.generateReport();
+        console.log(`📊 Performance Report: ${JSON.stringify(report, null, 2)}`);
+      },
+      15 * 60 * 1000
+    ); // Every 15 minutes
   }
 
   // Generate performance report
   generateReport() {
     if (this.metrics.length === 0) {
-      return { message: 'No metrics available' };
+      return { message: "No metrics available" };
     }
 
     const recentMetrics = this.metrics.slice(-100); // Last 100 requests
-    const avgResponseTime = recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length;
+    const avgResponseTime =
+      recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length;
     const errorCount = recentMetrics.filter(m => m.statusCode >= 400).length;
     const errorRate = errorCount / recentMetrics.length;
     const memoryStats = memoryManager.getMemoryStats();
@@ -203,13 +207,13 @@ export class PerformanceMonitor {
       timestamp: new Date().toISOString(),
       totalRequests: recentMetrics.length,
       avgResponseTime: Math.round(avgResponseTime),
-      errorRate: Math.round(errorRate * 100) + '%',
+      errorRate: Math.round(errorRate * 100) + "%",
       memory: memoryStats,
       slowestEndpoints,
       alerts: {
         thresholds: this.alertThresholds,
-        recentAlerts: Array.from(this.alertCooldown.keys()).length
-      }
+        recentAlerts: Array.from(this.alertCooldown.keys()).length,
+      },
     };
   }
 
@@ -217,28 +221,29 @@ export class PerformanceMonitor {
   getHealthCheck() {
     const memoryStats = memoryManager.getMemoryStats();
     const recentMetrics = this.metrics.slice(-20);
-    const avgResponseTime = recentMetrics.length > 0 
-      ? recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length 
-      : 0;
+    const avgResponseTime =
+      recentMetrics.length > 0
+        ? recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length
+        : 0;
 
     return {
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: memoryStats,
       averageResponseTime: Math.round(avgResponseTime),
       requestsInLast5Min: recentMetrics.length,
-      version: process.env.npm_package_version || '1.0.0'
+      version: process.env.npm_package_version || "1.0.0",
     };
   }
 
   // Get performance analytics for dashboard
   getAnalytics(hours: number = 1) {
-    const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - hours * 60 * 60 * 1000;
     const relevantMetrics = this.metrics.filter(m => m.timestamp > cutoffTime);
 
     if (relevantMetrics.length === 0) {
-      return { message: 'No data for specified time range' };
+      return { message: "No data for specified time range" };
     }
 
     // Group by endpoint
@@ -248,18 +253,18 @@ export class PerformanceMonitor {
           count: 0,
           totalTime: 0,
           errors: 0,
-          maxTime: 0
+          maxTime: 0,
         };
       }
-      
+
       acc[metric.endpoint].count++;
       acc[metric.endpoint].totalTime += metric.responseTime;
       acc[metric.endpoint].maxTime = Math.max(acc[metric.endpoint].maxTime, metric.responseTime);
-      
+
       if (metric.statusCode >= 400) {
         acc[metric.endpoint].errors++;
       }
-      
+
       return acc;
     }, {} as any);
 
@@ -270,13 +275,13 @@ export class PerformanceMonitor {
       avgResponseTime: Math.round(stats.totalTime / stats.count),
       maxResponseTime: Math.round(stats.maxTime),
       errorRate: Math.round((stats.errors / stats.count) * 100),
-      requestsPerHour: Math.round((stats.count / hours))
+      requestsPerHour: Math.round(stats.count / hours),
     }));
 
     return {
       timeRange: `${hours} hour(s)`,
       totalRequests: relevantMetrics.length,
-      endpoints: analytics.sort((a, b) => b.requests - a.requests)
+      endpoints: analytics.sort((a, b) => b.requests - a.requests),
     };
   }
 }

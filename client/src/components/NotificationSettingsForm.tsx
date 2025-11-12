@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { UKLocationInput } from '@/components/ui/uk-location-input';
-import { useToast } from '@/hooks/use-toast';
-import { Bell, Mail, Briefcase, MessageSquare, Star, Filter, X, Plus } from 'lucide-react';
-import type { User, JobAlertFilter } from '@shared/schema';
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { UKLocationInput } from "@/components/ui/uk-location-input";
+import { useToast } from "@/hooks/use-toast";
+import { Bell, Mail, Briefcase, MessageSquare, Star, Filter, X, Plus } from "lucide-react";
+import type { User, JobAlertFilter } from "@shared/schema";
 
 interface NotificationSettingsFormProps {
   user: User;
@@ -26,33 +26,33 @@ interface NotificationPreferences {
   email_job_alerts: boolean;
   email_rating_requests: boolean;
   email_system_updates: boolean;
-  digest_mode: 'instant' | 'daily' | 'weekly';
+  digest_mode: "instant" | "daily" | "weekly";
   digest_time: string;
 }
 
 export function NotificationSettingsForm({ user }: NotificationSettingsFormProps) {
   const { toast } = useToast();
   const [localPreferences, setLocalPreferences] = useState<NotificationPreferences | null>(null);
-  
+
   // Job alert filter state
-  const [skillInput, setSkillInput] = useState('');
-  const [locationInput, setLocationInput] = useState('');
-  const [keywordInput, setKeywordInput] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [skillInput, setSkillInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [keywordInput, setKeywordInput] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [filterSkills, setFilterSkills] = useState<string[]>([]);
   const [filterLocations, setFilterLocations] = useState<string[]>([]);
   const [filterKeywords, setFilterKeywords] = useState<string[]>([]);
 
   // Fetch notification preferences
   const { data: preferences, isLoading } = useQuery<NotificationPreferences>({
-    queryKey: ['/api/notifications/settings'],
+    queryKey: ["/api/notifications/settings"],
   });
-  
+
   // Fetch job alert filters (freelancers only)
   const { data: jobAlertFilter, isLoading: isLoadingFilters } = useQuery<JobAlertFilter>({
-    queryKey: ['/api/notifications/job-alerts'],
-    enabled: user.role === 'freelancer',
+    queryKey: ["/api/notifications/job-alerts"],
+    enabled: user.role === "freelancer",
   });
 
   // Update local state when preferences are loaded
@@ -61,38 +61,38 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
       setLocalPreferences(preferences);
     }
   }, [preferences]);
-  
+
   // Update filter state when job alert filter is loaded
   useEffect(() => {
     if (jobAlertFilter) {
       setFilterSkills(jobAlertFilter.skills || []);
       setFilterLocations(jobAlertFilter.locations || []);
       setFilterKeywords(jobAlertFilter.keywords || []);
-      setDateFrom(jobAlertFilter.date_from || '');
-      setDateTo(jobAlertFilter.date_to || '');
+      setDateFrom(jobAlertFilter.date_from || "");
+      setDateTo(jobAlertFilter.date_to || "");
     }
   }, [jobAlertFilter]);
 
   // Update preferences mutation
   const updateMutation = useMutation({
     mutationFn: async (newPreferences: Partial<NotificationPreferences>) => {
-      return await apiRequest('/api/notifications/settings', {
-        method: 'POST',
+      return await apiRequest("/api/notifications/settings", {
+        method: "POST",
         body: JSON.stringify(newPreferences),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/settings'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/settings"] });
       toast({
-        title: 'Settings saved',
-        description: 'Your notification preferences have been updated.',
+        title: "Settings saved",
+        description: "Your notification preferences have been updated.",
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to update notification preferences.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update notification preferences.",
+        variant: "destructive",
       });
     },
   });
@@ -100,23 +100,23 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
   // Update job alert filters mutation
   const updateFiltersMutation = useMutation({
     mutationFn: async (filters: Partial<JobAlertFilter>) => {
-      return await apiRequest('/api/notifications/job-alerts', {
-        method: 'POST',
+      return await apiRequest("/api/notifications/job-alerts", {
+        method: "POST",
         body: JSON.stringify(filters),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/job-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/job-alerts"] });
       toast({
-        title: 'Job alerts updated',
-        description: 'Your job alert preferences have been saved.',
+        title: "Job alerts updated",
+        description: "Your job alert preferences have been saved.",
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to update job alert preferences.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update job alert preferences.",
+        variant: "destructive",
       });
     },
   });
@@ -128,44 +128,44 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
     setLocalPreferences(newPreferences);
     updateMutation.mutate({ [key]: value });
   };
-  
+
   // Job alert filter handlers
   const handleAddSkill = () => {
     if (skillInput.trim() && !filterSkills.includes(skillInput.trim())) {
       const newSkills = [...filterSkills, skillInput.trim()];
       setFilterSkills(newSkills);
-      setSkillInput('');
+      setSkillInput("");
     }
   };
-  
+
   const handleRemoveSkill = (skill: string) => {
     setFilterSkills(filterSkills.filter(s => s !== skill));
   };
-  
+
   const handleAddLocation = () => {
     if (locationInput.trim() && !filterLocations.includes(locationInput.trim())) {
       const newLocations = [...filterLocations, locationInput.trim()];
       setFilterLocations(newLocations);
-      setLocationInput('');
+      setLocationInput("");
     }
   };
-  
+
   const handleRemoveLocation = (location: string) => {
     setFilterLocations(filterLocations.filter(l => l !== location));
   };
-  
+
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !filterKeywords.includes(keywordInput.trim())) {
       const newKeywords = [...filterKeywords, keywordInput.trim()];
       setFilterKeywords(newKeywords);
-      setKeywordInput('');
+      setKeywordInput("");
     }
   };
-  
+
   const handleRemoveKeyword = (keyword: string) => {
     setFilterKeywords(filterKeywords.filter(k => k !== keyword));
   };
-  
+
   const handleSaveFilters = () => {
     updateFiltersMutation.mutate({
       skills: filterSkills.length > 0 ? filterSkills : null,
@@ -199,9 +199,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
             <Bell className="h-5 w-5" />
             Email Notifications
           </CardTitle>
-          <CardDescription>
-            Choose which email notifications you'd like to receive
-          </CardDescription>
+          <CardDescription>Choose which email notifications you'd like to receive</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Messages */}
@@ -224,7 +222,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
             <Switch
               id="email_messages"
               checked={localPreferences.email_messages}
-              onCheckedChange={(checked) => handleToggle('email_messages', checked)}
+              onCheckedChange={checked => handleToggle("email_messages", checked)}
               data-testid="switch-email-messages"
             />
           </div>
@@ -232,7 +230,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
           <Separator />
 
           {/* Application Updates (Freelancers only) */}
-          {user.role === 'freelancer' && (
+          {user.role === "freelancer" && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-3">
@@ -253,7 +251,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                 <Switch
                   id="email_application_updates"
                   checked={localPreferences.email_application_updates}
-                  onCheckedChange={(checked) => handleToggle('email_application_updates', checked)}
+                  onCheckedChange={checked => handleToggle("email_application_updates", checked)}
                   data-testid="switch-email-application-updates"
                 />
               </div>
@@ -262,7 +260,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
           )}
 
           {/* Job Updates (Recruiters only) */}
-          {user.role === 'recruiter' && (
+          {user.role === "recruiter" && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-3">
@@ -283,7 +281,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                 <Switch
                   id="email_job_updates"
                   checked={localPreferences.email_job_updates}
-                  onCheckedChange={(checked) => handleToggle('email_job_updates', checked)}
+                  onCheckedChange={checked => handleToggle("email_job_updates", checked)}
                   data-testid="switch-email-job-updates"
                 />
               </div>
@@ -292,7 +290,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
           )}
 
           {/* Job Alerts (Freelancers only) */}
-          {user.role === 'freelancer' && (
+          {user.role === "freelancer" && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-3">
@@ -313,7 +311,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                 <Switch
                   id="email_job_alerts"
                   checked={localPreferences.email_job_alerts}
-                  onCheckedChange={(checked) => handleToggle('email_job_alerts', checked)}
+                  onCheckedChange={checked => handleToggle("email_job_alerts", checked)}
                   data-testid="switch-email-job-alerts"
                 />
               </div>
@@ -341,7 +339,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
             <Switch
               id="email_rating_requests"
               checked={localPreferences.email_rating_requests}
-              onCheckedChange={(checked) => handleToggle('email_rating_requests', checked)}
+              onCheckedChange={checked => handleToggle("email_rating_requests", checked)}
               data-testid="switch-email-rating-requests"
             />
           </div>
@@ -368,7 +366,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
             <Switch
               id="email_system_updates"
               checked={localPreferences.email_system_updates}
-              onCheckedChange={(checked) => handleToggle('email_system_updates', checked)}
+              onCheckedChange={checked => handleToggle("email_system_updates", checked)}
               data-testid="switch-email-system-updates"
             />
           </div>
@@ -376,21 +374,23 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
       </Card>
 
       {/* Job Alert Filters (Freelancers only) */}
-      {user.role === 'freelancer' && localPreferences.email_job_alerts && (
+      {user.role === "freelancer" && localPreferences.email_job_alerts && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
               Job Alert Filters
             </CardTitle>
-            <CardDescription>
-              Customize which jobs you get notified about
-            </CardDescription>
+            <CardDescription>Customize which jobs you get notified about</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Skills Filter */}
             <div className="space-y-3">
-              <Label htmlFor="skill-input" className="text-base font-medium" data-testid="label-skills-filter">
+              <Label
+                htmlFor="skill-input"
+                className="text-base font-medium"
+                data-testid="label-skills-filter"
+              >
                 Skills
               </Label>
               <p className="text-sm text-muted-foreground">
@@ -401,8 +401,8 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                   id="skill-input"
                   placeholder="e.g., Sound Engineer, Lighting Tech"
                   value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                  onChange={e => setSkillInput(e.target.value)}
+                  onKeyPress={e => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
                   data-testid="input-skill-filter"
                 />
                 <Button
@@ -417,8 +417,13 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
               </div>
               {filterSkills.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {filterSkills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="gap-1" data-testid={`badge-skill-${skill}`}>
+                  {filterSkills.map(skill => (
+                    <Badge
+                      key={skill}
+                      variant="secondary"
+                      className="gap-1"
+                      data-testid={`badge-skill-${skill}`}
+                    >
                       {skill}
                       <button
                         onClick={() => handleRemoveSkill(skill)}
@@ -464,8 +469,13 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
               </div>
               {filterLocations.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {filterLocations.map((location) => (
-                    <Badge key={location} variant="secondary" className="gap-1" data-testid={`badge-location-${location}`}>
+                  {filterLocations.map(location => (
+                    <Badge
+                      key={location}
+                      variant="secondary"
+                      className="gap-1"
+                      data-testid={`badge-location-${location}`}
+                    >
                       {location}
                       <button
                         onClick={() => handleRemoveLocation(location)}
@@ -484,7 +494,11 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
 
             {/* Keywords Filter */}
             <div className="space-y-3">
-              <Label htmlFor="keyword-input" className="text-base font-medium" data-testid="label-keywords-filter">
+              <Label
+                htmlFor="keyword-input"
+                className="text-base font-medium"
+                data-testid="label-keywords-filter"
+              >
                 Keywords
               </Label>
               <p className="text-sm text-muted-foreground">
@@ -495,8 +509,8 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                   id="keyword-input"
                   placeholder="e.g., festival, corporate, live music"
                   value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onKeyPress={e => e.key === "Enter" && (e.preventDefault(), handleAddKeyword())}
                   data-testid="input-keyword-filter"
                 />
                 <Button
@@ -511,8 +525,13 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
               </div>
               {filterKeywords.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {filterKeywords.map((keyword) => (
-                    <Badge key={keyword} variant="secondary" className="gap-1" data-testid={`badge-keyword-${keyword}`}>
+                  {filterKeywords.map(keyword => (
+                    <Badge
+                      key={keyword}
+                      variant="secondary"
+                      className="gap-1"
+                      data-testid={`badge-keyword-${keyword}`}
+                    >
                       {keyword}
                       <button
                         onClick={() => handleRemoveKeyword(keyword)}
@@ -546,7 +565,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                     id="date-from"
                     type="date"
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={e => setDateFrom(e.target.value)}
                     data-testid="input-date-from"
                   />
                 </div>
@@ -558,7 +577,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                     id="date-to"
                     type="date"
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={e => setDateTo(e.target.value)}
                     data-testid="input-date-to"
                   />
                 </div>
@@ -574,7 +593,7 @@ export function NotificationSettingsForm({ user }: NotificationSettingsFormProps
                 disabled={updateFiltersMutation.isPending}
                 data-testid="button-save-job-alerts"
               >
-                {updateFiltersMutation.isPending ? 'Saving...' : 'Save Job Alert Preferences'}
+                {updateFiltersMutation.isPending ? "Saving..." : "Save Job Alert Preferences"}
               </Button>
             </div>
           </CardContent>

@@ -1,9 +1,9 @@
-import { useLocation } from 'wouter';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { Layout } from '@/components/Layout';
-import { NotificationSettingsForm } from '@/components/NotificationSettingsForm';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { Layout } from "@/components/Layout";
+import { NotificationSettingsForm } from "@/components/NotificationSettingsForm";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 export default function NotificationSettings() {
   const [, setLocation] = useLocation();
@@ -11,7 +11,7 @@ export default function NotificationSettings() {
 
   useEffect(() => {
     if (!loading && !user) {
-      setLocation('/auth');
+      setLocation("/auth");
     }
   }, [loading, user, setLocation]);
 
@@ -38,9 +38,7 @@ export default function NotificationSettings() {
         <div className="max-w-3xl mx-auto space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Notification Settings</h1>
-            <p className="text-muted-foreground">
-              Manage your email notifications and job alerts.
-            </p>
+            <p className="text-muted-foreground">Manage your email notifications and job alerts.</p>
           </div>
           <NotificationSettingsForm user={user} />
         </div>

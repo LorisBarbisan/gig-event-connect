@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { apiRequest } from '@/lib/queryClient';
-import { Layout } from '@/components/Layout';
-import SimplifiedFreelancerDashboard from '@/components/SimplifiedFreelancerDashboard';
-import SimplifiedRecruiterDashboard from '@/components/SimplifiedRecruiterDashboard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { Layout } from "@/components/Layout";
+import SimplifiedFreelancerDashboard from "@/components/SimplifiedFreelancerDashboard";
+import SimplifiedRecruiterDashboard from "@/components/SimplifiedRecruiterDashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
   id: string;
-  role: 'freelancer' | 'recruiter' | 'admin';
+  role: "freelancer" | "recruiter" | "admin";
   email: string;
 }
 
@@ -21,17 +21,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
-    
+
     if (!user) {
       // Only redirect if auth is fully loaded and still no user
-      const storedUser = localStorage.getItem('user');
+      const storedUser = localStorage.getItem("user");
       if (!storedUser) {
-        console.log('Dashboard: No user found, redirecting to auth');
-        setLocation('/auth');
+        console.log("Dashboard: No user found, redirecting to auth");
+        setLocation("/auth");
       }
       return;
     }
-    
+
     // User exists, fetch profile
     fetchProfile();
   }, [user, authLoading, setLocation]);
@@ -39,18 +39,29 @@ export default function Dashboard() {
   const fetchProfile = async () => {
     try {
       if (user) {
-        console.log('Dashboard fetchProfile - user data:', { id: user.id, role: user.role, email: user.email });
+        console.log("Dashboard fetchProfile - user data:", {
+          id: user.id,
+          role: user.role,
+          email: user.email,
+        });
+
+        // Validate that user has a role
+        if (!user.role) {
+          console.error("⚠️ User object missing role property:", user);
+        }
+
         // Since we have user data with role, we can set the profile directly
+        // Default to freelancer if role is missing to prevent wrong dashboard
         const profileData = {
           id: user.id.toString(),
-          role: user.role,
-          email: user.email
+          role: (user.role || "freelancer") as "freelancer" | "recruiter" | "admin",
+          email: user.email,
         };
-        console.log('Dashboard fetchProfile - setting profile data:', profileData);
+        console.log("Dashboard fetchProfile - setting profile data:", profileData);
         setProfile(profileData);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
     }
@@ -88,16 +99,33 @@ export default function Dashboard() {
     );
   }
 
-  console.log('Dashboard render - profile data:', profile);
-  console.log('Dashboard render - showing:', profile.role === 'freelancer' ? 'FreelancerDashboard' : 'RecruiterDashboard');
+  console.log("Dashboard render - profile data:", profile);
+  console.log("Dashboard render - user data:", user);
+  console.log("Dashboard render - profile.role:", profile.role);
+  console.log(
+    "Dashboard render - showing:",
+    profile.role === "freelancer" ? "FreelancerDashboard" : "RecruiterDashboard"
+  );
+
+  // Determine which dashboard to show based on role
+  // Default to freelancer if role is undefined/null to prevent wrong dashboard
+  const showFreelancerDashboard = profile.role === "freelancer";
+  const showRecruiterDashboard = profile.role === "recruiter" || profile.role === "admin";
+
+  if (!showFreelancerDashboard && !showRecruiterDashboard) {
+    console.error("⚠️ Unknown user role:", profile.role, "- Defaulting to FreelancerDashboard");
+  }
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {profile.role === 'freelancer' ? (
+        {showFreelancerDashboard ? (
           <SimplifiedFreelancerDashboard />
-        ) : (
+        ) : showRecruiterDashboard ? (
           <SimplifiedRecruiterDashboard />
+        ) : (
+          // Fallback: if role is somehow undefined/null, default to freelancer
+          <SimplifiedFreelancerDashboard />
         )}
       </div>
     </Layout>

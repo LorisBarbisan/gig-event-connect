@@ -1,19 +1,28 @@
-import { useState, useEffect } from 'react';
-import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { UKLocationInput } from '@/components/ui/uk-location-input';
-import { Search, MapPin, Star, User, Calendar, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { ContactModal } from '@/components/ContactModal';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/Layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { UKLocationInput } from "@/components/ui/uk-location-input";
+import {
+  Search,
+  MapPin,
+  Star,
+  User,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { ContactModal } from "@/components/ContactModal";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 export default function Freelancers() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [, setLocation] = useLocation();
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -24,7 +33,7 @@ export default function Freelancers() {
   // Check for highlight parameter in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const highlight = urlParams.get('highlight');
+    const highlight = urlParams.get("highlight");
     if (highlight) {
       setHighlightedFreelancer(highlight);
       // Remove highlight after 3 seconds
@@ -38,19 +47,23 @@ export default function Freelancers() {
   }, [searchQuery, locationFilter]);
 
   // Fetch freelancers using server-side search
-  const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['/api/freelancers/search', searchQuery, locationFilter, currentPage],
+  const {
+    data: searchResults,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["/api/freelancers/search", searchQuery, locationFilter, currentPage],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (searchQuery) params.append('keyword', searchQuery);
-      if (locationFilter) params.append('location', locationFilter);
-      params.append('page', currentPage.toString());
-      params.append('limit', '20');
+      if (searchQuery) params.append("keyword", searchQuery);
+      if (locationFilter) params.append("location", locationFilter);
+      params.append("page", currentPage.toString());
+      params.append("limit", "20");
 
       const response = await fetch(`/api/freelancers/search?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch freelancers');
+      if (!response.ok) throw new Error("Failed to fetch freelancers");
       return await response.json();
-    }
+    },
   });
 
   const freelancers = searchResults?.results || [];
@@ -62,19 +75,25 @@ export default function Freelancers() {
   // Transform freelancer data to match display format
   const transformedFreelancers = freelancers.map((profile: any) => ({
     id: `real-${profile.user_id}`,
-    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-    title: profile.title || 'Event Professional',
-    location: profile.location || 'Location not specified',
-    experience: profile.experience_years ? `${profile.experience_years} years` : 'Experience not specified',
+    name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim(),
+    title: profile.title || "Event Professional",
+    location: profile.location || "Location not specified",
+    experience: profile.experience_years
+      ? `${profile.experience_years} years`
+      : "Experience not specified",
     rating: profile.average_rating || 0,
-    availability: profile.availability_status === 'available' ? 'Available' : 
-                 profile.availability_status === 'busy' ? 'Busy' : 'Unavailable',
+    availability:
+      profile.availability_status === "available"
+        ? "Available"
+        : profile.availability_status === "busy"
+          ? "Busy"
+          : "Unavailable",
     skills: profile.skills || [],
-    bio: profile.bio || 'Professional event crew member',
+    bio: profile.bio || "Professional event crew member",
     recentProjects: Math.floor(Math.random() * 5) + 1,
     avatar: profile.profile_photo_url || null,
     isReal: true,
-    relevanceScore: profile.relevance_score || 0
+    relevanceScore: profile.relevance_score || 0,
   }));
 
   return (
@@ -86,7 +105,8 @@ export default function Freelancers() {
             <span className="text-primary">Find</span> <span className="text-accent">Crew</span>
           </h1>
           <p className="text-muted-foreground text-lg">
-            Connect with skilled technical professionals for your events. Browse profiles and hire the best crew for your projects.
+            Connect with skilled technical professionals for your events. Browse profiles and hire
+            the best crew for your projects.
           </p>
         </div>
 
@@ -104,7 +124,7 @@ export default function Freelancers() {
                 <Input
                   placeholder="Search freelancers, skills, or specializations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="w-full"
                   data-testid="input-search-freelancers"
                 />
@@ -113,7 +133,7 @@ export default function Freelancers() {
                 <UKLocationInput
                   placeholder="Filter by UK location..."
                   value={locationFilter}
-                  onChange={(value) => setLocationFilter(value)}
+                  onChange={value => setLocationFilter(value)}
                   data-testid="input-location-filter"
                 />
               </div>
@@ -132,7 +152,7 @@ export default function Freelancers() {
                 </span>
               ) : (
                 <>
-                  {totalResults} Freelancer{totalResults !== 1 ? 's' : ''} Found
+                  {totalResults} Freelancer{totalResults !== 1 ? "s" : ""} Found
                   {totalResults > 0 && (
                     <span className="text-sm font-normal text-muted-foreground ml-2">
                       (Page {currentPage} of {totalPages})
@@ -151,10 +171,11 @@ export default function Freelancers() {
                   <div className="text-red-600 text-4xl">⚠️</div>
                   <h3 className="text-xl font-semibold text-red-900">Search Error</h3>
                   <p className="text-red-700 max-w-md mx-auto">
-                    We encountered an error while searching for freelancers. Please try again in a moment.
+                    We encountered an error while searching for freelancers. Please try again in a
+                    moment.
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => window.location.reload()}
                     className="mt-4"
                     data-testid="button-retry-search"
@@ -174,34 +195,27 @@ export default function Freelancers() {
                   <User className="h-12 w-12 text-muted-foreground mx-auto" />
                   <h3 className="text-xl font-semibold">No Freelancers Found</h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    {searchQuery || locationFilter 
+                    {searchQuery || locationFilter
                       ? `No freelancers match your search criteria. Try adjusting your filters or search terms.`
-                      : `There are currently no freelancer profiles available. Freelancers need to complete their profiles before appearing in search results.`
-                    }
+                      : `There are currently no freelancer profiles available. Freelancers need to complete their profiles before appearing in search results.`}
                   </p>
                   <div className="pt-4 flex gap-4 justify-center">
                     {(searchQuery || locationFilter) && (
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
-                          setSearchQuery('');
-                          setLocationFilter('');
+                          setSearchQuery("");
+                          setLocationFilter("");
                         }}
                         data-testid="button-clear-filters"
                       >
                         Clear Filters
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setLocation('/auth?tab=signup')}
-                    >
+                    <Button variant="outline" onClick={() => setLocation("/auth?tab=signup")}>
                       Join as Freelancer
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setLocation('/jobs')}
-                    >
+                    <Button variant="outline" onClick={() => setLocation("/jobs")}>
                       Browse Jobs Instead
                     </Button>
                   </div>
@@ -213,28 +227,34 @@ export default function Freelancers() {
           {/* Freelancers Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {transformedFreelancers.map((freelancer: any) => (
-              <Card 
-                key={freelancer.id} 
+              <Card
+                key={freelancer.id}
                 className={`hover:shadow-lg transition-shadow border-l-4 border-l-accent ${
-                  highlightedFreelancer && 
-                  (freelancer.id === `real-${highlightedFreelancer}`)
-                    ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  highlightedFreelancer && freelancer.id === `real-${highlightedFreelancer}`
+                    ? "ring-2 ring-blue-500 bg-blue-50"
+                    : ""
                 }`}
                 data-testid={`freelancer-card-${freelancer.id}`}
               >
                 <CardHeader>
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-2xl overflow-hidden">
-                      {freelancer.avatar && (freelancer.avatar.startsWith('data:image/') || freelancer.avatar.startsWith('https://') || freelancer.avatar.startsWith('http://')) ? (
-                        <img 
-                          src={freelancer.avatar} 
+                      {freelancer.avatar &&
+                      (freelancer.avatar.startsWith("data:image/") ||
+                        freelancer.avatar.startsWith("https://") ||
+                        freelancer.avatar.startsWith("http://")) ? (
+                        <img
+                          src={freelancer.avatar}
                           alt={`${freelancer.name} profile photo`}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
                         <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center">
                           <span className="text-white font-bold text-lg">
-                            {freelancer.name.split(' ').map((n: string) => n[0]).join('')}
+                            {freelancer.name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")}
                           </span>
                         </div>
                       )}
@@ -256,9 +276,15 @@ export default function Freelancers() {
                             <span>{freelancer.rating.toFixed(1)}</span>
                           </div>
                         )}
-                        <Badge 
-                          variant={freelancer.availability === 'Available' ? 'default' : 'secondary'}
-                          className={freelancer.availability === 'Available' ? 'bg-green-100 text-green-800' : ''}
+                        <Badge
+                          variant={
+                            freelancer.availability === "Available" ? "default" : "secondary"
+                          }
+                          className={
+                            freelancer.availability === "Available"
+                              ? "bg-green-100 text-green-800"
+                              : ""
+                          }
                         >
                           {freelancer.availability}
                         </Badge>
@@ -269,7 +295,7 @@ export default function Freelancers() {
                 <CardContent>
                   <div className="space-y-4">
                     <p className="text-muted-foreground text-sm">{freelancer.bio}</p>
-                    
+
                     <div className="flex flex-wrap gap-2">
                       {freelancer.skills.map((skill: any, index: number) => (
                         <Badge key={index} variant="outline" className="text-xs">
@@ -290,11 +316,11 @@ export default function Freelancers() {
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <Button 
+                      <Button
                         className="bg-gradient-primary hover:bg-primary-hover"
                         onClick={() => {
                           if (!currentUser) {
-                            alert('Please log in to contact freelancers');
+                            alert("Please log in to contact freelancers");
                             return;
                           }
                           setSelectedFreelancer(freelancer);
@@ -304,10 +330,10 @@ export default function Freelancers() {
                       >
                         Contact
                       </Button>
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={() => {
-                          const userId = freelancer.id.replace('real-', '');
+                          const userId = freelancer.id.replace("real-", "");
                           setLocation(`/profile/${userId}`);
                         }}
                         data-testid={`button-view-profile-${freelancer.id}`}
@@ -327,7 +353,8 @@ export default function Freelancers() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((currentPage - 1) * 20) + 1} - {Math.min(currentPage * 20, totalResults)} of {totalResults} results
+                    Showing {(currentPage - 1) * 20 + 1} -{" "}
+                    {Math.min(currentPage * 20, totalResults)} of {totalResults} results
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -352,11 +379,11 @@ export default function Freelancers() {
                         } else {
                           pageNum = currentPage - 2 + i;
                         }
-                        
+
                         return (
                           <Button
                             key={pageNum}
-                            variant={currentPage === pageNum ? 'default' : 'outline'}
+                            variant={currentPage === pageNum ? "default" : "outline"}
                             size="sm"
                             onClick={() => setCurrentPage(pageNum)}
                             className="w-10"
@@ -394,10 +421,10 @@ export default function Freelancers() {
             setSelectedFreelancer(null);
           }}
           freelancer={{
-            id: parseInt(selectedFreelancer.id.replace('real-', '')),
-            user_id: parseInt(selectedFreelancer.id.replace('real-', '')),
-            first_name: selectedFreelancer.name.split(' ')[0] || '',
-            last_name: selectedFreelancer.name.split(' ').slice(1).join(' ') || '',
+            id: parseInt(selectedFreelancer.id.replace("real-", "")),
+            user_id: parseInt(selectedFreelancer.id.replace("real-", "")),
+            first_name: selectedFreelancer.name.split(" ")[0] || "",
+            last_name: selectedFreelancer.name.split(" ").slice(1).join(" ") || "",
             title: selectedFreelancer.title,
             photo_url: selectedFreelancer.avatar,
           }}

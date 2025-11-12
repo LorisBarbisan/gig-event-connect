@@ -1,46 +1,52 @@
+import {
+  insertJobApplicationSchema,
+  insertJobSchema,
+  insertMessageSchema,
+  insertNotificationSchema,
+  insertProfileSchema,
+  insertUserSchema,
+} from "@shared/schema-optimized";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import bcrypt from "bcryptjs";
-import { optimizedStorage } from "./storage-optimized";
-import { insertUserSchema, insertProfileSchema, insertJobSchema, insertJobApplicationSchema, insertMessageSchema, insertNotificationSchema } from "@shared/schema-optimized";
 import { sendVerificationEmail } from "./emailService";
-import { randomBytes } from "crypto";
+import { optimizedStorage } from "./storage-optimized";
 
 // OPTIMIZED ROUTES: Simplified, efficient API endpoints
 
 export async function registerOptimizedRoutes(app: Express): Promise<Server> {
-  
   // =============================================
   // AUTHENTICATION ROUTES - Simplified
   // =============================================
-  
+
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { email, password, role } = insertUserSchema.parse(req.body);
-      
+
       const existingUser = await optimizedStorage.getUserByEmail(email.toLowerCase());
       if (existingUser) {
         return res.status(400).json({ error: "User already exists" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const verificationToken = randomBytes(32).toString('hex');
+      const verificationToken = randomBytes(32).toString("hex");
       const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
+
       const user = await optimizedStorage.createUser({
         email: email.toLowerCase(),
         password: hashedPassword,
         role,
         email_verification_token: verificationToken,
-        email_verification_expires: verificationExpires
+        email_verification_expires: verificationExpires,
       });
 
-      const baseUrl = req.protocol + '://' + req.get('host');
+      const baseUrl = req.protocol + "://" + req.get("host");
       const emailSent = await sendVerificationEmail(user.email, verificationToken, baseUrl);
 
-      res.json({ 
+      res.json({
         message: "Registration successful! Please verify your email to sign in.",
-        emailSent: emailSent
+        emailSent: emailSent,
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -51,7 +57,7 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signin", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       const user = await optimizedStorage.getUserByEmail(email.toLowerCase());
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
@@ -81,12 +87,12 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   app.get("/verify-email", async (req, res) => {
     try {
       const { token } = req.query;
-      if (!token || typeof token !== 'string') {
+      if (!token || typeof token !== "string") {
         return res.status(400).send("Invalid verification link");
       }
 
       const isValid = await optimizedStorage.verifyEmail(token);
-      
+
       if (isValid) {
         res.send(`
           <!DOCTYPE html>
@@ -121,12 +127,12 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   // =============================================
   // USER & PROFILE ROUTES - Unified
   // =============================================
-  
+
   app.get("/api/users/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const user = await optimizedStorage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -187,7 +193,7 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   // =============================================
   // JOB ROUTES - Simplified
   // =============================================
-  
+
   app.get("/api/jobs", async (req, res) => {
     try {
       const jobs = await optimizedStorage.getAllJobs();
@@ -246,7 +252,7 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   // =============================================
   // APPLICATION ROUTES
   // =============================================
-  
+
   app.post("/api/applications", async (req, res) => {
     try {
       const application = insertJobApplicationSchema.parse(req.body);
@@ -295,7 +301,7 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   // =============================================
   // MESSAGING ROUTES - Simplified
   // =============================================
-  
+
   app.post("/api/messages", async (req, res) => {
     try {
       const message = insertMessageSchema.parse(req.body);
@@ -345,7 +351,7 @@ export async function registerOptimizedRoutes(app: Express): Promise<Server> {
   // =============================================
   // NOTIFICATION ROUTES
   // =============================================
-  
+
   app.post("/api/notifications", async (req, res) => {
     try {
       const notification = insertNotificationSchema.parse(req.body);
