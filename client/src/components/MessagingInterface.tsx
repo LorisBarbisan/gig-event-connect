@@ -90,7 +90,6 @@ const getAvatarInitials = (user: User): string => {
 
 // Helper function to format dates
 const formatDate = (dateString: string | Date): string => {
-  // Handle both string and Date object inputs
   const date = typeof dateString === "string" ? new Date(dateString) : dateString;
 
   // Validate date
@@ -101,10 +100,9 @@ const formatDate = (dateString: string | Date): string => {
 
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-
-  // Handle future dates
-  if (diffMs < 0) return "In the future";
-  console.log("diffMs", diffMs);
+  console.log("date===>", date);
+  console.log("now===>", now);
+  console.log("diffMs===>", diffMs);
 
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMins / 60);
@@ -146,21 +144,17 @@ export function MessagingInterface() {
     queryKey: ["/api/conversations", selectedConversation, "messages"],
     queryFn: async () => {
       const data = await apiRequest(`/api/conversations/${selectedConversation}/messages`);
-      // Ensure all created_at timestamps are properly formatted ISO strings
-      return data.map((msg: Message) => ({
-        ...msg,
-        created_at:
-          typeof msg.created_at === "string"
-            ? msg.created_at
-            : new Date(msg.created_at).toISOString(),
-      }));
+      return data;
     },
-    enabled: selectedConversation !== null,
+    enabled: !!selectedConversation,
     refetchOnMount: "always",
     refetchOnWindowFocus: true, // Always refetch on focus
     staleTime: 0, // Always consider stale - no caching
     gcTime: 1000, // Keep in cache for 1 second (was 0, but 0 might cause issues)
     refetchOnReconnect: true,
+    // 🔁 Poll every 5 seconds
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
 
   // Fetch conversations (still using React Query)
@@ -334,8 +328,8 @@ export function MessagingInterface() {
 
     // Clear inputs immediately BEFORE mutation to prevent race condition
     // if user switches conversations while mutation is in flight
+    console.log("messageData===>", messageData);
     setNewMessage("");
-
     sendMessageMutation.mutate(messageData);
   };
 
@@ -674,6 +668,7 @@ export function MessagingInterface() {
                       messages.map(message => {
                         const isMyMessage = message.sender_id === user?.id;
                         const isSystemMessage = message.sender_id === null;
+                        console.log("message.created_at", message.created_at);
 
                         return (
                           <div

@@ -284,7 +284,6 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
-  console.log("🧩 DATABASE_URL:", process.env.DATABASE_URL);
   // Use PORT environment variable for production deployment
   // Fall back to 3000 for development (5000 and 7000 are often used by macOS services)
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
