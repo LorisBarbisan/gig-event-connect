@@ -44,8 +44,10 @@ export function MessagingInterface() {
     queryKey: ["/api/conversations", selectedConversation, "messages"],
     queryFn: () => apiRequest(`/api/conversations/${selectedConversation}/messages`),
     enabled: !!selectedConversation,
-    refetchInterval: 5000,
+    staleTime: 0, // CRITICAL: Override default 5-minute staleTime to ensure instant updates
+    refetchInterval: false, // Disable polling - rely on WebSocket for real-time updates
     refetchOnWindowFocus: true,
+    refetchOnMount: "always", // Always refetch when component mounts
   });
 
   // --- SEND MESSAGE MUTATION ---
@@ -65,7 +67,12 @@ export function MessagingInterface() {
       setNewMessage(variables.content);
     },
 
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Force immediate refetch to ensure UI updates even if WebSocket fails
+      await queryClient.refetchQueries({
+        queryKey: ["/api/conversations", selectedConversation, "messages"],
+      });
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({
         queryKey: ["/api/conversations", selectedConversation, "messages"],
       });
@@ -114,14 +121,31 @@ export function MessagingInterface() {
         },
       };
 
+      // DEBUG: Log WebSocket message received
+      console.log(
+        `🔔 [WebSocket] Received new_message for conversation ${conversation_id}, message ID: ${newMessage.id}`
+      );
+
+      // Update messages cache immediately - this should trigger instant UI update
       queryClient.setQueryData<Message[]>(
         ["/api/conversations", conversation_id, "messages"],
         old => {
-          if (!old) return [newMessage];
+          if (!old) {
+            console.log(
+              `📝 [Cache] No existing messages, creating new array with message ${newMessage.id}`
+            );
+            return [newMessage];
+          }
 
           const exists = old.some(m => m.id === newMessage.id);
-          if (exists) return old;
+          if (exists) {
+            console.log(`⚠️ [Cache] Message ${newMessage.id} already exists in cache, skipping`);
+            return old;
+          }
 
+          console.log(
+            `✅ [Cache] Adding message ${newMessage.id} to cache (total: ${old.length + 1} messages)`
+          );
           return [...old, newMessage];
         }
       );

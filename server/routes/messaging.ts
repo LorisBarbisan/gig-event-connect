@@ -61,6 +61,11 @@ export function registerMessagingRoutes(app: Express) {
         console.error("Failed to broadcast badge counts after marking messages as read:", error);
       }
 
+      // CRITICAL: Set no-cache headers to prevent browser/HTTP caching of messages
+      // Messages are real-time and should always be fresh
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
       res.json(messages);
     } catch (error) {
       console.error("Get conversation messages error:", error);
@@ -300,7 +305,64 @@ export function registerMessagingRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid input", details: result.error.issues });
       }
 
+      // TIMING: Start measuring message save time
+      const messageSaveStartTime = Date.now();
       const message = await storage.sendMessage(result.data);
+      const messageSaveEndTime = Date.now();
+      console.log(
+        `⏱️ [Timing] Message saved in ${messageSaveEndTime - messageSaveStartTime}ms (ID: ${message.id})`
+      );
+
+      // OPTIMIZATION: Broadcast WebSocket events IMMEDIATELY after message save
+      // This ensures instant delivery to receivers before any notification/profile fetching delays
+      const broadcastStartTime = Date.now();
+      try {
+        const { wsService } = await import("../websocketService.js");
+        // OPTIMIZATION: Use req.user directly instead of redundant database fetch
+        // req.user already contains all needed sender data (id, email, role, first_name, last_name, company_name, deleted_at, etc.)
+        // Type assertion needed because Express.User type is minimal, but computeUserRole returns full user object
+        const sender = req.user as typeof req.user & {
+          first_name?: string | null;
+          last_name?: string | null;
+          company_name?: string | null;
+          deleted_at?: string | Date | null;
+        };
+
+        // Broadcast to RECIPIENT (if not deleted) for instant UI update
+        if (conversation.otherUser && !(await storage.isUserDeleted(conversation.otherUser.id))) {
+          // Broadcast new_message event with full data (works for both MessagingInterface and LiveNotificationPopups)
+          wsService.broadcastNewMessage(
+            conversation.otherUser.id,
+            message,
+            sender,
+            conversation_id
+          );
+
+          // Broadcast conversation update in case it was restored after deletion
+          wsService.broadcastConversationUpdated(conversation.otherUser.id, conversation_id);
+
+          console.log(
+            `✅ [WebSocket] Broadcasts sent to recipient ${conversation.otherUser.id} (message ID: ${message.id})`
+          );
+        }
+
+        // Broadcast to SENDER for instant UI update (so they see their message immediately)
+        wsService.broadcastNewMessage(req.user.id, message, sender, conversation_id);
+
+        // Broadcast conversation update to sender as well
+        wsService.broadcastConversationUpdated(req.user.id, conversation_id);
+
+        const broadcastEndTime = Date.now();
+        console.log(
+          `⏱️ [Timing] WebSocket broadcasts completed in ${broadcastEndTime - broadcastStartTime}ms (message ID: ${message.id})`
+        );
+        console.log(
+          `✅ [WebSocket] Broadcasts sent to sender ${req.user.id} (message ID: ${message.id})`
+        );
+      } catch (error) {
+        console.error("Failed to broadcast WebSocket events:", error);
+        // Don't fail the request if WebSocket broadcast fails
+      }
 
       // Create file attachment if provided
       if (attachment) {
@@ -316,7 +378,9 @@ export function registerMessagingRoutes(app: Express) {
       }
 
       // Create notification for other participant in conversation (only if recipient is not deleted)
+      // NOTE: This happens AFTER WebSocket broadcast to ensure instant message delivery
       if (conversation.otherUser && !(await storage.isUserDeleted(conversation.otherUser.id))) {
+        const notificationStartTime = Date.now();
         // Get sender's display name (company name for recruiters, name for freelancers)
         let senderDisplayName = req.user.email; // fallback
 
@@ -347,6 +411,25 @@ export function registerMessagingRoutes(app: Express) {
           action_url: `/dashboard?tab=messages&conversation=${conversation_id}`,
           metadata: JSON.stringify({ sender_id: req.user.id, conversation_id: conversation_id }),
         });
+
+        // Broadcast updated badge counts (after notification is created)
+        // Use setImmediate to ensure notification is created first, but don't block response
+        setImmediate(async () => {
+          try {
+            const recipientCounts = await storage.getCategoryUnreadCounts(
+              conversation.otherUser.id
+            );
+            const { wsService } = await import("../websocketService.js");
+            wsService.broadcastBadgeCounts(conversation.otherUser.id, recipientCounts);
+          } catch (error) {
+            console.error("Failed to broadcast badge counts:", error);
+          }
+        });
+
+        const notificationEndTime = Date.now();
+        console.log(
+          `⏱️ [Timing] Notification created in ${notificationEndTime - notificationStartTime}ms (message ID: ${message.id})`
+        );
 
         // Send email notification
         try {
@@ -395,54 +478,6 @@ export function registerMessagingRoutes(app: Express) {
           console.error("Error preparing message notification email:", error);
           // Don't fail the request if email preparation fails
         }
-      }
-
-      // Broadcast real-time updates to BOTH sender and recipient for instant UI updates
-      try {
-        const { wsService } = await import("../websocketService.js");
-        const sender = await storage.getUser(req.user.id);
-
-        if (sender) {
-          // Broadcast to RECIPIENT (if not deleted)
-          if (conversation.otherUser && !(await storage.isUserDeleted(conversation.otherUser.id))) {
-            // Broadcast new_message event with full data (works for both MessagingInterface and LiveNotificationPopups)
-            wsService.broadcastNewMessage(
-              conversation.otherUser.id,
-              message,
-              sender,
-              conversation_id
-            );
-
-            // Broadcast conversation update in case it was restored after deletion
-            wsService.broadcastConversationUpdated(conversation.otherUser.id, conversation_id);
-
-            // Broadcast updated badge counts (after notification is created)
-            // Use setImmediate to ensure notification is created first
-            setImmediate(async () => {
-              try {
-                const recipientCounts = await storage.getCategoryUnreadCounts(
-                  conversation.otherUser.id
-                );
-                wsService.broadcastBadgeCounts(conversation.otherUser.id, recipientCounts);
-              } catch (error) {
-                console.error("Failed to broadcast badge counts:", error);
-              }
-            });
-
-            console.log(`✅ WebSocket broadcasts sent to recipient ${conversation.otherUser.id}`);
-          }
-
-          // Broadcast to SENDER for instant UI update (so they see their message immediately)
-          wsService.broadcastNewMessage(req.user.id, message, sender, conversation_id);
-
-          // Broadcast conversation update to sender as well
-          wsService.broadcastConversationUpdated(req.user.id, conversation_id);
-
-          console.log(`✅ WebSocket broadcasts sent to sender ${req.user.id}`);
-        }
-      } catch (error) {
-        console.error("Failed to broadcast WebSocket events:", error);
-        // Don't fail the request if WebSocket broadcast fails
       }
 
       res.status(201).json(message);
