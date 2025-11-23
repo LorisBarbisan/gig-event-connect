@@ -1,9 +1,8 @@
 import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
 import { storage } from "./storage";
-import type { User } from "@shared/schema";
 
 // Initialize passport
 export function initializePassport() {

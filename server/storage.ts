@@ -47,73 +47,9 @@ import {
   type RecruiterProfile,
   type User,
 } from "@shared/schema";
-import dotenv from "dotenv";
 import { and, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-dotenv.config();
-
-const connectionString = process.env.DATABASE_URL!;
-const client = postgres(connectionString, {
-  max: 20, // Maximum connections in the pool
-  idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 5, // Reduced connection timeout for faster failure detection
-  prepare: false, // Disable prepared statements to reduce memory usage
-  transform: {
-    undefined: null, // Transform undefined to null for better SQL compatibility
-  },
-  debug: process.env.NODE_ENV === "development" ? false : false, // Disable debug in production
-  onnotice: process.env.NODE_ENV === "development" ? console.log : () => {}, // Log notices only in dev
-  // Add connection retry logic for better reliability
-  connection: {
-    options: `--application_name=eventlink-${process.env.NODE_ENV || "development"}`,
-  },
-});
-const db = drizzle(client);
-export { db };
-
-// Simple in-memory cache for frequently accessed data
-class SimpleCache {
-  private cache = new Map<string, { data: any; expiry: number }>();
-
-  set(key: string, data: any, ttlSeconds: number = 300) {
-    const expiry = Date.now() + ttlSeconds * 1000;
-    this.cache.set(key, { data, expiry });
-  }
-
-  get<T>(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return item.data as T;
-  }
-
-  delete(key: string) {
-    this.cache.delete(key);
-  }
-
-  clear() {
-    this.cache.clear();
-  }
-
-  // Clear cache entries that start with a pattern
-  clearPattern(pattern: string) {
-    const keysToDelete: string[] = [];
-    this.cache.forEach((_, key) => {
-      if (key.startsWith(pattern)) {
-        keysToDelete.push(key);
-      }
-    });
-    keysToDelete.forEach(key => this.cache.delete(key));
-  }
-}
-
-const cache = new SimpleCache();
+import { db } from "./api/config/db";
+import { cache } from "./api/utils/cache.util";
 
 export interface IStorage {
   // User management
@@ -2030,7 +1966,7 @@ export class DatabaseStorage implements IStorage {
       // Broadcast asynchronously (non-blocking)
       setImmediate(async () => {
         try {
-          const { wsService } = await import("./websocketService");
+          const { wsService } = await import("./api/websocket/websocketService");
 
           // Send new_notification event
           wsService.broadcastNotification(notification.user_id!, newNotification);

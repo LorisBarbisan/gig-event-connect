@@ -7,24 +7,24 @@ import helmet from "helmet";
 import { createServer, type Server } from "http";
 import passport from "passport";
 import { WebSocket, WebSocketServer } from "ws";
-import { setCacheByEndpoint } from "./cacheHeaders";
-import { nukeAllUserData } from "./clearAllUserData";
+import { nukeAllUserData } from "./api/config/clearAllUserData.js";
+import { searchLocalLocations } from "./api/utils/ukLocations.js";
 import { initializePassport } from "./passport";
-import { performanceMonitor } from "./performanceMonitor";
 import { storage } from "./storage";
-import { searchLocalLocations } from "./ukLocations";
 
 // Import domain-specific route modules
-import { registerAdminRoutes } from "./routes/admin";
-import { registerApplicationRoutes } from "./routes/applications";
-import { registerAuthRoutes } from "./routes/auth";
-import { registerContactRoutes } from "./routes/contact";
-import { registerFileRoutes } from "./routes/files";
-import { registerJobRoutes } from "./routes/jobs";
-import { registerMessagingRoutes } from "./routes/messaging";
-import { registerNotificationRoutes } from "./routes/notifications";
-import { registerProfileRoutes } from "./routes/profiles";
-import { registerRatingsRoutes } from "./routes/ratings";
+import { setCacheByEndpoint } from "./api/middleware/cacheHeaders.js";
+import { registerAdminRoutes } from "./api/routes/admin.route.js";
+import { registerApplicationRoutes } from "./api/routes/applications.route.js";
+import { registerAuthRoutes } from "./api/routes/auth.route.js";
+import { registerContactRoutes } from "./api/routes/contact.route.js";
+import { registerFileRoutes } from "./api/routes/file.route.js";
+import { registerJobRoutes } from "./api/routes/job.route.js";
+import { registerMessagingRoutes } from "./api/routes/message.route.js";
+import { registerNotificationRoutes } from "./api/routes/notification.route.js";
+import { registerProfileRoutes } from "./api/routes/profile.route.js";
+import { registerRatingsRoutes } from "./api/routes/rating.route.js";
+import { performanceMonitor } from "./api/utils/performance-monitor.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
@@ -128,7 +128,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       ...sessionStoreConfig,
-      secret: process.env.SESSION_SECRET || "eventlink-dev-secret-key-change-in-production",
+      secret: (() => {
+        const secret = process.env.SESSION_SECRET;
+        if (!secret) throw new Error("SESSION_SECRET is required");
+        return secret;
+      })(),
       resave: false,
       saveUninitialized: false,
       name: "eventlink.sid", // Custom session name for security
@@ -166,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV === "development") {
     app.get("/api/debug/email-connector", async (req, res) => {
       try {
-        const { sendVerificationEmail } = await import("./emailService");
+        const { sendVerificationEmail } = await import("./api/utils/emailService.js");
 
         // Try to send a test email
         try {
@@ -253,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/jobs/sync-external", async (req, res) => {
     try {
       console.log("🔄 External job sync requested");
-      const { jobAggregator } = await import("./jobAggregator");
+      const { jobAggregator } = await import("./api/utils/jobAggregator.js");
       const config = req.body.config; // Optional configuration
 
       // Check if sync is already in progress
@@ -329,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Feedback submission endpoint (public)
   app.post("/api/feedback", async (req, res) => {
     try {
-      const { feedbackType, message, pageUrl, timestamp, source } = req.body;
+      const { feedbackType, message, pageUrl, source } = req.body;
 
       if (!feedbackType || !message) {
         return res.status(400).json({ error: "Feedback type and message are required" });
@@ -465,10 +469,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Initialize WebSocket service with broadcast function
-  const { wsService } = await import("./websocketService.js");
+  const { wsService } = await import("./api/websocket/websocketService.js");
   wsService.initialize(broadcastToUser);
 
-  wss.on("connection", (ws: WebSocket, req) => {
+  wss.on("connection", (ws: WebSocket, _req) => {
     console.log("WebSocket connection established on /ws");
 
     let userId: number | null = null;

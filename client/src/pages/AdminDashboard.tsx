@@ -1,18 +1,8 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminGuard } from "@/components/AdminGuard";
+import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -20,27 +10,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  Users,
-  MessageSquare,
-  TrendingUp,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { trackAdminAnalytics } from "@/lib/analytics";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import {
   AlertCircle,
-  Clock,
-  CheckCircle,
-  UserCheck,
   Briefcase,
   FileText,
-  Calendar,
-  ChevronRight,
-  Shield,
   Mail,
+  MessageSquare,
+  Shield,
+  TrendingUp,
+  UserCheck,
+  Users,
 } from "lucide-react";
-import { AdminGuard } from "@/components/AdminGuard";
-import { Layout } from "@/components/Layout";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { trackAdminEvent, trackAdminAnalytics } from "@/lib/analytics";
+import { useEffect, useState } from "react";
 
 interface FeedbackItem {
   id: number;
@@ -282,7 +277,7 @@ function AdminDashboardContent() {
 
     setIsBootstrapping(true);
     try {
-      const result = await apiRequest("/api/bootstrap/create-first-admin", {
+      const result = await apiRequest("/api/admin/create-first-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email }),
