@@ -176,11 +176,13 @@ export async function markCategoryNotificationsAsRead(req: Request, res: Respons
 // Delete notification
 export async function deleteNotification(req: Request, res: Response) {
   try {
+    console.log("Deleting notification:", req.params.id);
     const notificationId = parseInt(req.params.id);
 
     // Check if notification belongs to user
     const notification = await storage.getNotification(notificationId);
     if (!notification) {
+      console.log("Notification with id " + notificationId + " not found");
       return res.status(404).json({ error: "Notification not found" });
     }
 

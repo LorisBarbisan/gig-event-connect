@@ -2005,6 +2005,7 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(notifications.created_at))
       .limit(limit);
+
     return result;
   }
 

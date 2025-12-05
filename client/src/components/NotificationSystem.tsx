@@ -86,9 +86,9 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["/api/notifications", userId],
     queryFn: () => apiRequest("/api/notifications") as Promise<Notification[]>,
-    staleTime: 0, // Always consider data stale so refetches work immediately
-    refetchInterval: false, // Disable polling - rely on WebSocket and optimistic updates
-    // Polling causes race conditions and delays in UI updates
+    staleTime: 0,
+    refetchInterval: false,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch unread count with smart polling
@@ -98,23 +98,27 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
       const data = await apiRequest("/api/notifications/unread-count");
       return data.count;
     },
-    staleTime: 0, // CRITICAL: Override default 5-minute staleTime to ensure instant updates
-    refetchInterval: false, // Disable polling - rely on WebSocket for real-time updates
+    staleTime: 0,
+    refetchInterval: false,
     refetchIntervalInBackground: false, // Stop when tab is inactive
-    refetchOnMount: "always", // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Always refetch when component mounts
   });
 
-  // Mark notification as read - rely on WebSocket for updates
+  // Mark notification as read - rely on server response and WebSocket for updates
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
       return apiRequest(`/api/notifications/${notificationId}/read`, {
         method: "PATCH",
       });
     },
-    onSuccess: () => {
-      // WebSocket will handle cache updates via notification_updated and badge_counts_update events
-      // No need for optimistic updates or manual refetches
-      console.log(`✅ [Mutation] Marked notification as read, waiting for WebSocket update`);
+    onSuccess: async () => {
+      // Refetch to get fresh data from server
+      await queryClient.refetchQueries({
+        queryKey: ["/api/notifications", userId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["/api/notifications/unread-count", userId],
+      });
     },
     onError: () => {
       toast({
@@ -161,11 +165,9 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     onSuccess: async () => {
       await queryClient.refetchQueries({
         queryKey: ["/api/notifications", userId],
-        type: "active",
       });
       await queryClient.refetchQueries({
         queryKey: ["/api/notifications/unread-count", userId],
-        type: "active",
       });
     },
     onError: () => {

@@ -1,10 +1,8 @@
 // Complete user data cleanup utility
-import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString);
-const db = drizzle(client);
 
 export async function nukeAllUserData(): Promise<void> {
   // PRODUCTION SAFETY: Prevent accidental data wipes
@@ -50,7 +48,7 @@ export async function nukeAllUserData(): Promise<void> {
       await client`DELETE FROM sessions;`;
       console.log("✅ Sessions cleared");
     } catch (e) {
-      console.log("ℹ️ No session table found");
+      console.log("ℹ️ No session table found", e);
     }
 
     // Verify cleanup
