@@ -11,10 +11,8 @@ export function setCacheByEndpoint(res: Response, endpoint: string) {
   // User profiles - cache for 1 hour (profiles change infrequently)
   else if (endpoint.includes("/api/freelancer/") || endpoint.includes("/api/recruiter/")) {
     CacheHeaders.longCache(res);
-  }
-  // Notifications and messages - cache for 1 minute (real-time data)
-  else if (endpoint.includes("/api/notifications") || endpoint.includes("/api/messages")) {
-    CacheHeaders.shortCache(res);
+  } else if (endpoint.includes("/api/notifications") || endpoint.includes("/api/messages")) {
+    CacheHeaders.noCache(res);
   }
   // Location data - cache for 1 hour (static reference data)
   else if (endpoint.includes("/api/locations")) {
