@@ -1,7 +1,7 @@
+import { EventLinkLogo } from "@/components/Logo";
+import { useAuth } from "@/hooks/useAuth";
 import { MessageSquare, Plus } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { EventLinkLogo } from "@/components/Logo";
 
 interface MobileNavigationProps {
   onFeedbackClick: () => void;
@@ -9,7 +9,7 @@ interface MobileNavigationProps {
 
 export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => {
   const [, setLocation] = useLocation();
-  const { user, signOut } = useOptimizedAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full">

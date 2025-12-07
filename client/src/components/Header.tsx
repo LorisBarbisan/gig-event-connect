@@ -1,13 +1,13 @@
+import { EventLinkLogo } from "@/components/Logo";
+import { MobileNavigation } from "@/components/MobileNavigation";
+import { NotificationSystem } from "@/components/NotificationSystem";
+import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { UserMenu } from "@/components/UserMenu";
+import { useAuth } from "@/hooks/useAuth";
 import { Menu, MessageSquare, Plus } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { EventLinkLogo } from "@/components/Logo";
-import { UserMenu } from "@/components/UserMenu";
-import { SearchBar } from "@/components/SearchBar";
-import { NotificationSystem } from "@/components/NotificationSystem";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MobileNavigation } from "@/components/MobileNavigation";
 
 interface HeaderProps {
   onFeedbackClick: () => void;
@@ -15,7 +15,7 @@ interface HeaderProps {
 
 export const Header = ({ onFeedbackClick }: HeaderProps) => {
   const [location, setLocation] = useLocation();
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const isHomePage = location === "/";
 
   return (

@@ -1,4 +1,4 @@
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -19,7 +19,7 @@ export function useBadgeCounts({
   enabled = true,
   refetchInterval = 1500,
 }: UseBadgeCountsProps = {}) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Fetch badge counts from API

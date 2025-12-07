@@ -1,24 +1,24 @@
-import { useState, useEffect } from "react";
+import { ContactModal } from "@/components/ContactModal";
 import { Layout } from "@/components/Layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { UKLocationInput } from "@/components/ui/uk-location-input";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Search,
-  MapPin,
-  Star,
-  User,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Loader2,
+  MapPin,
+  Search,
+  Star,
+  User,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ContactModal } from "@/components/ContactModal";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 export default function Freelancers() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,7 +27,7 @@ export default function Freelancers() {
   const [, setLocation] = useLocation();
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedFreelancer, setSelectedFreelancer] = useState<any>(null);
-  const { user: currentUser } = useOptimizedAuth();
+  const { user: currentUser } = useAuth();
   const [highlightedFreelancer, setHighlightedFreelancer] = useState<string | null>(null);
 
   // Check for highlight parameter in URL

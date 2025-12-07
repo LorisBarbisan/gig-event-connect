@@ -1,4 +1,4 @@
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useTabNotifications } from "@/hooks/useTabNotifications";
 
 /**
@@ -7,7 +7,7 @@ import { useTabNotifications } from "@/hooks/useTabNotifications";
  * It automatically detects new applications, messages, and other notifications for all user types.
  */
 export function TabNotificationManager() {
-  const { user, loading } = useOptimizedAuth();
+  const { user, loading } = useAuth();
 
   // Use the tab notifications hook with the current user's ID
   const { unreadCount, hasNotifications } = useTabNotifications({

@@ -1,13 +1,13 @@
 import { Layout } from "@/components/Layout";
 import { NotificationSettingsForm } from "@/components/NotificationSettingsForm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 export default function NotificationSettings() {
   const [, setLocation] = useLocation();
-  const { user, loading } = useOptimizedAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {

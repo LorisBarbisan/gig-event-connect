@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,15 +7,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, LogOut, Settings, UserCircle, Star, Bell } from "lucide-react";
-import { useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { Bell, LogOut, Settings, Star, User, UserCircle } from "lucide-react";
+import { useLocation } from "wouter";
 
 export const UserMenu = () => {
   const [, setLocation] = useLocation();
-  const { user, signOut } = useOptimizedAuth();
+  const { user, signOut } = useAuth();
 
   if (!user) return null;
 

@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { ImageUpload } from "@/components/ImageUpload";
+import { SimplifiedCVUploader } from "@/components/SimplifiedCVUploader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,22 +12,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Building2, MapPin, Globe, Plus, X } from "lucide-react";
-import { ImageUpload } from "@/components/ImageUpload";
-import { SimplifiedCVUploader } from "@/components/SimplifiedCVUploader";
-import { RatingDisplay } from "./StarRating";
+import { Textarea } from "@/components/ui/textarea";
 import { UKLocationInput } from "@/components/ui/uk-location-input";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useFreelancerAverageRating } from "@/hooks/useRatings";
+import { apiRequest } from "@/lib/queryClient";
 import type {
-  FreelancerProfile,
-  RecruiterProfile,
   FreelancerFormData,
+  FreelancerProfile,
   RecruiterFormData,
+  RecruiterProfile,
 } from "@shared/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { Building2, Globe, MapPin, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RatingDisplay } from "./StarRating";
 
 interface ProfileFormProps {
   profile?: FreelancerProfile | RecruiterProfile;
@@ -38,7 +38,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileFormProps) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(!profile);
   const [formData, setFormData] = useState<FreelancerFormData | RecruiterFormData>(() => {
     if (userType === "freelancer") {
@@ -552,7 +552,7 @@ function FreelancerFormFields({
 
 // CV Upload section for freelancers when editing their profile
 function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

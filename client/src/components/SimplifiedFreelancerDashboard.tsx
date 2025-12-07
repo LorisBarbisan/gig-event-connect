@@ -2,8 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TabBadge } from "@/components/ui/tab-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useBadgeCounts } from "@/hooks/useBadgeCounts";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useFreelancerAverageRating } from "@/hooks/useRatings";
 import { apiRequest } from "@/lib/queryClient";
 import type { FreelancerFormData, JobApplication } from "@shared/types";
@@ -15,7 +15,7 @@ import { MessagingInterface } from "./MessagingInterface";
 import { ProfileForm } from "./ProfileForm";
 
 export default function SimplifiedFreelancerDashboard() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

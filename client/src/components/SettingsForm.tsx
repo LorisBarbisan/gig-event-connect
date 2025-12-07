@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/types";
 import { Eye, EyeOff, Key, Trash2 } from "lucide-react";
@@ -43,7 +43,7 @@ interface SettingsFormProps {
 
 export function SettingsForm({ user }: SettingsFormProps) {
   const { toast } = useToast();
-  const { signOut, updateUser } = useOptimizedAuth();
+  const { signOut, updateUser } = useAuth();
   // const { profile } = useProfile(); // Temporarily disabled to prevent errors
   const [showEmail, setShowEmail] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);

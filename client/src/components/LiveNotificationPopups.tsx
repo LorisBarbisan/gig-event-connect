@@ -1,7 +1,7 @@
 import { ToastAction } from "@/components/ui/toast";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useToast } from "@/hooks/use-toast";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
@@ -10,7 +10,7 @@ interface LiveNotificationPopupsProps {
 }
 
 export function LiveNotificationPopups({ enabled = true }: LiveNotificationPopupsProps) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { subscribe } = useWebSocket();

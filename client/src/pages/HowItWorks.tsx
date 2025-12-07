@@ -1,23 +1,23 @@
-import { useLocation } from "wouter";
-import { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
-  UserPlus,
-  BriefcaseIcon,
-  MessageCircle,
-  Star,
-  FileText,
-  Users,
-  Phone,
   Award,
+  BriefcaseIcon,
+  FileText,
+  MessageCircle,
+  Phone,
+  Star,
+  UserPlus,
+  Users,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 export default function HowItWorks() {
   const [, setLocation] = useLocation();
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
 
   // Set SEO metadata for this page
   useEffect(() => {

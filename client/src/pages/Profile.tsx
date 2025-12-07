@@ -1,32 +1,29 @@
-import { useState, useEffect } from "react";
-import { useLocation, useParams } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { apiRequest } from "@/lib/queryClient";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageModal } from "@/components/MessageModal";
+import { RatingDisplay } from "@/components/StarRating";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useFreelancerAverageRating } from "@/hooks/useRatings";
+import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  User,
-  MapPin,
-  Coins,
   Calendar,
+  Download,
+  ExternalLink,
   Globe,
   Linkedin,
-  ExternalLink,
-  Mail,
+  MapPin,
+  MessageCircle,
   Phone,
   Star,
-  MessageCircle,
-  FileText,
-  Download,
+  User,
 } from "lucide-react";
-import { RatingDisplay } from "@/components/StarRating";
-import { useFreelancerAverageRating } from "@/hooks/useRatings";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { MessageModal } from "@/components/MessageModal";
+import { useEffect, useState } from "react";
+import { useLocation, useParams } from "wouter";
 
 interface Profile {
   id: string;
@@ -71,7 +68,7 @@ interface RecruiterProfile {
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { userId } = useParams();
-  const { user, loading: authLoading } = useOptimizedAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile | null>(null);
   const [recruiterProfile, setRecruiterProfile] = useState<RecruiterProfile | null>(null);

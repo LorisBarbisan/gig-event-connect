@@ -1,5 +1,4 @@
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import type { Notification } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -26,7 +25,7 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -98,11 +97,6 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               }
             }
 
-            console.log("📨 WebSocket message received:", data.type);
-            // DEBUG: Log what we're about to send
-            console.log("📨 [Client] WebSocket message received:", data);
-            console.log("[WS] Incoming message=========================>:", data);
-
             // Notify all subscribers (they decide how to handle the message)
             subscribersRef.current.forEach(callback => {
               try {
@@ -112,124 +106,51 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               }
             });
 
-            // Lightweight cache updates only - let subscribers handle heavy refetches
             switch (data.type) {
               case "new_message":
-                // Invalidate conversations list to trigger refetch and show new messages
-                // MessagingInterface will handle the actual refetch
                 queryClient.invalidateQueries({
                   queryKey: ["/api/conversations"],
-                  refetchType: "active", // Only refetch if query is active (component is mounted)
+                  refetchType: "active",
                 });
-                // Specific conversation messages will be refetched by MessagingInterface if active
                 break;
 
               case "badge_counts_update":
-                // Directly update cache with new counts (no refetch needed)
                 if (data.counts) {
                   console.log("📊 [WebSocket] Updating badge counts:", data.counts);
                   queryClient.setQueryData(
                     ["/api/notifications/category-counts", user.id],
                     data.counts
                   );
-                  // Use the total field directly from counts - don't recalculate to avoid double counting
-                  // The server already calculates total correctly: messages + applications + jobs + ratings
+
                   const totalUnread = (data.counts as { total?: number }).total ?? 0;
-                  // Query returns data.count (number), so cache must be number, not { count: number }
                   queryClient.setQueryData(
                     ["/api/notifications/unread-count", user.id],
                     totalUnread
                   );
-                  console.log(`✅ [WebSocket] Badge counts updated, total unread: ${totalUnread}`);
                 }
                 break;
 
               case "new_notification":
-                // Update cache immediately with new notification, then refetch for consistency
-                // Badge counts are handled separately by badge_counts_update
-                if (data.notification) {
-                  console.log(
-                    `📬 [WebSocket] New notification received, adding to cache:`,
-                    data.notification
-                  );
-                  // Update cache immediately with new notification for instant UI update
-                  queryClient.setQueryData<Notification[]>(["/api/notifications", user.id], old => {
-                    if (!old) return [data.notification];
-                    // Check if notification already exists (avoid duplicates)
-                    const exists = old.some(n => n.id === data.notification.id);
-                    if (exists) {
-                      console.log(
-                        `⚠️ [WebSocket] Notification ${data.notification.id} already in cache, skipping`
-                      );
-                      return old;
-                    }
-                    // Add new notification at the beginning (most recent first)
-                    return [data.notification, ...old];
-                  });
-                  console.log(`✅ [WebSocket] Cache updated instantly with new notification`);
+                queryClient.invalidateQueries({
+                  queryKey: ["/api/notifications", user.id],
+                  refetchType: "active",
+                });
 
-                  // Also refetch to ensure consistency (runs in background)
-                  queryClient.refetchQueries({
-                    queryKey: ["/api/notifications", user.id],
-                    type: "active", // Only refetch if query is active (component is mounted)
-                  });
-                }
                 break;
 
               case "notification_updated":
-                // Update cache immediately with real database data, then refetch for consistency
-                // Badge counts are handled separately by badge_counts_update
-                if (data.notification) {
-                  console.log(
-                    `📬 [WebSocket] Notification updated, updating cache with database data:`,
-                    data.notification
-                  );
-                  // Update cache immediately with real database data for instant UI update
-                  queryClient.setQueryData<Notification[]>(["/api/notifications", user.id], old => {
-                    if (!old) return [data.notification];
-                    // Replace the notification with the updated one from database
-                    const index = old.findIndex(n => n.id === data.notification.id);
-                    if (index >= 0) {
-                      // Replace existing notification with updated one
-                      const updated = [...old];
-                      updated[index] = data.notification;
-                      return updated;
-                    }
-                    // If not found, add it (shouldn't happen, but handle gracefully)
-                    return [data.notification, ...old];
-                  });
-                  console.log(`✅ [WebSocket] Cache updated instantly with database data`);
-
-                  // Also refetch to ensure consistency (runs in background)
-                  queryClient.refetchQueries({
-                    queryKey: ["/api/notifications", user.id],
-                    type: "active",
-                  });
-                }
+                queryClient.invalidateQueries({
+                  queryKey: ["/api/notifications", user.id],
+                  refetchType: "active",
+                });
                 break;
 
               case "all_notifications_updated":
-                // Update cache immediately with real database data, then refetch for consistency
-                // Badge counts are handled separately by badge_counts_update
-                if (data.notifications) {
-                  console.log(
-                    `📬 [WebSocket] All notifications updated, updating cache with database data (${data.notifications.length} notifications)`
-                  );
-                  // Update cache immediately with real database data for instant UI update
-                  queryClient.setQueryData<Notification[]>(
-                    ["/api/notifications", user.id],
-                    data.notifications
-                  );
-                  console.log(`✅ [WebSocket] Cache updated instantly with database data`);
-
-                  // Also refetch to ensure consistency (runs in background)
-                  queryClient.refetchQueries({
-                    queryKey: ["/api/notifications", user.id],
-                    type: "active",
-                  });
-                }
+                queryClient.invalidateQueries({
+                  queryKey: ["/api/notifications", user.id],
+                  refetchType: "active",
+                });
                 break;
-
               default:
                 break;
             }

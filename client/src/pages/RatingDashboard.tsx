@@ -1,16 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Layout } from "@/components/Layout";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { useFreelancerRatings, useFreelancerAverageRating } from "@/hooks/useRatings";
-import { RatingDisplay, StarRating } from "@/components/StarRating";
-import { Star, TrendingUp, Award, Calendar } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
+import { useFreelancerAverageRating, useFreelancerRatings } from "@/hooks/useRatings";
 import { format } from "date-fns";
+import { Award, Calendar, Star, TrendingUp } from "lucide-react";
 
 export function RatingDashboard() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { data: ratings = [], isLoading: ratingsLoading } = useFreelancerRatings(user?.id || 0);
   const { data: averageRating } = useFreelancerAverageRating(user?.id || 0);
 

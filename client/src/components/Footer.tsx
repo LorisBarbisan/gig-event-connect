@@ -1,11 +1,11 @@
-import { Link, useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { EventLinkLogo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { Link, useLocation } from "wouter";
 
 export const Footer = () => {
   const [, setLocation] = useLocation();
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return (

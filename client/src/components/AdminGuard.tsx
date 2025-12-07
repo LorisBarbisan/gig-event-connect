@@ -1,14 +1,14 @@
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { useToast } from "@/hooks/use-toast";
 
 interface AdminGuardProps {
   children: React.ReactNode;
 }
 
 export function AdminGuard({ children }: AdminGuardProps) {
-  const { user, loading: isLoading } = useOptimizedAuth();
+  const { user, loading: isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const hasToasted = useRef(false);

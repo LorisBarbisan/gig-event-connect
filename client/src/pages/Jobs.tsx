@@ -1,43 +1,36 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { Layout } from "@/components/Layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UKLocationInput } from "@/components/ui/uk-location-input";
 import { useToast } from "@/hooks/use-toast";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
-  Search,
-  MapPin,
-  Clock,
-  Coins,
   Calendar as CalendarIcon,
-  Filter,
-  RefreshCw,
   ChevronDown,
-  ChevronUp,
-  X,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  Clock,
+  Coins,
+  Filter,
+  MapPin,
+  RefreshCw,
+  Search,
+  X,
 } from "lucide-react";
-import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 export default function Jobs() {
   const { toast } = useToast();
-  const { user: currentUser, loading: userLoading } = useOptimizedAuth();
+  const { user: currentUser, loading: userLoading } = useAuth();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);

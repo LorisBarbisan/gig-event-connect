@@ -6,13 +6,13 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 export default function Auth() {
-  const { user, signUp, signIn, updateUser, loading: authLoading } = useOptimizedAuth();
+  const { user, signUp, signIn, updateUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
@@ -110,7 +110,6 @@ export default function Auth() {
     // Handle OAuth error messages
     const oauthError = urlParams.get("oauth_error");
     const provider = urlParams.get("provider");
-    const message = urlParams.get("message");
 
     if (oauthError && provider) {
       let errorMessage = "";
@@ -248,6 +247,7 @@ export default function Auth() {
         });
       }
     } catch (err) {
+      console.error("Sign Up Error:", err);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -263,7 +263,6 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      // Use the useAuth hook's signIn method instead of direct fetch
       const { error } = await signIn(signInData.email, signInData.password);
 
       if (error) {
@@ -296,6 +295,7 @@ export default function Auth() {
         setLocation("/dashboard");
       }
     } catch (error) {
+      console.error("Sign In Error:", error);
       setShowResendOption(false);
       setPendingVerificationEmail("");
       toast({
@@ -339,6 +339,7 @@ export default function Auth() {
         });
       }
     } catch (err) {
+      console.error("Resend Verification Error:", err);
       toast({
         title: "Error",
         description: "Failed to resend verification email. Please try again.",
@@ -375,7 +376,7 @@ export default function Auth() {
                     Registration Successful!
                   </h2>
                   <p className="text-lg text-muted-foreground">
-                    We've sent a verification email to
+                    We&apos;ve sent a verification email to
                   </p>
                   <p className="text-lg font-semibold text-primary mt-1">
                     {pendingVerificationEmail}
@@ -690,7 +691,7 @@ export default function Auth() {
                   Please check your email and click the verification link before signing in.
                 </p>
                 <p className="text-sm text-red-700 mb-3">
-                  Didn't receive the email? We can resend it to:
+                  Didn&apos;t receive the email? We can resend it to:
                 </p>
                 <p className="font-medium text-red-900 mb-4">{pendingVerificationEmail}</p>
                 <Button

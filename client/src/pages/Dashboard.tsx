@@ -2,7 +2,7 @@ import { Layout } from "@/components/Layout";
 import SimplifiedFreelancerDashboard from "@/components/SimplifiedFreelancerDashboard";
 import SimplifiedRecruiterDashboard from "@/components/SimplifiedRecruiterDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -13,7 +13,7 @@ interface Profile {
 }
 
 export default function Dashboard() {
-  const { user, loading: authLoading } = useOptimizedAuth();
+  const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

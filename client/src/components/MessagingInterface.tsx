@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useToast } from "@/hooks/use-toast";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils/format-date";
 import {
@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from "react";
 
 // --- COMPONENT ---
 export function MessagingInterface() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { subscribe } = useWebSocket();
   const { toast } = useToast();
@@ -44,10 +44,10 @@ export function MessagingInterface() {
     queryKey: ["/api/conversations", selectedConversation, "messages"],
     queryFn: () => apiRequest(`/api/conversations/${selectedConversation}/messages`),
     enabled: !!selectedConversation,
-    staleTime: 0, // CRITICAL: Override default 5-minute staleTime to ensure instant updates
-    refetchInterval: false, // Disable polling - rely on WebSocket for real-time updates
+    staleTime: 0,
+    refetchInterval: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: "always", // Always refetch when component mounts
+    refetchOnMount: "always",
   });
 
   // --- SEND MESSAGE MUTATION ---
@@ -58,6 +58,14 @@ export function MessagingInterface() {
         body: JSON.stringify(payload),
       }),
 
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ["/api/conversations", selectedConversation, "messages"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", selectedConversation, "messages"],
+      });
+    },
     onError: (_err, variables) => {
       toast({
         title: "Failed to send message",
@@ -65,17 +73,6 @@ export function MessagingInterface() {
       });
       // restore content back to text box
       setNewMessage(variables.content);
-    },
-
-    onSuccess: async () => {
-      // Force immediate refetch to ensure UI updates even if WebSocket fails
-      await queryClient.refetchQueries({
-        queryKey: ["/api/conversations", selectedConversation, "messages"],
-      });
-      // Also invalidate to ensure fresh data
-      queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", selectedConversation, "messages"],
-      });
     },
   });
 
