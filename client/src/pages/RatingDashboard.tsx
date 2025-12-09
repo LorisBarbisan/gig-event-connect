@@ -1,46 +1,46 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Layout } from '@/components/Layout';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useFreelancerRatings, useFreelancerAverageRating } from '@/hooks/useRatings';
-import { RatingDisplay, StarRating } from '@/components/StarRating';
+import { StarRating } from '@/components/StarRating';
 import { Star, TrendingUp, Award, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
+const SAMPLE_RATINGS = [
+  { id: 1, rating: 5, job_title: 'Test Event Technician', recruiter: { first_name: 'Admin', last_name: 'User' }, created_at: '2025-11-29T12:36:58Z' },
+  { id: 2, rating: 4, job_title: 'ICT Technician', recruiter: { first_name: 'Admin', last_name: 'User' }, created_at: '2025-11-14T12:36:58Z' },
+  { id: 3, rating: 5, job_title: '.NET Developer', recruiter: { first_name: 'Admin', last_name: 'User' }, created_at: '2025-10-30T12:36:58Z' },
+  { id: 4, rating: 5, job_title: 'AV Technician', recruiter: { first_name: 'Test', last_name: 'Recruiter' }, created_at: '2025-10-20T12:39:09Z' },
+  { id: 5, rating: 4, job_title: 'Stage Manager', recruiter: { first_name: 'Test', last_name: 'Recruiter' }, created_at: '2025-10-10T12:39:09Z' },
+  { id: 6, rating: 5, job_title: 'Sound Engineer', recruiter: { first_name: 'Patrick', last_name: 'N.' }, created_at: '2025-09-30T12:39:09Z' },
+  { id: 7, rating: 3, job_title: 'Lighting Tech', recruiter: { first_name: 'Patrick', last_name: 'N.' }, created_at: '2025-09-20T12:39:09Z' },
+  { id: 8, rating: 5, job_title: 'Event Coordinator', recruiter: { first_name: 'Loris', last_name: 'B.' }, created_at: '2025-09-10T12:39:09Z' },
+  { id: 9, rating: 4, job_title: 'Production Assistant', recruiter: { first_name: 'Loris', last_name: 'B.' }, created_at: '2025-08-31T12:39:09Z' },
+];
+
+const SAMPLE_AVERAGE = { average: 4.4, count: 9 };
+
 export function RatingDashboard() {
   const { user } = useOptimizedAuth();
-  const { data: ratings = [], isLoading: ratingsLoading } = useFreelancerRatings(user?.id || 0);
-  const { data: averageRating } = useFreelancerAverageRating(user?.id || 0);
+  const { data: apiRatings = [], isLoading: ratingsLoading } = useFreelancerRatings(user?.id || 0);
+  const { data: apiAverageRating } = useFreelancerAverageRating(user?.id || 0);
 
-  if (!user) {
-    return (
-      <Layout>
-        <div className="container mx-auto p-6">
-          <div className="text-center">
-            <p>Please log in to view your ratings.</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (user.role !== 'freelancer') {
-    return (
-      <Layout>
-        <div className="container mx-auto p-6">
-          <div className="text-center">
-            <p>This page is only available for freelancers.</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const isPreviewMode = !user || user.role !== 'freelancer';
+  const ratings = isPreviewMode ? SAMPLE_RATINGS : apiRatings;
+  const averageRating = isPreviewMode ? SAMPLE_AVERAGE : apiAverageRating;
 
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
+      {isPreviewMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <p className="text-amber-800 text-sm font-medium">
+            Preview Mode - Showing sample ratings data. Log in as a freelancer to see your actual ratings.
+          </p>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <Award className="w-8 h-8 text-yellow-500" />
         <div>
