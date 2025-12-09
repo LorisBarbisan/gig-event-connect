@@ -3,76 +3,11 @@ import dotenv from "dotenv";
 import express, { NextFunction, type Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import { reconcileAdminUsers } from "./api/utils/reconcile-admin-users";
+import { sanitizeLogData } from "./api/utils/sanitize-log-data";
 import { registerRoutes } from "./routes-modular";
 import { log, serveStatic, setupVite } from "./vite";
 dotenv.config();
-
-// PII-safe logging utility
-function sanitizeLogData(data: any): any {
-  if (!data || typeof data !== "object") return {};
-
-  const sensitiveFields = [
-    "password",
-    "token",
-    "secret",
-    "key",
-    "email",
-    "phone",
-    "ssn",
-    "first_name",
-    "last_name",
-    "address",
-    "credit_card",
-    "auth_token",
-    "session_id",
-    "refresh_token",
-    "access_token",
-    "api_key",
-  ];
-
-  const result: any = {};
-
-  for (const [key, value] of Object.entries(data)) {
-    const lowerKey = key.toLowerCase();
-    const isSensitive = sensitiveFields.some(field => lowerKey.includes(field));
-
-    if (isSensitive) {
-      result[key] = "[REDACTED]";
-    } else if (key === "error" || key === "message" || key === "status") {
-      result[key] = value; // Keep error messages for debugging
-    } else if (typeof value === "number" || typeof value === "boolean") {
-      result[key] = value; // Keep non-sensitive primitive values
-    } else if (key === "id" || key === "count" || key === "total") {
-      result[key] = value; // Keep IDs and counts
-    }
-  }
-
-  return result;
-}
-
-// Admin reconciliation function - ensures admin users have correct roles
-async function reconcileAdminUsers(): Promise<void> {
-  try {
-    const adminEmails = process.env.ADMIN_EMAILS
-      ? process.env.ADMIN_EMAILS.split(",").map(email => email.trim().toLowerCase())
-      : [];
-
-    if (adminEmails.length === 0) {
-      console.log("⚠️ No admin emails configured in ADMIN_EMAILS");
-      return;
-    }
-
-    console.log(`🔧 Reconciling admin users: ${adminEmails.join(", ")}`);
-
-    for (const email of adminEmails) {
-      console.log(`✅ Admin email ${email} configured - will get admin role at login`);
-    }
-
-    console.log("✅ Admin reconciliation complete");
-  } catch (error) {
-    console.error("❌ Admin reconciliation failed:", error);
-  }
-}
 
 const app = express();
 
@@ -119,6 +54,11 @@ if (process.env.NODE_ENV === "production") {
             "https://storage.googleapis.com",
             "ws://localhost:*",
             "wss://localhost:*",
+            "wss://*.replit.dev", // Replit dev domains
+            "ws://*.replit.dev", // Replit dev domains (non-SSL)
+            "wss://*.replit.app", // Replit production domains
+            "wss://eventlink.one", // Custom production domain
+            "ws://eventlink.one",
           ],
           frameSrc: [
             "https://accounts.google.com",
