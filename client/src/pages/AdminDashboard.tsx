@@ -139,13 +139,13 @@ function AdminDashboardContent() {
     isLoading: feedbackLoading,
     refetch: refetchFeedback,
   } = useQuery({
-    queryKey: ["/api/admin/feedback", feedbackFilters],
+    queryKey: ["/api/feedback", feedbackFilters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (feedbackFilters.status !== "all") params.append("status", feedbackFilters.status);
       if (feedbackFilters.type !== "all") params.append("type", feedbackFilters.type);
 
-      return await apiRequest(`/api/admin/feedback?${params.toString()}`);
+      return await apiRequest(`/api/feedback?${params.toString()}`);
     },
     retry: 1,
   });
@@ -177,8 +177,8 @@ function AdminDashboardContent() {
 
   // Contact messages query
   const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery<ContactMessage[]>({
-    queryKey: ["/api/admin/contact-messages"],
-    queryFn: () => apiRequest("/api/admin/contact-messages"),
+    queryKey: ["/api/contact-messages"],
+    queryFn: () => apiRequest("/api/contact-messages"),
     retry: 1,
   });
 
@@ -255,7 +255,7 @@ function AdminDashboardContent() {
 
       setContactReply("");
       setSelectedContactMessage(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/contact-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/contact-messages"] });
     } catch (error: any) {
       console.error("❌ Reply error:", error);
       console.error("❌ Error message:", error?.message);
