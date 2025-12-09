@@ -1,30 +1,29 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TabBadge } from '@/components/ui/tab-badge';
-import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useBadgeCounts } from '@/hooks/useBadgeCounts';
-import { apiRequest } from '@/lib/queryClient';
-import { Plus, Briefcase, Users } from 'lucide-react';
-import { ProfileForm } from './ProfileForm';
-import { JobForm } from './JobForm';
-import { JobCard } from './JobCard';
-import { ApplicationCard } from './ApplicationCard';
-import { MessagingInterface } from './MessagingInterface';
-import { useLocation } from 'wouter';
-import type { Job, JobApplication, JobFormData } from '@shared/types';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { TabBadge } from "@/components/ui/tab-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useBadgeCounts } from "@/hooks/useBadgeCounts";
+import { useProfile } from "@/hooks/useProfile";
+import { apiRequest } from "@/lib/queryClient";
+import type { Job, JobApplication, JobFormData } from "@shared/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Briefcase, Plus, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { ApplicationCard } from "./ApplicationCard";
+import { JobCard } from "./JobCard";
+import { JobForm } from "./JobForm";
+import { MessagingInterface } from "./MessagingInterface";
+import { ProfileForm } from "./ProfileForm";
 
 export default function SimplifiedRecruiterDashboard() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
@@ -32,28 +31,28 @@ export default function SimplifiedRecruiterDashboard() {
   // Get badge counts for tabs
   const { roleSpecificCounts, markCategoryAsRead } = useBadgeCounts({
     enabled: !!user?.id,
-    refetchInterval: activeTab === 'messages' ? 10000 : 15000, // Poll faster when on messages tab
+    refetchInterval: activeTab === "messages" ? 10000 : 15000, // Poll faster when on messages tab
   });
 
   // Handle URL parameters for direct navigation to job posting and messages
   useEffect(() => {
     const handleSearchParams = () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get('tab');
-      const actionParam = urlParams.get('action');
-      
+      const tabParam = urlParams.get("tab");
+      const actionParam = urlParams.get("action");
+
       // Switch to tab specified in URL (e.g., from notifications)
-      if (tabParam && ['profile', 'jobs', 'applications', 'messages'].includes(tabParam)) {
+      if (tabParam && ["profile", "jobs", "applications", "messages"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
-      
+
       // Handle job posting action
-      if (tabParam === 'jobs' && actionParam === 'post') {
+      if (tabParam === "jobs" && actionParam === "post") {
         setShowJobForm(true);
         // Clear the action parameter to prevent repeated triggers
-        urlParams.delete('action');
-        const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
-        window.history.replaceState({}, '', newUrl);
+        urlParams.delete("action");
+        const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""}`;
+        window.history.replaceState({}, "", newUrl);
       }
     };
 
@@ -62,10 +61,10 @@ export default function SimplifiedRecruiterDashboard() {
 
     // Listen for navigation events (including search parameter changes)
     const handlePopState = () => handleSearchParams();
-    window.addEventListener('popstate', handlePopState);
-    
+    window.addEventListener("popstate", handlePopState);
+
     // For programmatic navigation (our case), we need to listen for location changes
-    // Since wouter doesn't trigger popstate for programmatic navigation, 
+    // Since wouter doesn't trigger popstate for programmatic navigation,
     // we'll use a MutationObserver approach or check periodically
     let lastSearch = window.location.search;
     const checkSearch = () => {
@@ -77,15 +76,20 @@ export default function SimplifiedRecruiterDashboard() {
     const intervalId = setInterval(checkSearch, 100);
 
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("popstate", handlePopState);
       clearInterval(intervalId);
     };
   }, []); // Only run once on mount
 
   // Use custom hooks - only call when user ID is available
-  const { profile, isLoading: profileLoading, saveProfile, isSaving } = useProfile({
+  const {
+    profile,
+    isLoading: profileLoading,
+    saveProfile,
+    isSaving,
+  } = useProfile({
     userId: user?.id || 0,
-    userType: 'recruiter'
+    userType: "recruiter",
   });
 
   // Remove the problematic notification hook for now
@@ -95,17 +99,17 @@ export default function SimplifiedRecruiterDashboard() {
 
   // Fetch jobs
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
-    queryKey: ['/api/jobs/recruiter', user?.id],
+    queryKey: ["/api/jobs/recruiter", user?.id],
     queryFn: () => apiRequest(`/api/jobs/recruiter/${user?.id}`),
     enabled: !!user?.id,
   });
 
   // Fetch applications
   const { data: applications = [], isLoading: applicationsLoading } = useQuery({
-    queryKey: ['/api/recruiter', user?.id, 'applications'],
+    queryKey: ["/api/recruiter", user?.id, "applications"],
     queryFn: () => apiRequest(`/api/recruiter/${user?.id}/applications`),
     enabled: !!user?.id,
-    select: (data) => {
+    select: data => {
       // Filter out applications for jobs that might have been deleted
       return data.filter((app: JobApplication) => {
         // Only show applications that have valid job data
@@ -116,9 +120,9 @@ export default function SimplifiedRecruiterDashboard() {
 
   // Fetch unread message count with optimized polling
   const { data: unreadCount } = useQuery({
-    queryKey: ['/api/messages/unread-count', user?.id],
+    queryKey: ["/api/messages/unread-count", user?.id],
     queryFn: () => apiRequest(`/api/messages/unread-count?userId=${user?.id}`),
-    refetchInterval: activeTab === 'messages' ? 15000 : 30000, // Poll faster only when on messages tab
+    refetchInterval: activeTab === "messages" ? 15000 : 30000, // Poll faster only when on messages tab
     refetchIntervalInBackground: false, // Stop when tab is inactive
     enabled: !!user?.id,
   });
@@ -128,50 +132,52 @@ export default function SimplifiedRecruiterDashboard() {
     mutationFn: async (jobData: JobFormData) => {
       // Remove empty string fields to prevent validation errors
       const processedData: any = { ...jobData };
-      
+
       // Remove empty duration fields
-      if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
-      if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      if (!processedData.start_time || processedData.start_time === "")
+        delete processedData.start_time;
+      if (!processedData.end_time || processedData.end_time === "") delete processedData.end_time;
       // Remove empty contract_type
-      if (!processedData.contract_type || processedData.contract_type === '') delete processedData.contract_type;
-      
+      if (!processedData.contract_type || processedData.contract_type === "")
+        delete processedData.contract_type;
+
       const requestPayload = {
         recruiter_id: user?.id,
-        company: (profile as any)?.company_name || 'Company',
-        status: 'active',
-        ...processedData
+        company: (profile as any)?.company_name || "Company",
+        status: "active",
+        ...processedData,
       };
-      
-      console.log('📤 Sending job creation request:', JSON.stringify(requestPayload, null, 2));
-      
-      return await apiRequest('/api/jobs', {
-        method: 'POST',
+
+      console.log("📤 Sending job creation request:", JSON.stringify(requestPayload, null, 2));
+
+      return await apiRequest("/api/jobs", {
+        method: "POST",
         body: JSON.stringify(requestPayload),
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       });
     },
     onSuccess: () => {
-      console.log('🎯 Job created successfully! Invalidating all job caches...');
-      
+      console.log("🎯 Job created successfully! Invalidating all job caches...");
+
       // Invalidate queries to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-      
-      console.log('✅ Jobs cache invalidated');
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/recruiter", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+
+      console.log("✅ Jobs cache invalidated");
+
       toast({
-        title: 'Job posted',
-        description: 'Your job has been posted successfully.',
+        title: "Job posted",
+        description: "Your job has been posted successfully.",
       });
       setShowJobForm(false);
     },
     onError: (error: any) => {
-      console.error('❌ Job creation error:', error);
-      const errorMessage = error?.message || error?.error || 'Failed to post job.';
+      console.error("❌ Job creation error:", error);
+      const errorMessage = error?.message || error?.error || "Failed to post job.";
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -181,36 +187,39 @@ export default function SimplifiedRecruiterDashboard() {
     mutationFn: async (jobData: JobFormData & { id: number }) => {
       // Remove empty string fields to prevent validation errors
       const processedData: any = { ...jobData };
-      
+
       // Remove empty duration fields
-      if (!processedData.start_time || processedData.start_time === '') delete processedData.start_time;
-      if (!processedData.end_time || processedData.end_time === '') delete processedData.end_time;
+      if (!processedData.start_time || processedData.start_time === "")
+        delete processedData.start_time;
+      if (!processedData.end_time || processedData.end_time === "") delete processedData.end_time;
       // Remove empty contract_type
-      if (!processedData.contract_type || processedData.contract_type === '') delete processedData.contract_type;
-      
+      if (!processedData.contract_type || processedData.contract_type === "")
+        delete processedData.contract_type;
+
       return await apiRequest(`/api/jobs/${jobData.id}`, {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify(processedData),
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       });
     },
     onSuccess: () => {
       // Invalidate queries to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs/recruiter', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/recruiter", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       setEditingJob(null);
       toast({
-        title: 'Success',
-        description: 'Job updated successfully!',
+        title: "Success",
+        description: "Job updated successfully!",
       });
     },
     onError: (error: any) => {
-      console.error('❌ Job update error:', error);
-      const errorMessage = error?.message || error?.error || 'Failed to update job. Please try again.';
+      console.error("❌ Job update error:", error);
+      const errorMessage =
+        error?.message || error?.error || "Failed to update job. Please try again.";
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -219,22 +228,28 @@ export default function SimplifiedRecruiterDashboard() {
   const deleteJobMutation = useMutation({
     mutationFn: async (jobId: number) => {
       return await apiRequest(`/api/jobs/${jobId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
     },
     onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ['/api/jobs/recruiter', user?.id], type: 'active' });
-      await queryClient.refetchQueries({ queryKey: ['/api/recruiter', user?.id, 'applications'], type: 'active' });
+      await queryClient.refetchQueries({
+        queryKey: ["/api/jobs/recruiter", user?.id],
+        type: "active",
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["/api/recruiter", user?.id, "applications"],
+        type: "active",
+      });
       toast({
-        title: 'Success',
-        description: 'Job deleted successfully!',
+        title: "Success",
+        description: "Job deleted successfully!",
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete job. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete job. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -242,15 +257,16 @@ export default function SimplifiedRecruiterDashboard() {
   // Helper functions
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    
+
     // Mark category notifications as read when tab is opened
-    if (tab === 'jobs') {
-      markCategoryAsRead('jobs');
-    } else if (tab === 'messages') {
-      markCategoryAsRead('messages');
-    } else if (tab === 'applications') {
-      markCategoryAsRead('applications');
+    // Note: Messages notifications are NOT marked as read automatically
+    // They remain unread until user explicitly views/reads them
+    if (tab === "jobs") {
+      markCategoryAsRead("jobs");
+    } else if (tab === "applications") {
+      markCategoryAsRead("applications");
     }
+    // Removed: markCategoryAsRead('messages') - keep message notifications unread until user reads them
   };
 
   const toggleJobExpansion = (jobId: number) => {
@@ -264,8 +280,8 @@ export default function SimplifiedRecruiterDashboard() {
   };
 
   const getHiredApplicantsForJob = (jobId: number): JobApplication[] => {
-    return applications.filter((app: JobApplication) => 
-      app.job_id === jobId && app.status === 'hired'
+    return applications.filter(
+      (app: JobApplication) => app.job_id === jobId && app.status === "hired"
     );
   };
 
@@ -280,9 +296,10 @@ export default function SimplifiedRecruiterDashboard() {
       const companyName = (profile as any)?.company_name?.trim();
       if (!user?.id || !companyName) {
         toast({
-          title: 'Error',
-          description: 'Please complete your company profile first. Make sure to add your company name.',
-          variant: 'destructive',
+          title: "Error",
+          description:
+            "Please complete your company profile first. Make sure to add your company name.",
+          variant: "destructive",
         });
         return;
       }
@@ -311,16 +328,18 @@ export default function SimplifiedRecruiterDashboard() {
   }
 
   // Simplified notification indicators
-  const hasNewApplications = applications.some((app: JobApplication) => app.status === 'pending');
-  const hasNewJobUpdates = applications.some((app: JobApplication) => 
-    app.status === 'rejected' || app.status === 'hired'
+  const hasNewApplications = applications.some((app: JobApplication) => app.status === "pending");
+  const hasNewJobUpdates = applications.some(
+    (app: JobApplication) => app.status === "rejected" || app.status === "hired"
   );
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Recruiter Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Manage your company profile, job postings, and applications</p>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Manage your company profile, job postings, and applications
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
@@ -334,11 +353,17 @@ export default function SimplifiedRecruiterDashboard() {
             <span className="sm:hidden">Jobs</span>
             <TabBadge count={roleSpecificCounts.jobs || 0} />
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center justify-center text-xs sm:text-sm">
+          <TabsTrigger
+            value="messages"
+            className="flex items-center justify-center text-xs sm:text-sm"
+          >
             Messages
             <TabBadge count={roleSpecificCounts.messages || 0} />
           </TabsTrigger>
-          <TabsTrigger value="applications" className="flex items-center justify-center text-xs sm:text-sm">
+          <TabsTrigger
+            value="applications"
+            className="flex items-center justify-center text-xs sm:text-sm"
+          >
             <span className="hidden sm:inline">Applications</span>
             <span className="sm:hidden">Apps</span>
             <TabBadge count={roleSpecificCounts.applications || 0} />
@@ -360,7 +385,9 @@ export default function SimplifiedRecruiterDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">My Job Postings</h2>
-              <p className="text-muted-foreground">Manage your job listings and track applications</p>
+              <p className="text-muted-foreground">
+                Manage your job listings and track applications
+              </p>
             </div>
             <Button onClick={() => setShowJobForm(!showJobForm)} data-testid="button-post-job">
               <Plus className="w-4 h-4 mr-2" />
@@ -440,7 +467,9 @@ export default function SimplifiedRecruiterDashboard() {
               <CardContent className="p-8 text-center">
                 <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">No Applications Yet</h3>
-                <p className="text-muted-foreground">Job applications will appear here when freelancers apply to your posted jobs.</p>
+                <p className="text-muted-foreground">
+                  Job applications will appear here when freelancers apply to your posted jobs.
+                </p>
               </CardContent>
             </Card>
           ) : (

@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { FeedbackForm } from "@/components/FeedbackForm";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { Header } from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,23 +10,18 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const [showFeedback, setShowFeedback] = useState(false);
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header onFeedbackClick={() => setShowFeedback(true)} />
-      
-      <main className="flex-1">
-        {children}
-      </main>
+
+      <main className="flex-1">{children}</main>
 
       <Footer />
 
       {/* Feedback Modal */}
-      <FeedbackForm 
-        open={showFeedback} 
-        onOpenChange={setShowFeedback} 
-      />
+      <FeedbackForm open={showFeedback} onOpenChange={setShowFeedback} />
     </div>
   );
 };

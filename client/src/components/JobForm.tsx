@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { UKLocationInput } from '@/components/ui/uk-location-input';
-import type { JobFormData } from '@shared/types';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { UKLocationInput } from "@/components/ui/uk-location-input";
+import type { JobFormData } from "@shared/types";
 
 interface JobFormProps {
   initialData?: any; // Job data for editing
@@ -15,17 +15,23 @@ interface JobFormProps {
   isEditing?: boolean;
 }
 
-export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditing = false }: JobFormProps) {
+export function JobForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  isSubmitting,
+  isEditing = false,
+}: JobFormProps) {
   const [formData, setFormData] = useState<JobFormData>({
-    title: initialData?.title || '',
-    type: 'freelance', // All jobs are freelance/gig work
-    location: initialData?.location || '',
-    rate: initialData?.rate || '',
-    description: initialData?.description || '',
-    event_date: initialData?.event_date || '',
-    end_date: initialData?.end_date || '',
-    start_time: initialData?.start_time || '',
-    end_time: initialData?.end_time || '',
+    title: initialData?.title || "",
+    type: "freelance", // All jobs are freelance/gig work
+    location: initialData?.location || "",
+    rate: initialData?.rate || "",
+    description: initialData?.description || "",
+    event_date: initialData?.event_date || "",
+    end_date: initialData?.end_date || "",
+    start_time: initialData?.start_time || "",
+    end_time: initialData?.end_time || "",
   });
 
   const handleInputChange = (field: keyof JobFormData, value: string) => {
@@ -41,31 +47,35 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
     // Reset form only when creating new job
     if (!isEditing) {
       setFormData({
-        title: '',
-        type: 'freelance',
-        location: '',
-        rate: '',
-        description: '',
-        event_date: '',
-        end_date: '',
-        start_time: '',
-        end_time: '',
+        title: "",
+        type: "freelance",
+        location: "",
+        rate: "",
+        description: "",
+        event_date: "",
+        end_date: "",
+        start_time: "",
+        end_time: "",
       });
     }
   };
 
   // Validation: title, location, rate, description, and event_date (start date) are mandatory
-  const isValid = formData.title && formData.location && formData.rate && formData.description && formData.event_date;
+  const isValid =
+    formData.title &&
+    formData.location &&
+    formData.rate &&
+    formData.description &&
+    formData.event_date;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isEditing ? 'Edit Job' : 'Post New Job'}</CardTitle>
+        <CardTitle>{isEditing ? "Edit Job" : "Post New Job"}</CardTitle>
         <CardDescription>
-          {isEditing 
-            ? 'Update your job listing details' 
-            : 'Create a new gig listing to find the perfect crew member'
-          }
+          {isEditing
+            ? "Update your job listing details"
+            : "Create a new gig listing to find the perfect crew member"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -75,7 +85,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
             <Input
               id="job-title"
               value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
+              onChange={e => handleInputChange("title", e.target.value)}
               placeholder="e.g. Senior Sound Engineer"
               data-testid="input-job-title"
             />
@@ -98,7 +108,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
             <Input
               id="job-rate"
               value={formData.rate}
-              onChange={(e) => handleInputChange('rate', e.target.value)}
+              onChange={e => handleInputChange("rate", e.target.value)}
               placeholder="£450 per day"
               data-testid="input-job-rate"
             />
@@ -109,7 +119,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
               id="start-date"
               type="date"
               value={formData.event_date}
-              onChange={(e) => handleInputChange('event_date', e.target.value)}
+              onChange={e => handleInputChange("event_date", e.target.value)}
               data-testid="input-start-date"
             />
           </div>
@@ -122,7 +132,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
               id="end-date"
               type="date"
               value={formData.end_date}
-              onChange={(e) => handleInputChange('end_date', e.target.value)}
+              onChange={e => handleInputChange("end_date", e.target.value)}
               data-testid="input-end-date"
             />
           </div>
@@ -142,7 +152,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
                 id="start-time"
                 type="time"
                 value={formData.start_time}
-                onChange={(e) => handleInputChange('start_time', e.target.value)}
+                onChange={e => handleInputChange("start_time", e.target.value)}
                 data-testid="input-start-time"
               />
             </div>
@@ -152,7 +162,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
                 id="end-time"
                 type="time"
                 value={formData.end_time}
-                onChange={(e) => handleInputChange('end_time', e.target.value)}
+                onChange={e => handleInputChange("end_time", e.target.value)}
                 data-testid="input-end-time"
               />
             </div>
@@ -164,7 +174,7 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
           <Textarea
             id="job-description"
             value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
+            onChange={e => handleInputChange("description", e.target.value)}
             placeholder="Describe the role, requirements, and responsibilities..."
             rows={4}
             data-testid="textarea-job-description"
@@ -173,8 +183,12 @@ export function JobForm({ initialData, onSubmit, onCancel, isSubmitting, isEditi
 
         {/* Submit buttons */}
         <div className="flex gap-2">
-          <Button onClick={handleSubmit} disabled={isSubmitting || !isValid} data-testid="button-submit-job">
-            {isSubmitting ? 'Posting...' : isEditing ? 'Update Job' : 'Post Job'}
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isValid}
+            data-testid="button-submit-job"
+          >
+            {isSubmitting ? "Posting..." : isEditing ? "Update Job" : "Post Job"}
           </Button>
           <Button variant="outline" onClick={onCancel} data-testid="button-cancel-job">
             Cancel

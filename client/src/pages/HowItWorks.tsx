@@ -1,29 +1,42 @@
-import { useLocation } from 'wouter';
-import { useEffect } from 'react';
-import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { UserPlus, BriefcaseIcon, MessageCircle, Star, FileText, Users, Phone, Award } from 'lucide-react';
+import { Layout } from "@/components/Layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Award,
+  BriefcaseIcon,
+  FileText,
+  MessageCircle,
+  Phone,
+  Star,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 export default function HowItWorks() {
   const [, setLocation] = useLocation();
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
 
   // Set SEO metadata for this page
   useEffect(() => {
     // Update document title
     document.title = "How Does It Work - EventLink | Event Industry Professional Network";
-    
+
     // Update meta description
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Learn how EventLink connects freelance event professionals with corporate event opportunities. Step-by-step guide for both freelancers and recruiters in the events industry.');
+      metaDescription.setAttribute(
+        "content",
+        "Learn how EventLink connects freelance event professionals with corporate event opportunities. Step-by-step guide for both freelancers and recruiters in the events industry."
+      );
     } else {
       // Create meta description if it doesn't exist
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = 'Learn how EventLink connects freelance event professionals with corporate event opportunities. Step-by-step guide for both freelancers and recruiters in the events industry.';
+      const meta = document.createElement("meta");
+      meta.name = "description";
+      meta.content =
+        "Learn how EventLink connects freelance event professionals with corporate event opportunities. Step-by-step guide for both freelancers and recruiters in the events industry.";
       document.head.appendChild(meta);
     }
 
@@ -32,26 +45,29 @@ export default function HowItWorks() {
       document.title = "EventLink - Event Industry Professional Network";
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {
-        metaDesc.setAttribute('content', 'Connecting technical professionals with event opportunities in the corporate events sector.');
+        metaDesc.setAttribute(
+          "content",
+          "Connecting technical professionals with event opportunities in the corporate events sector."
+        );
       }
     };
   }, []);
 
   const handleFreelancerCTA = () => {
     if (user) {
-      setLocation('/dashboard');
+      setLocation("/dashboard");
     } else {
-      setLocation('/auth?tab=signup');
+      setLocation("/auth?tab=signup");
     }
   };
 
   const handleRecruiterCTA = () => {
-    if (user && user.role === 'recruiter') {
-      setLocation('/dashboard'); // Recruiters can post jobs from dashboard
+    if (user && user.role === "recruiter") {
+      setLocation("/dashboard"); // Recruiters can post jobs from dashboard
     } else if (user) {
-      setLocation('/dashboard');
+      setLocation("/dashboard");
     } else {
-      setLocation('/auth?tab=signup');
+      setLocation("/auth?tab=signup");
     }
   };
 
@@ -64,15 +80,14 @@ export default function HowItWorks() {
             How Does It Work?
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            EventLink connects event professionals with opportunities in the corporate events industry. 
-            Whether you're a freelancer looking for work or a recruiter seeking skilled professionals, 
-            we make the process simple and efficient.
+            EventLink connects event professionals with opportunities in the corporate events
+            industry. Whether you're a freelancer looking for work or a recruiter seeking skilled
+            professionals, we make the process simple and efficient.
           </p>
         </div>
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
-          
           {/* For Freelancers Section */}
           <div className="space-y-8">
             <div className="text-center">
@@ -93,8 +108,9 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Register for free, upload your CV, and highlight your skills. 
-                        Showcase your expertise in AV, event management, technical production, or other event specialties.
+                        Register for free, upload your CV, and highlight your skills. Showcase your
+                        expertise in AV, event management, technical production, or other event
+                        specialties.
                       </p>
                     </div>
                   </div>
@@ -110,8 +126,9 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Get Matched with Jobs</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Recruiters post opportunities and you can apply directly. Browse corporate events, 
-                        conferences, exhibitions, and other exciting projects that match your skills.
+                        Recruiters post opportunities and you can apply directly. Browse corporate
+                        events, conferences, exhibitions, and other exciting projects that match
+                        your skills.
                       </p>
                     </div>
                   </div>
@@ -127,8 +144,8 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Communicate Easily</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Use our internal messaging system to stay connected with recruiters. 
-                        Discuss project details, negotiate terms, and confirm bookings all in one place.
+                        Use our internal messaging system to stay connected with recruiters. Discuss
+                        project details, negotiate terms, and confirm bookings all in one place.
                       </p>
                     </div>
                   </div>
@@ -144,8 +161,8 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Grow Your Reputation</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Get rated by recruiters and showcase your reliability and expertise. 
-                        Build a strong professional reputation that opens doors to better opportunities.
+                        Get rated by recruiters and showcase your reliability and expertise. Build a
+                        strong professional reputation that opens doors to better opportunities.
                       </p>
                     </div>
                   </div>
@@ -154,9 +171,9 @@ export default function HowItWorks() {
             </div>
 
             <div className="text-center pt-6">
-              <Button 
+              <Button
                 onClick={handleFreelancerCTA}
-                size="lg" 
+                size="lg"
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-3 text-lg font-semibold"
                 data-testid="button-create-profile"
               >
@@ -185,8 +202,9 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">post jobs</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Share event roles quickly and for free. Detail your requirements, location, 
-                        budget, and timeline to attract the right candidates for your corporate events.
+                        Share event roles quickly and for free. Detail your requirements, location,
+                        budget, and timeline to attract the right candidates for your corporate
+                        events.
                       </p>
                     </div>
                   </div>
@@ -202,8 +220,8 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Browse Freelancer Profiles</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Discover qualified AV techs, event crew, and specialists with ease. 
-                        Filter by location, skills, experience, and availability to find your ideal team.
+                        Discover qualified AV techs, event crew, and specialists with ease. Filter
+                        by location, skills, experience, and availability to find your ideal team.
                       </p>
                     </div>
                   </div>
@@ -219,7 +237,7 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Connect & Hire</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Review applications, message candidates directly, and confirm bookings. 
+                        Review applications, message candidates directly, and confirm bookings.
                         Streamline your hiring process with our integrated communication tools.
                       </p>
                     </div>
@@ -236,7 +254,7 @@ export default function HowItWorks() {
                     <div className="flex flex-col">
                       <h3 className="text-xl font-semibold mb-2">Build Your Trusted Crew</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Rate freelancers and re-hire the best professionals for future projects. 
+                        Rate freelancers and re-hire the best professionals for future projects.
                         Create a reliable network of event specialists you can count on.
                       </p>
                     </div>
@@ -246,9 +264,9 @@ export default function HowItWorks() {
             </div>
 
             <div className="text-center pt-6">
-              <Button 
+              <Button
                 onClick={handleRecruiterCTA}
-                size="lg" 
+                size="lg"
                 className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-3 text-lg font-semibold"
                 data-testid="button-post-job"
               >
@@ -262,21 +280,22 @@ export default function HowItWorks() {
         <div className="text-center mt-16 pt-12 border-t border-border">
           <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of event professionals who are already using EventLink to grow their careers and find the perfect team members.
+            Join thousands of event professionals who are already using EventLink to grow their
+            careers and find the perfect team members.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
+            <Button
               onClick={handleFreelancerCTA}
-              size="lg" 
+              size="lg"
               variant="outline"
               className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               data-testid="button-join-freelancer"
             >
               Join as Freelancer
             </Button>
-            <Button 
+            <Button
               onClick={handleRecruiterCTA}
-              size="lg" 
+              size="lg"
               variant="outline"
               className="border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
               data-testid="button-join-recruiter"

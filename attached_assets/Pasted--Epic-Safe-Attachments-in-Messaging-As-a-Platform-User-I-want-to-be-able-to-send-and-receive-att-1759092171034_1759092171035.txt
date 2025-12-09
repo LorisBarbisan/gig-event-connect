@@ -67,7 +67,7 @@ Acceptance Criteria
 
  Database stores metadata only (path, file type, sender, timestamp).
 
- Download links are time-limited (e.g., expire after 24h).
+ Download links are time-limited (e.g., expire after).
 
  Deleted users’ files are purged.
 

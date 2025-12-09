@@ -1,60 +1,66 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  Briefcase, 
-  Shield, 
-  Search, 
-  Clock, 
+import {
+  Users,
+  Briefcase,
+  Shield,
+  Search,
+  Clock,
   Award,
   MessageSquare,
-  TrendingUp 
+  TrendingUp,
 } from "lucide-react";
 
 const freelancerFeatures = [
   {
     icon: Search,
     title: "Smart Job Matching",
-    description: "Get matched with relevant opportunities based on your skills, location, and availability."
+    description:
+      "Get matched with relevant opportunities based on your skills, location, and availability.",
   },
   {
     icon: Clock,
     title: "Flexible Scheduling",
-    description: "Choose when and where you work. Perfect for balancing multiple projects and commitments."
+    description:
+      "Choose when and where you work. Perfect for balancing multiple projects and commitments.",
   },
   {
     icon: Award,
     title: "Build Your Reputation",
-    description: "Showcase your skills, collect reviews, and build a professional profile that stands out."
+    description:
+      "Showcase your skills, collect reviews, and build a professional profile that stands out.",
   },
   {
     icon: TrendingUp,
     title: "Career Growth",
-    description: "Access training resources and advance your career in the events industry."
-  }
+    description: "Access training resources and advance your career in the events industry.",
+  },
 ];
 
 const companyFeatures = [
   {
     icon: Users,
     title: "Verified Professionals",
-    description: "Access a curated network of experienced technical crew with verified skills and backgrounds."
+    description:
+      "Access a curated network of experienced technical crew with verified skills and backgrounds.",
   },
   {
     icon: Briefcase,
     title: "Easy Job Posting",
-    description: "Post jobs quickly with our streamlined process and reach qualified candidates instantly."
+    description:
+      "Post jobs quickly with our streamlined process and reach qualified candidates instantly.",
   },
   {
     icon: Shield,
     title: "Secure Hiring",
-    description: "Built-in verification, reviews, and secure payment processing for peace of mind."
+    description: "Built-in verification, reviews, and secure payment processing for peace of mind.",
   },
   {
     icon: MessageSquare,
     title: "Direct Communication",
-    description: "Connect directly with freelancers, discuss requirements, and coordinate seamlessly."
-  }
+    description:
+      "Connect directly with freelancers, discuss requirements, and coordinate seamlessly.",
+  },
 ];
 
 export const FeaturesSection = () => {
@@ -66,12 +72,10 @@ export const FeaturesSection = () => {
           <Badge variant="secondary" className="w-fit mx-auto">
             Why Choose E8
           </Badge>
-          <h2 className="text-3xl lg:text-5xl font-bold">
-            Built for the Events Industry
-          </h2>
+          <h2 className="text-3xl lg:text-5xl font-bold">Built for the Events Industry</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Whether you're a freelance technician looking for your next gig or a company seeking skilled crew, 
-            we've designed the perfect platform for the corporate events sector.
+            Whether you're a freelance technician looking for your next gig or a company seeking
+            skilled crew, we've designed the perfect platform for the corporate events sector.
           </p>
         </div>
 

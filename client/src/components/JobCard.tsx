@@ -1,11 +1,34 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { MapPin, Calendar, Users, Edit, Trash2, Coins, ChevronDown, ChevronUp, User, MessageCircle, Eye, Clock } from 'lucide-react';
-import { MessageModal } from '@/components/MessageModal';
-import type { Job, JobApplication } from '@shared/types';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Edit,
+  Trash2,
+  Coins,
+  ChevronDown,
+  ChevronUp,
+  User,
+  MessageCircle,
+  Eye,
+  Clock,
+} from "lucide-react";
+import { MessageModal } from "@/components/MessageModal";
+import type { Job, JobApplication } from "@shared/types";
 
 interface JobCardProps {
   job: Job;
@@ -19,38 +42,40 @@ interface JobCardProps {
   currentUserId?: number;
 }
 
-export function JobCard({ 
-  job, 
-  hiredApplicants, 
+export function JobCard({
+  job,
+  hiredApplicants,
   applicantCount = 0,
-  onEdit, 
-  onDelete, 
-  onExpandToggle, 
+  onEdit,
+  onDelete,
+  onExpandToggle,
   isExpanded = false,
   showHiredSection = true,
-  currentUserId = 0
+  currentUserId = 0,
 }: JobCardProps) {
   const [messageModalOpen, setMessageModalOpen] = useState(false);
-  const [selectedFreelancer, setSelectedFreelancer] = useState<{id: number, name: string} | null>(null);
+  const [selectedFreelancer, setSelectedFreelancer] = useState<{ id: number; name: string } | null>(
+    null
+  );
 
   // Helper function to format duration display
   const formatDuration = (job: Job): string | null => {
     if (!job.duration_type) return null;
-    
+
     switch (job.duration_type) {
-      case 'time':
+      case "time":
         if (job.start_time && job.end_time) {
           return `${job.start_time} - ${job.end_time}`;
         }
         return null;
-      case 'days':
+      case "days":
         if (job.days) {
-          return `${job.days} day${job.days !== 1 ? 's' : ''}`;
+          return `${job.days} day${job.days !== 1 ? "s" : ""}`;
         }
         return null;
-      case 'hours':
+      case "hours":
         if (job.hours) {
-          return `${job.hours} hour${job.hours !== 1 ? 's' : ''}`;
+          return `${job.hours} hour${job.hours !== 1 ? "s" : ""}`;
         }
         return null;
       default:
@@ -60,17 +85,18 @@ export function JobCard({
 
   const handleProfileView = (userId: number) => {
     // Navigate directly to the freelancer's profile page
-    window.open(`/profile/${userId}`, '_blank');
+    window.open(`/profile/${userId}`, "_blank");
   };
 
   const handleMessageFreelancer = (applicant: JobApplication) => {
-    const freelancerName = applicant.freelancer_profile?.first_name && applicant.freelancer_profile?.last_name
-      ? `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}`
-      : `Freelancer ${applicant.freelancer_id}`;
-    
+    const freelancerName =
+      applicant.freelancer_profile?.first_name && applicant.freelancer_profile?.last_name
+        ? `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}`
+        : `Freelancer ${applicant.freelancer_id}`;
+
     setSelectedFreelancer({
       id: applicant.freelancer_id,
-      name: freelancerName
+      name: freelancerName,
     });
     setMessageModalOpen(true);
   };
@@ -82,7 +108,15 @@ export function JobCard({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-semibold">{job.title}</h3>
-              <Badge variant={job.status === 'active' ? 'default' : job.status === 'paused' ? 'secondary' : 'outline'}>
+              <Badge
+                variant={
+                  job.status === "active"
+                    ? "default"
+                    : job.status === "paused"
+                      ? "secondary"
+                      : "outline"
+                }
+              >
                 {job.status}
               </Badge>
               {showHiredSection && hiredApplicants.length > 0 && (
@@ -91,7 +125,7 @@ export function JobCard({
                 </Badge>
               )}
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
@@ -114,18 +148,20 @@ export function JobCard({
                 </div>
               )}
             </div>
-            
+
             <p className="text-sm text-muted-foreground mb-2">{job.description}</p>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-sm">
                 <Users className="w-4 h-4" />
-                <span>{applicantCount} {applicantCount === 1 ? 'applicant' : 'applicants'}</span>
+                <span>
+                  {applicantCount} {applicantCount === 1 ? "applicant" : "applicants"}
+                </span>
               </div>
               {showHiredSection && hiredApplicants.length > 0 && onExpandToggle && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onExpandToggle(job.id)}
                   data-testid={`button-expand-job-${job.id}`}
                   className="text-sm"
@@ -145,10 +181,15 @@ export function JobCard({
               )}
             </div>
           </div>
-          
+
           <div className="flex flex-row gap-2 sm:ml-4 w-full sm:w-auto justify-end sm:justify-start">
             {onEdit && (
-              <Button variant="outline" size="sm" onClick={() => onEdit(job.id)} data-testid={`button-edit-job-${job.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(job.id)}
+                data-testid={`button-edit-job-${job.id}`}
+              >
                 <Edit className="w-4 h-4" />
               </Button>
             )}
@@ -168,7 +209,7 @@ export function JobCard({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       onClick={() => onDelete(job.id)}
                     >
@@ -189,22 +230,22 @@ export function JobCard({
               Hired Freelancers
             </h4>
             <div className="space-y-3">
-              {hiredApplicants.map((applicant) => (
-                <div 
+              {hiredApplicants.map(applicant => (
+                <div
                   key={applicant.id}
                   className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-medium">
-                      {applicant.freelancer_profile?.first_name?.[0] || 'F'}
-                      {applicant.freelancer_profile?.last_name?.[0] || ''}
+                      {applicant.freelancer_profile?.first_name?.[0] || "F"}
+                      {applicant.freelancer_profile?.last_name?.[0] || ""}
                     </div>
                     <div>
                       <h5 className="font-medium">
-                        {applicant.freelancer_profile?.first_name && applicant.freelancer_profile?.last_name 
+                        {applicant.freelancer_profile?.first_name &&
+                        applicant.freelancer_profile?.last_name
                           ? `${applicant.freelancer_profile.first_name} ${applicant.freelancer_profile.last_name}`
-                          : `Freelancer ${applicant.freelancer_id}`
-                        }
+                          : `Freelancer ${applicant.freelancer_id}`}
                       </h5>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         {applicant.freelancer_profile?.title && (
@@ -239,7 +280,7 @@ export function JobCard({
           </div>
         )}
       </CardContent>
-      
+
       {/* Message Modal */}
       {selectedFreelancer && (
         <MessageModal

@@ -1,22 +1,35 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { X, Send, MessageSquare } from 'lucide-react';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { X, Send, MessageSquare } from "lucide-react";
 
 const feedbackSchema = z.object({
-  feedbackType: z.enum(['malfunction', 'feature-missing', 'suggestion', 'other'], {
-    required_error: 'Please select a feedback type',
+  feedbackType: z.enum(["malfunction", "feature-missing", "suggestion", "other"], {
+    required_error: "Please select a feedback type",
   }),
-  message: z.string().min(10, 'Please provide at least 10 characters of feedback'),
+  message: z.string().min(10, "Please provide at least 10 characters of feedback"),
 });
 
 type FeedbackFormData = z.infer<typeof feedbackSchema>;
@@ -24,17 +37,17 @@ type FeedbackFormData = z.infer<typeof feedbackSchema>;
 interface FeedbackFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  source?: 'header' | 'popup';
+  source?: "header" | "popup";
 }
 
 const feedbackTypes = [
-  { value: 'malfunction', label: 'Malfunction' },
-  { value: 'feature-missing', label: 'Feature Missing' },
-  { value: 'suggestion', label: 'Suggestion' },
-  { value: 'other', label: 'Other' },
+  { value: "malfunction", label: "Malfunction" },
+  { value: "feature-missing", label: "Feature Missing" },
+  { value: "suggestion", label: "Suggestion" },
+  { value: "other", label: "Other" },
 ];
 
-export function FeedbackForm({ open, onOpenChange, source = 'header' }: FeedbackFormProps) {
+export function FeedbackForm({ open, onOpenChange, source = "header" }: FeedbackFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,7 +55,7 @@ export function FeedbackForm({ open, onOpenChange, source = 'header' }: Feedback
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
       feedbackType: undefined,
-      message: '',
+      message: "",
     },
   });
 
@@ -55,30 +68,30 @@ export function FeedbackForm({ open, onOpenChange, source = 'header' }: Feedback
         timestamp: new Date().toISOString(),
         source,
       };
-      
-      return await apiRequest('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      return await apiRequest("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(feedbackData),
       });
     },
     onSuccess: () => {
       toast({
-        title: 'Thank you for your feedback!',
-        description: 'Your feedback has been sent successfully. We appreciate your input.',
+        title: "Thank you for your feedback!",
+        description: "Your feedback has been sent successfully. We appreciate your input.",
       });
       form.reset();
       onOpenChange(false);
-      
+
       // Mark feedback as submitted in session storage
-      sessionStorage.setItem('feedback_submitted', 'true');
+      sessionStorage.setItem("feedback_submitted", "true");
     },
-    onError: (error) => {
-      console.error('Feedback submission error:', error);
+    onError: error => {
+      console.error("Feedback submission error:", error);
       toast({
-        title: 'Something went wrong',
-        description: 'Unable to send your feedback. Please try again later.',
-        variant: 'destructive',
+        title: "Something went wrong",
+        description: "Unable to send your feedback. Please try again later.",
+        variant: "destructive",
       });
     },
     onSettled: () => {
@@ -91,9 +104,9 @@ export function FeedbackForm({ open, onOpenChange, source = 'header' }: Feedback
   };
 
   const handleClose = () => {
-    if (source === 'popup') {
+    if (source === "popup") {
       // Mark popup as dismissed to prevent showing again this session
-      sessionStorage.setItem('feedback_popup_dismissed', 'true');
+      sessionStorage.setItem("feedback_popup_dismissed", "true");
     }
     form.reset();
     onOpenChange(false);
@@ -118,7 +131,8 @@ export function FeedbackForm({ open, onOpenChange, source = 'header' }: Feedback
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Help us improve EventLink by sharing your thoughts, reporting issues, or suggesting new features.
+            Help us improve EventLink by sharing your thoughts, reporting issues, or suggesting new
+            features.
           </p>
         </DialogHeader>
 
@@ -137,7 +151,7 @@ export function FeedbackForm({ open, onOpenChange, source = 'header' }: Feedback
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {feedbackTypes.map((type) => (
+                      {feedbackTypes.map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>

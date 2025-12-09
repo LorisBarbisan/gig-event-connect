@@ -1,14 +1,22 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { ExternalLink, RefreshCw, MapPin, Coins, Calendar, Building2, Settings } from 'lucide-react';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  ExternalLink,
+  RefreshCw,
+  MapPin,
+  Coins,
+  Calendar,
+  Building2,
+  Settings,
+} from "lucide-react";
 
 interface ExternalJobsSectionProps {
   showInJobsPage?: boolean;
@@ -21,9 +29,9 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
 
   // Fetch external jobs
   const { data: externalJobs = [], isLoading: externalJobsLoading } = useQuery({
-    queryKey: ['/api/jobs/external'],
+    queryKey: ["/api/jobs/external"],
     queryFn: async () => {
-      const response = await fetch('/api/jobs/external');
+      const response = await fetch("/api/jobs/external");
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -35,23 +43,23 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
   // Sync external jobs mutation
   const syncExternalJobsMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/jobs/sync-external', {
-        method: 'POST',
+      return await apiRequest("/api/jobs/sync-external", {
+        method: "POST",
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs/external'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/external"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({
-        title: 'Jobs synced',
-        description: 'Latest jobs from Reed and Adzuna have been fetched.',
+        title: "Jobs synced",
+        description: "Latest jobs from Reed and Adzuna have been fetched.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Sync failed',
-        description: error.message || 'Failed to sync external jobs. Check API credentials.',
-        variant: 'destructive',
+        title: "Sync failed",
+        description: error.message || "Failed to sync external jobs. Check API credentials.",
+        variant: "destructive",
       });
     },
   });
@@ -86,7 +94,7 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
               onCheckedChange={setShowExternalJobs}
             />
           </div>
-          
+
           {showExternalJobs && (
             <>
               <Separator />
@@ -97,19 +105,23 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
                     Fetch latest events and AV jobs from external platforms
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={handleSyncJobs}
                   disabled={syncExternalJobsMutation.isPending}
                   size="sm"
                   data-testid="button-sync-external-jobs"
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${syncExternalJobsMutation.isPending ? 'animate-spin' : ''}`} />
-                  {syncExternalJobsMutation.isPending ? 'Syncing...' : 'Sync Jobs'}
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${syncExternalJobsMutation.isPending ? "animate-spin" : ""}`}
+                  />
+                  {syncExternalJobsMutation.isPending ? "Syncing..." : "Sync Jobs"}
                 </Button>
               </div>
-              
+
               <div className="text-sm text-muted-foreground">
-                <p>Current external jobs: <strong>{externalJobs.length}</strong></p>
+                <p>
+                  Current external jobs: <strong>{externalJobs.length}</strong>
+                </p>
                 <p className="mt-1">
                   API Setup Required: Add Reed API key and Adzuna credentials to sync jobs.
                 </p>
@@ -132,14 +144,16 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
             Jobs from Reed, Adzuna and other platforms - apply directly on their websites
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleSyncJobs}
           disabled={syncExternalJobsMutation.isPending}
           size="sm"
           variant="outline"
           data-testid="button-refresh-external-jobs"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${syncExternalJobsMutation.isPending ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${syncExternalJobsMutation.isPending ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>
@@ -160,11 +174,9 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
                       <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                         {job.external_source}
                       </Badge>
-                      <Badge variant="outline">
-                        {job.type}
-                      </Badge>
+                      <Badge variant="outline">{job.type}</Badge>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <Building2 className="w-4 h-4" />
@@ -179,22 +191,22 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
                         {job.rate}
                       </div>
                     </div>
-                    
+
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
                       {job.description}
                     </p>
-                    
+
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
                       Posted: {job.posted_date || new Date(job.created_at).toLocaleDateString()}
                     </div>
                   </div>
-                  
+
                   <div className="ml-4">
                     <Button asChild size="sm" data-testid={`button-apply-external-${job.id}`}>
-                      <a 
-                        href={job.external_url} 
-                        target="_blank" 
+                      <a
+                        href={job.external_url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1"
                       >
@@ -217,7 +229,7 @@ export default function ExternalJobsSection({ showInJobsPage = false }: External
               Configure API credentials and sync to display jobs from Reed and Adzuna.
             </p>
             <Button onClick={handleSyncJobs} disabled={syncExternalJobsMutation.isPending}>
-              {syncExternalJobsMutation.isPending ? 'Syncing...' : 'Sync External Jobs'}
+              {syncExternalJobsMutation.isPending ? "Syncing..." : "Sync External Jobs"}
             </Button>
           </CardContent>
         </Card>

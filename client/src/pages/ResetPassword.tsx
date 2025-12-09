@@ -1,29 +1,29 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useSearch } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, Eye, EyeOff, Shield } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Check, Eye, EyeOff, Shield } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   // Extract token from URL parameters
   useEffect(() => {
     const params = new URLSearchParams(searchString);
-    const resetToken = params.get('token');
+    const resetToken = params.get("token");
     if (resetToken) {
       setToken(resetToken);
       setTokenValid(true); // We'll validate on submit
@@ -34,9 +34,9 @@ export default function ResetPassword() {
 
   const validatePassword = (pwd: string): string[] => {
     const errors: string[] = [];
-    if (pwd.length < 8) errors.push('Must be at least 8 characters long');
-    if (!/[A-Z]/.test(pwd)) errors.push('Must contain at least one uppercase letter');
-    if (!/[0-9]/.test(pwd)) errors.push('Must contain at least one number');
+    if (pwd.length < 8) errors.push("Must be at least 8 characters long");
+    if (!/[A-Z]/.test(pwd)) errors.push("Must contain at least one uppercase letter");
+    if (!/[0-9]/.test(pwd)) errors.push("Must contain at least one number");
     return errors;
   };
 
@@ -45,12 +45,12 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password.trim()) {
       toast({
         title: "Error",
         description: "Please enter a new password.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -59,7 +59,7 @@ export default function ResetPassword() {
       toast({
         title: "Error",
         description: "Please confirm your password.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -68,7 +68,7 @@ export default function ResetPassword() {
       toast({
         title: "Error",
         description: "Passwords do not match.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -76,39 +76,39 @@ export default function ResetPassword() {
     if (passwordErrors.length > 0) {
       toast({
         title: "Password Requirements",
-        description: passwordErrors.join(', '),
-        variant: "destructive"
+        description: passwordErrors.join(", "),
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    
+
     try {
-      const data = await apiRequest('/api/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          token, 
-          password: password.trim(), 
-          confirmPassword: confirmPassword.trim() 
-        })
+      const data = await apiRequest("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          token,
+          password: password.trim(),
+          confirmPassword: confirmPassword.trim(),
+        }),
       });
-      
+
       toast({
         title: "Success",
-        description: data.message
+        description: data.message,
       });
-      
+
       // Redirect to login with success message
       setTimeout(() => {
-        setLocation('/auth');
+        setLocation("/auth");
       }, 1500);
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error("Password reset error:", error);
       toast({
         title: "Error",
         description: "Network error. Please check your connection and try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -132,16 +132,16 @@ export default function ResetPassword() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center">
-                <Button 
-                  onClick={() => setLocation('/forgot-password')}
+                <Button
+                  onClick={() => setLocation("/forgot-password")}
                   className="w-full mb-2"
                   data-testid="button-request-new-reset"
                 >
                   Request New Reset Link
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => setLocation('/auth')}
+                  onClick={() => setLocation("/auth")}
                   className="w-full"
                   data-testid="button-back-to-signin"
                 >
@@ -161,10 +161,10 @@ export default function ResetPassword() {
         <Card className="border-border/50 shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-2 mb-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setLocation('/auth')}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation("/auth")}
                 data-testid="button-back"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -186,7 +186,7 @@ export default function ResetPassword() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter new password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     data-testid="input-new-password"
                     className={passwordErrors.length > 0 && password ? "border-destructive" : ""}
@@ -208,20 +208,34 @@ export default function ResetPassword() {
                 </div>
                 {password && (
                   <div className="space-y-1">
-                    <div className={`text-xs ${passwordErrors.length === 0 ? 'text-success' : 'text-muted-foreground'}`}>
+                    <div
+                      className={`text-xs ${passwordErrors.length === 0 ? "text-success" : "text-muted-foreground"}`}
+                    >
                       Password requirements:
                     </div>
                     <div className="space-y-1 text-xs">
-                      <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-success' : 'text-muted-foreground'}`}>
-                        <Check className={`w-3 h-3 ${password.length >= 8 ? 'text-success' : 'text-muted-foreground'}`} />
+                      <div
+                        className={`flex items-center gap-1 ${password.length >= 8 ? "text-success" : "text-muted-foreground"}`}
+                      >
+                        <Check
+                          className={`w-3 h-3 ${password.length >= 8 ? "text-success" : "text-muted-foreground"}`}
+                        />
                         At least 8 characters
                       </div>
-                      <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-success' : 'text-muted-foreground'}`}>
-                        <Check className={`w-3 h-3 ${/[A-Z]/.test(password) ? 'text-success' : 'text-muted-foreground'}`} />
+                      <div
+                        className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? "text-success" : "text-muted-foreground"}`}
+                      >
+                        <Check
+                          className={`w-3 h-3 ${/[A-Z]/.test(password) ? "text-success" : "text-muted-foreground"}`}
+                        />
                         One uppercase letter
                       </div>
-                      <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'}`}>
-                        <Check className={`w-3 h-3 ${/[0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'}`} />
+                      <div
+                        className={`flex items-center gap-1 ${/[0-9]/.test(password) ? "text-success" : "text-muted-foreground"}`}
+                      >
+                        <Check
+                          className={`w-3 h-3 ${/[0-9]/.test(password) ? "text-success" : "text-muted-foreground"}`}
+                        />
                         One number
                       </div>
                     </div>
@@ -237,15 +251,15 @@ export default function ResetPassword() {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm new password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={e => setConfirmPassword(e.target.value)}
                     required
                     data-testid="input-confirm-password"
                     className={
                       confirmPassword && password && confirmPassword !== password
                         ? "border-destructive"
                         : confirmPassword && password && confirmPassword === password
-                        ? "border-success"
-                        : ""
+                          ? "border-success"
+                          : ""
                     }
                   />
                   <Button
@@ -264,25 +278,27 @@ export default function ResetPassword() {
                   </Button>
                 </div>
                 {confirmPassword && password && (
-                  <div className={`text-xs ${passwordsMatch ? 'text-success' : 'text-destructive'}`}>
-                    {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                  <div
+                    className={`text-xs ${passwordsMatch ? "text-success" : "text-destructive"}`}
+                  >
+                    {passwordsMatch ? "Passwords match" : "Passwords do not match"}
                   </div>
                 )}
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-primary hover:bg-primary-hover"
                 disabled={
-                  loading || 
-                  !password.trim() || 
-                  !confirmPassword.trim() || 
+                  loading ||
+                  !password.trim() ||
+                  !confirmPassword.trim() ||
                   password !== confirmPassword ||
                   passwordErrors.length > 0
                 }
                 data-testid="button-reset-password"
               >
-                {loading ? 'Resetting Password...' : 'Reset Password'}
+                {loading ? "Resetting Password..." : "Reset Password"}
               </Button>
             </form>
           </CardContent>

@@ -1,41 +1,38 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TabBadge } from '@/components/ui/tab-badge';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useBadgeCounts } from '@/hooks/useBadgeCounts';
-import { apiRequest } from '@/lib/queryClient';
-import { Briefcase, BookOpen, CheckCircle, Clock, AlertCircle, MessageCircle, Star } from 'lucide-react';
-import { RatingDisplay } from '@/components/StarRating';
-import { useFreelancerAverageRating } from '@/hooks/useRatings';
-import { useToast } from '@/hooks/use-toast';
-import { ProfileForm } from './ProfileForm';
-import { ApplicationCard } from './ApplicationCard';
-import { MessagingInterface } from './MessagingInterface';
-import type { JobApplication, FreelancerFormData } from '@shared/types';
+import { Card, CardContent } from "@/components/ui/card";
+import { TabBadge } from "@/components/ui/tab-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useBadgeCounts } from "@/hooks/useBadgeCounts";
+import { useFreelancerAverageRating } from "@/hooks/useRatings";
+import { apiRequest } from "@/lib/queryClient";
+import type { FreelancerFormData, JobApplication } from "@shared/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, BookOpen, Briefcase, CheckCircle, Clock, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ApplicationCard } from "./ApplicationCard";
+import { MessagingInterface } from "./MessagingInterface";
+import { ProfileForm } from "./ProfileForm";
 
 export default function SimplifiedFreelancerDashboard() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Get rating data for current user
   const { data: averageRating } = useFreelancerAverageRating(user?.id || 0);
-  
+
   // Check URL parameters for initial tab
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
-    return tabParam || 'profile';
+    const tabParam = urlParams.get("tab");
+    return tabParam || "profile";
   });
-  
+
   // Handle URL parameter changes (e.g., from notifications)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
+    const tabParam = urlParams.get("tab");
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
@@ -44,12 +41,12 @@ export default function SimplifiedFreelancerDashboard() {
   // Get badge counts for tabs
   const { roleSpecificCounts, markCategoryAsRead } = useBadgeCounts({
     enabled: !!user?.id,
-    refetchInterval: activeTab === 'messages' ? 10000 : 15000, // Poll faster when on messages tab
+    refetchInterval: activeTab === "messages" ? 1000 : 1500, // Poll faster when on messages tab
   });
 
   // Fetch freelancer profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['/api/freelancer/profile', user?.id],
+    queryKey: ["/api/freelancer/profile", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const data = await apiRequest(`/api/freelancer/${user.id}`);
@@ -61,7 +58,7 @@ export default function SimplifiedFreelancerDashboard() {
 
   // Get user's job applications
   const { data: jobApplications = [], isLoading: applicationsLoading } = useQuery({
-    queryKey: ['/api/freelancer/applications', user?.id],
+    queryKey: ["/api/freelancer/applications", user?.id],
     queryFn: async () => {
       return await apiRequest(`/api/freelancer/${user?.id}/applications`);
     },
@@ -71,24 +68,25 @@ export default function SimplifiedFreelancerDashboard() {
 
   // Fetch unread message count with optimized polling
   const { data: unreadCount } = useQuery({
-    queryKey: ['/api/messages/unread-count', user?.id],
+    queryKey: ["/api/messages/unread-count", user?.id],
     queryFn: () => apiRequest(`/api/messages/unread-count?userId=${user?.id}`),
-    refetchInterval: activeTab === 'messages' ? 15000 : 30000, // Poll faster only when on messages tab
+    refetchInterval: activeTab === "messages" ? 15000 : 30000, // Poll faster only when on messages tab
     refetchIntervalInBackground: false, // Stop when tab is inactive
     enabled: !!user?.id,
   });
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    
+
     // Mark category notifications as read when tab is opened
-    if (tab === 'jobs') {
-      markCategoryAsRead('applications');
-    } else if (tab === 'messages') {
-      markCategoryAsRead('messages');
-    } else if (tab === 'bookings') {
-      markCategoryAsRead('ratings');
+    // Note: Messages notifications are NOT marked as read automatically
+    // They remain unread until user explicitly views/reads them
+    if (tab === "jobs") {
+      markCategoryAsRead("applications");
+    } else if (tab === "bookings") {
+      markCategoryAsRead("ratings");
     }
+    // Removed: markCategoryAsRead('messages') - keep message notifications unread until user reads them
   };
 
   if (!user) {
@@ -102,22 +100,32 @@ export default function SimplifiedFreelancerDashboard() {
     <div className="container mx-auto p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Freelancer Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Manage your profile, applications, and messages</p>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Manage your profile, applications, and messages
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <TabsTrigger value="profile" className="text-xs sm:text-sm">Edit Profile</TabsTrigger>
+          <TabsTrigger value="profile" className="text-xs sm:text-sm">
+            Edit Profile
+          </TabsTrigger>
           <TabsTrigger value="jobs" className="flex items-center justify-center text-xs sm:text-sm">
             <span className="hidden sm:inline">My Applications</span>
             <span className="sm:hidden">Applications</span>
             <TabBadge count={roleSpecificCounts.applications || 0} />
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center justify-center text-xs sm:text-sm">
+          <TabsTrigger
+            value="messages"
+            className="flex items-center justify-center text-xs sm:text-sm"
+          >
             Messages
             <TabBadge count={roleSpecificCounts.messages || 0} />
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center justify-center text-xs sm:text-sm">
+          <TabsTrigger
+            value="bookings"
+            className="flex items-center justify-center text-xs sm:text-sm"
+          >
             Ratings
             <TabBadge count={roleSpecificCounts.ratings || 0} />
           </TabsTrigger>
@@ -131,63 +139,64 @@ export default function SimplifiedFreelancerDashboard() {
             <ProfileForm
               profile={profile}
               userType="freelancer"
-              onSave={async (formData) => {
-              try {
-                console.log('🚀 SAVE CLICKED! Saving freelancer profile data:', formData);
-                
-                // Use the correct API endpoint for freelancer profiles
-                // Build update data excluding CV fields (managed separately by CV upload/delete)
-                const freelancerData = formData as FreelancerFormData;
-                
-                const processedData: any = {
-                  user_id: user.id,
-                  first_name: freelancerData.first_name,
-                  last_name: freelancerData.last_name,
-                  title: freelancerData.title,
-                  bio: freelancerData.bio,
-                  location: freelancerData.location,
-                  skills: freelancerData.skills,
-                  portfolio_url: freelancerData.portfolio_url,
-                  linkedin_url: freelancerData.linkedin_url,
-                  website_url: freelancerData.website_url,
-                  availability_status: freelancerData.availability_status,
-                  profile_photo_url: freelancerData.profile_photo_url,
-                  experience_years: freelancerData.experience_years ? parseInt(freelancerData.experience_years.toString()) : undefined,
-                };
-                console.log('📤 Sending processed data (CV fields excluded):', processedData);
+              onSave={async formData => {
+                try {
+                  console.log("🚀 SAVE CLICKED! Saving freelancer profile data:", formData);
 
-                const savedProfile = await apiRequest(`/api/freelancer/${user.id}`, {
-                  method: 'PUT',
-                  body: JSON.stringify(processedData)
-                });
-                console.log('✅ Profile saved successfully:', savedProfile);
-                
-                // Force refetch to update UI with saved data
-                console.log('🔄 Forcing refetch for user:', user?.id);
-                await queryClient.refetchQueries({ 
-                  queryKey: ['/api/freelancer/profile', user?.id], 
-                  exact: true,
-                  type: 'active'
-                });
-                console.log('🔄 Profile refetched with saved data!');
-                
-                // Show success message with toast
-                toast({
-                  title: "Profile saved successfully!",
-                  description: "Your changes have been updated.",
-                });
-                
-              } catch (error) {
-                console.error('Error saving profile:', error);
-                toast({
-                  title: "Failed to save profile",
-                  description: `${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-                  variant: "destructive",
-                });
-              }
-            }}
-            isSaving={false}
-          />
+                  // Use the correct API endpoint for freelancer profiles
+                  // Build update data excluding CV fields (managed separately by CV upload/delete)
+                  const freelancerData = formData as FreelancerFormData;
+
+                  const processedData: any = {
+                    user_id: user.id,
+                    first_name: freelancerData.first_name,
+                    last_name: freelancerData.last_name,
+                    title: freelancerData.title,
+                    bio: freelancerData.bio,
+                    location: freelancerData.location,
+                    skills: freelancerData.skills,
+                    portfolio_url: freelancerData.portfolio_url,
+                    linkedin_url: freelancerData.linkedin_url,
+                    website_url: freelancerData.website_url,
+                    availability_status: freelancerData.availability_status,
+                    profile_photo_url: freelancerData.profile_photo_url,
+                    experience_years: freelancerData.experience_years
+                      ? parseInt(freelancerData.experience_years.toString())
+                      : undefined,
+                  };
+                  console.log("📤 Sending processed data (CV fields excluded):", processedData);
+
+                  const savedProfile = await apiRequest(`/api/freelancer/${user.id}`, {
+                    method: "PUT",
+                    body: JSON.stringify(processedData),
+                  });
+                  console.log("✅ Profile saved successfully:", savedProfile);
+
+                  // Force refetch to update UI with saved data
+                  console.log("🔄 Forcing refetch for user:", user?.id);
+                  await queryClient.refetchQueries({
+                    queryKey: ["/api/freelancer/profile", user?.id],
+                    exact: true,
+                    type: "active",
+                  });
+                  console.log("🔄 Profile refetched with saved data!");
+
+                  // Show success message with toast
+                  toast({
+                    title: "Profile saved successfully!",
+                    description: "Your changes have been updated.",
+                  });
+                } catch (error) {
+                  console.error("Error saving profile:", error);
+                  toast({
+                    title: "Failed to save profile",
+                    description: `${error instanceof Error ? error.message : "Unknown error"}. Please try again.`,
+                    variant: "destructive",
+                  });
+                }
+              }}
+              isSaving={false}
+            />
           )}
         </TabsContent>
 
@@ -209,7 +218,10 @@ export default function SimplifiedFreelancerDashboard() {
                       <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div className="text-2xl font-bold">
-                      {jobApplications.filter((app: JobApplication) => app.status === 'applied').length}
+                      {
+                        jobApplications.filter((app: JobApplication) => app.status === "applied")
+                          .length
+                      }
                     </div>
                     <div className="text-sm text-muted-foreground">Pending</div>
                   </div>
@@ -218,7 +230,10 @@ export default function SimplifiedFreelancerDashboard() {
                       <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="text-2xl font-bold">
-                      {jobApplications.filter((app: JobApplication) => app.status === 'reviewed').length}
+                      {
+                        jobApplications.filter((app: JobApplication) => app.status === "reviewed")
+                          .length
+                      }
                     </div>
                     <div className="text-sm text-muted-foreground">Reviewed</div>
                   </div>
@@ -227,7 +242,10 @@ export default function SimplifiedFreelancerDashboard() {
                       <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {jobApplications.filter((app: JobApplication) => app.status === 'hired').length}
+                      {
+                        jobApplications.filter((app: JobApplication) => app.status === "hired")
+                          .length
+                      }
                     </div>
                     <div className="text-sm text-muted-foreground">Hired</div>
                   </div>
@@ -236,7 +254,10 @@ export default function SimplifiedFreelancerDashboard() {
                       <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="text-2xl font-bold">
-                      {jobApplications.filter((app: JobApplication) => app.status === 'rejected').length}
+                      {
+                        jobApplications.filter((app: JobApplication) => app.status === "rejected")
+                          .length
+                      }
                     </div>
                     <div className="text-sm text-muted-foreground">Rejected</div>
                   </div>
@@ -244,9 +265,7 @@ export default function SimplifiedFreelancerDashboard() {
                     <div className="flex items-center justify-center w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full mx-auto mb-2">
                       <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                    <div className="text-2xl font-bold">
-                      {averageRating?.count || 0}
-                    </div>
+                    <div className="text-2xl font-bold">{averageRating?.count || 0}</div>
                     <div className="text-sm text-muted-foreground">Ratings</div>
                   </div>
                 </div>
@@ -289,9 +308,7 @@ export default function SimplifiedFreelancerDashboard() {
               <p className="text-muted-foreground">Create new connections and grow your network</p>
             </div>
           </div>
-          {user && (
-            <MessagingInterface />
-          )}
+          {user && <MessagingInterface />}
         </TabsContent>
 
         {/* Bookings Tab */}
@@ -303,7 +320,8 @@ export default function SimplifiedFreelancerDashboard() {
 
           {applicationsLoading ? (
             <div className="flex justify-center p-8">Loading bookings...</div>
-          ) : jobApplications.filter((app: JobApplication) => app.status === 'hired').length === 0 ? (
+          ) : jobApplications.filter((app: JobApplication) => app.status === "hired").length ===
+            0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -316,7 +334,7 @@ export default function SimplifiedFreelancerDashboard() {
           ) : (
             <div className="space-y-4">
               {jobApplications
-                .filter((application: JobApplication) => application.status === 'hired')
+                .filter((application: JobApplication) => application.status === "hired")
                 .map((application: JobApplication) => (
                   <ApplicationCard
                     key={application.id}
