@@ -1,127 +1,144 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Building2, MapPin, Globe, Plus, X } from 'lucide-react';
-import { ImageUpload } from '@/components/ImageUpload';
-import { SimplifiedCVUploader } from '@/components/SimplifiedCVUploader';
-import { RatingDisplay } from './StarRating';
-import { UKLocationInput } from '@/components/ui/uk-location-input';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useToast } from '@/hooks/use-toast';
-import { useFreelancerAverageRating } from '@/hooks/useRatings';
-import type { FreelancerProfile, RecruiterProfile, FreelancerFormData, RecruiterFormData } from '@shared/types';
+import { ImageUpload } from "@/components/ImageUpload";
+import { SimplifiedCVUploader } from "@/components/SimplifiedCVUploader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { UKLocationInput } from "@/components/ui/uk-location-input";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useFreelancerAverageRating } from "@/hooks/useRatings";
+import { apiRequest } from "@/lib/queryClient";
+import type {
+  FreelancerFormData,
+  FreelancerProfile,
+  RecruiterFormData,
+  RecruiterProfile,
+} from "@shared/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { Building2, Globe, MapPin, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RatingDisplay } from "./StarRating";
 
 interface ProfileFormProps {
   profile?: FreelancerProfile | RecruiterProfile;
-  userType: 'freelancer' | 'recruiter';
+  userType: "freelancer" | "recruiter";
   onSave: (data: FreelancerFormData | RecruiterFormData) => void;
   isSaving: boolean;
 }
 
 export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileFormProps) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(!profile);
   const [formData, setFormData] = useState<FreelancerFormData | RecruiterFormData>(() => {
-    if (userType === 'freelancer') {
+    if (userType === "freelancer") {
       const freelancerProfile = profile as FreelancerProfile;
       return {
-        first_name: freelancerProfile?.first_name || '',
-        last_name: freelancerProfile?.last_name || '',
-        title: freelancerProfile?.title || '',
-        bio: freelancerProfile?.bio || '',
-        location: freelancerProfile?.location || '',
-        experience_years: freelancerProfile?.experience_years?.toString() || '',
+        first_name: freelancerProfile?.first_name || "",
+        last_name: freelancerProfile?.last_name || "",
+        title: freelancerProfile?.title || "",
+        bio: freelancerProfile?.bio || "",
+        location: freelancerProfile?.location || "",
+        experience_years: freelancerProfile?.experience_years?.toString() || "",
         skills: freelancerProfile?.skills || [],
-        portfolio_url: freelancerProfile?.portfolio_url || '',
-        linkedin_url: freelancerProfile?.linkedin_url || '',
-        website_url: freelancerProfile?.website_url || '',
-        availability_status: freelancerProfile?.availability_status || 'available',
-        profile_photo_url: freelancerProfile?.profile_photo_url || '',
+        portfolio_url: freelancerProfile?.portfolio_url || "",
+        linkedin_url: freelancerProfile?.linkedin_url || "",
+        website_url: freelancerProfile?.website_url || "",
+        availability_status: freelancerProfile?.availability_status || "available",
+        profile_photo_url: freelancerProfile?.profile_photo_url || "",
       } as FreelancerFormData;
     } else {
       const recruiterProfile = profile as RecruiterProfile;
       return {
-        company_name: recruiterProfile?.company_name || '',
-        contact_name: recruiterProfile?.contact_name || '',
-        company_type: recruiterProfile?.company_type || '',
-        location: recruiterProfile?.location || '',
-        description: recruiterProfile?.description || '',
-        website_url: recruiterProfile?.website_url || '',
-        linkedin_url: recruiterProfile?.linkedin_url || '',
-        company_logo_url: recruiterProfile?.company_logo_url || '',
+        company_name: recruiterProfile?.company_name || "",
+        contact_name: recruiterProfile?.contact_name || "",
+        company_type: recruiterProfile?.company_type || "",
+        location: recruiterProfile?.location || "",
+        description: recruiterProfile?.description || "",
+        website_url: recruiterProfile?.website_url || "",
+        linkedin_url: recruiterProfile?.linkedin_url || "",
+        company_logo_url: recruiterProfile?.company_logo_url || "",
       } as RecruiterFormData;
     }
   });
 
-  const [newSkill, setNewSkill] = useState('');
+  const [newSkill, setNewSkill] = useState("");
 
   useEffect(() => {
-    if (profile && userType === 'freelancer') {
+    if (profile && userType === "freelancer") {
       const freelancerProfile = profile as FreelancerProfile;
       setFormData({
-        first_name: freelancerProfile.first_name || '',
-        last_name: freelancerProfile.last_name || '',
-        title: freelancerProfile.title || '',
-        bio: freelancerProfile.bio || '',
-        location: freelancerProfile.location || '',
-        experience_years: freelancerProfile.experience_years?.toString() || '',
+        first_name: freelancerProfile.first_name || "",
+        last_name: freelancerProfile.last_name || "",
+        title: freelancerProfile.title || "",
+        bio: freelancerProfile.bio || "",
+        location: freelancerProfile.location || "",
+        experience_years: freelancerProfile.experience_years?.toString() || "",
         skills: freelancerProfile.skills || [],
-        portfolio_url: freelancerProfile.portfolio_url || '',
-        linkedin_url: freelancerProfile.linkedin_url || '',
-        website_url: freelancerProfile.website_url || '',
-        availability_status: freelancerProfile.availability_status || 'available',
-        profile_photo_url: freelancerProfile.profile_photo_url || '',
+        portfolio_url: freelancerProfile.portfolio_url || "",
+        linkedin_url: freelancerProfile.linkedin_url || "",
+        website_url: freelancerProfile.website_url || "",
+        availability_status: freelancerProfile.availability_status || "available",
+        profile_photo_url: freelancerProfile.profile_photo_url || "",
       } as FreelancerFormData);
-    } else if (profile && userType === 'recruiter') {
+    } else if (profile && userType === "recruiter") {
       const recruiterProfile = profile as RecruiterProfile;
       setFormData({
-        company_name: recruiterProfile.company_name || '',
-        contact_name: recruiterProfile.contact_name || '',
-        company_type: recruiterProfile.company_type || '',
-        location: recruiterProfile.location || '',
-        description: recruiterProfile.description || '',
-        website_url: recruiterProfile.website_url || '',
-        linkedin_url: recruiterProfile.linkedin_url || '',
-        company_logo_url: recruiterProfile.company_logo_url || '',
+        company_name: recruiterProfile.company_name || "",
+        contact_name: recruiterProfile.contact_name || "",
+        company_type: recruiterProfile.company_type || "",
+        location: recruiterProfile.location || "",
+        description: recruiterProfile.description || "",
+        website_url: recruiterProfile.website_url || "",
+        linkedin_url: recruiterProfile.linkedin_url || "",
+        company_logo_url: recruiterProfile.company_logo_url || "",
       } as RecruiterFormData);
     }
   }, [profile, userType]);
 
   const handleInputChange = (field: string, value: string) => {
-    console.log('ProfileForm handleInputChange:', { field, valueLength: value.length, isImageUpload: field.includes('url') });
+    console.log("ProfileForm handleInputChange:", {
+      field,
+      valueLength: value.length,
+      isImageUpload: field.includes("url"),
+    });
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleLocationChange = (value: string, locationData?: any) => {
-    console.log('ProfileForm handleLocationChange:', { value, locationData });
+    console.log("ProfileForm handleLocationChange:", { value, locationData });
     setFormData(prev => ({ ...prev, location: value }));
   };
 
   const handleSkillAdd = () => {
-    if (newSkill.trim() && userType === 'freelancer') {
+    if (newSkill.trim() && userType === "freelancer") {
       const freelancerData = formData as FreelancerFormData;
       if (!freelancerData.skills.includes(newSkill.trim())) {
         setFormData(prev => ({
           ...prev,
-          skills: [...freelancerData.skills, newSkill.trim()]
+          skills: [...freelancerData.skills, newSkill.trim()],
         }));
-        setNewSkill('');
+        setNewSkill("");
       }
     }
   };
 
   const handleSkillRemove = (skillToRemove: string) => {
-    if (userType === 'freelancer') {
+    if (userType === "freelancer") {
       const freelancerData = formData as FreelancerFormData;
       setFormData(prev => ({
         ...prev,
-        skills: freelancerData.skills.filter(skill => skill !== skillToRemove)
+        skills: freelancerData.skills.filter(skill => skill !== skillToRemove),
       }));
     }
   };
@@ -138,13 +155,12 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>
-                {userType === 'freelancer' ? 'Freelancer Profile' : 'Company Profile'}
+                {userType === "freelancer" ? "Freelancer Profile" : "Company Profile"}
               </CardTitle>
               <CardDescription>
-                {userType === 'freelancer' 
-                  ? 'Your professional information and skills'
-                  : 'Your company information and details'
-                }
+                {userType === "freelancer"
+                  ? "Your professional information and skills"
+                  : "Your company information and details"}
               </CardDescription>
             </div>
             <Button onClick={() => setIsEditing(true)} data-testid="button-edit-profile">
@@ -153,7 +169,7 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
           </div>
         </CardHeader>
         <CardContent>
-          {userType === 'freelancer' ? (
+          {userType === "freelancer" ? (
             <FreelancerProfileView profile={profile as FreelancerProfile} />
           ) : (
             <RecruiterProfileView profile={profile as RecruiterProfile} />
@@ -167,17 +183,18 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
     <Card>
       <CardHeader>
         <CardTitle>
-          {profile ? 'Edit Profile' : `Create ${userType === 'freelancer' ? 'Freelancer' : 'Company'} Profile`}
+          {profile
+            ? "Edit Profile"
+            : `Create ${userType === "freelancer" ? "Freelancer" : "Company"} Profile`}
         </CardTitle>
         <CardDescription>
-          {userType === 'freelancer' 
-            ? 'Update your professional information and skills'
-            : 'Update your company information and details'
-          }
+          {userType === "freelancer"
+            ? "Update your professional information and skills"
+            : "Update your company information and details"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {userType === 'freelancer' ? (
+        {userType === "freelancer" ? (
           <FreelancerFormFields
             formData={formData as FreelancerFormData}
             profile={profile as FreelancerProfile}
@@ -195,13 +212,17 @@ export function ProfileForm({ profile, userType, onSave, isSaving }: ProfileForm
             onLocationChange={handleLocationChange}
           />
         )}
-        
+
         <div className="flex gap-2">
           <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-profile">
-            {isSaving ? 'Saving...' : 'Save Profile'}
+            {isSaving ? "Saving..." : "Save Profile"}
           </Button>
           {profile && (
-            <Button variant="outline" onClick={() => setIsEditing(false)} data-testid="button-cancel-edit">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              data-testid="button-cancel-edit"
+            >
               Cancel
             </Button>
           )}
@@ -218,15 +239,18 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
-          {profile.profile_photo_url && 
-           profile.profile_photo_url.trim() !== '' && 
-           profile.profile_photo_url !== 'null' ? (
-            <img 
-              src={profile.profile_photo_url} 
-              alt="Profile" 
+          {profile.profile_photo_url &&
+          profile.profile_photo_url.trim() !== "" &&
+          profile.profile_photo_url !== "null" ? (
+            <img
+              src={profile.profile_photo_url}
+              alt="Profile"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                console.log('Profile photo failed to load:', profile.profile_photo_url?.substring(0, 50));
+              onError={e => {
+                console.log(
+                  "Profile photo failed to load:",
+                  profile.profile_photo_url?.substring(0, 50)
+                );
               }}
             />
           ) : (
@@ -234,12 +258,12 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
           )}
         </div>
         <div className="flex-1">
-          <h3 className="text-xl font-semibold">{profile.first_name} {profile.last_name}</h3>
+          <h3 className="text-xl font-semibold">
+            {profile.first_name} {profile.last_name}
+          </h3>
           <p className="text-muted-foreground">{profile.title}</p>
           <div className="flex items-center gap-3 mt-1">
-            <Badge variant="secondary">
-              {profile.availability_status}
-            </Badge>
+            <Badge variant="secondary">{profile.availability_status}</Badge>
             {averageRating && (
               <RatingDisplay
                 average={averageRating.average}
@@ -269,7 +293,9 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
           <h4 className="font-medium mb-2">Skills</h4>
           <div className="flex flex-wrap gap-2">
             {profile.skills.map((skill, index) => (
-              <Badge key={index} variant="outline">{skill}</Badge>
+              <Badge key={index} variant="outline">
+                {skill}
+              </Badge>
             ))}
           </div>
         </div>
@@ -278,24 +304,26 @@ function FreelancerProfileView({ profile }: { profile: FreelancerProfile }) {
   );
 }
 
-
 function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
   const [logoError, setLogoError] = useState(false);
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
-          {profile.company_logo_url && 
-           profile.company_logo_url.trim() !== '' && 
-           profile.company_logo_url !== 'null' && 
-           !logoError ? (
-            <img 
-              src={profile.company_logo_url} 
-              alt={`${profile.company_name} logo`} 
+          {profile.company_logo_url &&
+          profile.company_logo_url.trim() !== "" &&
+          profile.company_logo_url !== "null" &&
+          !logoError ? (
+            <img
+              src={profile.company_logo_url}
+              alt={`${profile.company_name} logo`}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                console.log('Company logo failed to load:', profile.company_logo_url?.substring(0, 50));
+              onError={e => {
+                console.log(
+                  "Company logo failed to load:",
+                  profile.company_logo_url?.substring(0, 50)
+                );
                 setLogoError(true);
               }}
               onLoad={() => setLogoError(false)}
@@ -308,9 +336,7 @@ function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
           <h3 className="text-xl font-semibold">{profile.company_name}</h3>
           <p className="text-muted-foreground">{profile.contact_name}</p>
           <div className="flex items-center gap-3 mt-1">
-            <Badge variant="secondary">
-              {profile.company_type}
-            </Badge>
+            <Badge variant="secondary">{profile.company_type}</Badge>
           </div>
         </div>
       </div>
@@ -323,7 +349,12 @@ function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
         {profile.website_url && (
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-muted-foreground" />
-            <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            <a
+              href={profile.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
               Website
             </a>
           </div>
@@ -339,15 +370,15 @@ function RecruiterProfileView({ profile }: { profile: RecruiterProfile }) {
   );
 }
 
-function FreelancerFormFields({ 
+function FreelancerFormFields({
   formData,
   profile,
   onInputChange,
-  onLocationChange, 
-  newSkill, 
-  setNewSkill, 
-  onSkillAdd, 
-  onSkillRemove 
+  onLocationChange,
+  newSkill,
+  setNewSkill,
+  onSkillAdd,
+  onSkillRemove,
 }: {
   formData: FreelancerFormData;
   profile?: FreelancerProfile;
@@ -366,7 +397,7 @@ function FreelancerFormFields({
           <Input
             id="first_name"
             value={formData.first_name}
-            onChange={(e) => onInputChange('first_name', e.target.value)}
+            onChange={e => onInputChange("first_name", e.target.value)}
             data-testid="input-first-name"
           />
         </div>
@@ -375,7 +406,7 @@ function FreelancerFormFields({
           <Input
             id="last_name"
             value={formData.last_name}
-            onChange={(e) => onInputChange('last_name', e.target.value)}
+            onChange={e => onInputChange("last_name", e.target.value)}
             data-testid="input-last-name"
           />
         </div>
@@ -386,7 +417,7 @@ function FreelancerFormFields({
         <Input
           id="title"
           value={formData.title}
-          onChange={(e) => onInputChange('title', e.target.value)}
+          onChange={e => onInputChange("title", e.target.value)}
           placeholder="e.g. Senior Sound Engineer"
           data-testid="input-title"
         />
@@ -397,7 +428,7 @@ function FreelancerFormFields({
         <Textarea
           id="bio"
           value={formData.bio}
-          onChange={(e) => onInputChange('bio', e.target.value)}
+          onChange={e => onInputChange("bio", e.target.value)}
           placeholder="Tell us about your experience and expertise..."
           rows={3}
           data-testid="textarea-bio"
@@ -422,7 +453,7 @@ function FreelancerFormFields({
             id="experience_years"
             type="number"
             value={formData.experience_years}
-            onChange={(e) => onInputChange('experience_years', e.target.value)}
+            onChange={e => onInputChange("experience_years", e.target.value)}
             placeholder="0"
             data-testid="input-experience-years"
           />
@@ -434,9 +465,9 @@ function FreelancerFormFields({
         <div className="flex gap-2 mb-2">
           <Input
             value={newSkill}
-            onChange={(e) => setNewSkill(e.target.value)}
+            onChange={e => setNewSkill(e.target.value)}
             placeholder="Add a skill"
-            onKeyPress={(e) => e.key === 'Enter' && onSkillAdd()}
+            onKeyPress={e => e.key === "Enter" && onSkillAdd()}
             data-testid="input-new-skill"
           />
           <Button type="button" onClick={onSkillAdd} data-testid="button-add-skill">
@@ -447,8 +478,8 @@ function FreelancerFormFields({
           {formData.skills.map((skill, index) => (
             <Badge key={index} variant="secondary" className="flex items-center gap-1">
               {skill}
-              <X 
-                className="w-3 h-3 cursor-pointer" 
+              <X
+                className="w-3 h-3 cursor-pointer"
                 onClick={() => onSkillRemove(skill)}
                 data-testid={`button-remove-skill-${skill}`}
               />
@@ -459,7 +490,10 @@ function FreelancerFormFields({
 
       <div>
         <Label htmlFor="availability_status">Availability Status</Label>
-        <Select value={formData.availability_status} onValueChange={(value) => onInputChange('availability_status', value)}>
+        <Select
+          value={formData.availability_status}
+          onValueChange={value => onInputChange("availability_status", value)}
+        >
           <SelectTrigger data-testid="select-availability">
             <SelectValue />
           </SelectTrigger>
@@ -478,7 +512,7 @@ function FreelancerFormFields({
             id="portfolio_url"
             type="url"
             value={formData.portfolio_url}
-            onChange={(e) => onInputChange('portfolio_url', e.target.value)}
+            onChange={e => onInputChange("portfolio_url", e.target.value)}
             placeholder="https://yourportfolio.com"
             data-testid="input-portfolio-url"
           />
@@ -489,7 +523,7 @@ function FreelancerFormFields({
             id="linkedin_url"
             type="url"
             value={formData.linkedin_url}
-            onChange={(e) => onInputChange('linkedin_url', e.target.value)}
+            onChange={e => onInputChange("linkedin_url", e.target.value)}
             placeholder="https://linkedin.com/in/yourprofile"
             data-testid="input-linkedin-url"
           />
@@ -500,7 +534,7 @@ function FreelancerFormFields({
         <ImageUpload
           label="Profile Photo (Optional)"
           value={formData.profile_photo_url}
-          onChange={(url: string) => onInputChange('profile_photo_url', url)}
+          onChange={(url: string) => onInputChange("profile_photo_url", url)}
           shape="circle"
         />
       </div>
@@ -518,33 +552,53 @@ function FreelancerFormFields({
 
 // CV Upload section for freelancers when editing their profile
 function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
-  
+  const queryClient = useQueryClient();
+
   // Only show if user is a freelancer
-  if (!user || user.role !== 'freelancer') {
+  if (!user || user.role !== "freelancer") {
     return null;
   }
 
-  const handleUploadComplete = () => {
-    toast({
-      title: "Success",
-      description: "Your CV has been uploaded successfully!",
-    });
-    // Force a page refresh to show the updated CV
-    window.location.reload();
+  const handleUploadComplete = async (updatedProfile?: any) => {
+    console.log("🔄 CV upload/delete complete for user:", user.id);
+
+    // Use the profile from the response (already fresh from DB)
+    if (updatedProfile) {
+      queryClient.setQueryData(["/api/freelancer/profile", user.id], updatedProfile);
+      console.log("✅ Profile updated in cache from response:", updatedProfile);
+
+      toast({
+        title: "Success",
+        description: "Your CV has been updated successfully!",
+      });
+    } else {
+      console.warn("No profile in response, falling back to refetch");
+      // Fallback: refetch if no profile provided
+      try {
+        const freshProfile = await apiRequest(`/api/freelancer/${user.id}`);
+        queryClient.setQueryData(["/api/freelancer/profile", user.id], freshProfile);
+        console.log("✅ Profile fetched and updated in cache:", freshProfile);
+      } catch (error) {
+        console.error("Failed to fetch updated profile:", error);
+      }
+    }
   };
 
   // Prepare current CV data for CVUploader
-  const currentCV = profile && profile.cv_file_url ? {
-    fileName: profile.cv_file_name,
-    fileType: profile.cv_file_type,
-    fileSize: profile.cv_file_size,
-    fileUrl: profile.cv_file_url
-  } : undefined;
+  const currentCV =
+    profile && profile.cv_file_url
+      ? {
+          fileName: profile.cv_file_name,
+          fileType: profile.cv_file_type,
+          fileSize: profile.cv_file_size,
+          fileUrl: profile.cv_file_url,
+        }
+      : undefined;
 
   return (
-    <SimplifiedCVUploader 
+    <SimplifiedCVUploader
       userId={user.id}
       currentCV={currentCV}
       onUploadComplete={handleUploadComplete}
@@ -552,10 +606,10 @@ function CVUploadSection({ profile }: { profile?: FreelancerProfile }) {
   );
 }
 
-function RecruiterFormFields({ 
-  formData, 
+function RecruiterFormFields({
+  formData,
   onInputChange,
-  onLocationChange 
+  onLocationChange,
 }: {
   formData: RecruiterFormData;
   onInputChange: (field: string, value: string) => void;
@@ -569,7 +623,7 @@ function RecruiterFormFields({
           <Input
             id="company_name"
             value={formData.company_name}
-            onChange={(e) => onInputChange('company_name', e.target.value)}
+            onChange={e => onInputChange("company_name", e.target.value)}
             data-testid="input-company-name"
           />
         </div>
@@ -578,7 +632,7 @@ function RecruiterFormFields({
           <Input
             id="contact_name"
             value={formData.contact_name}
-            onChange={(e) => onInputChange('contact_name', e.target.value)}
+            onChange={e => onInputChange("contact_name", e.target.value)}
             data-testid="input-contact-name"
           />
         </div>
@@ -587,7 +641,10 @@ function RecruiterFormFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="company_type">Company Type</Label>
-          <Select value={formData.company_type} onValueChange={(value) => onInputChange('company_type', value)}>
+          <Select
+            value={formData.company_type}
+            onValueChange={value => onInputChange("company_type", value)}
+          >
             <SelectTrigger data-testid="select-company-type">
               <SelectValue placeholder="Select company type" />
             </SelectTrigger>
@@ -596,7 +653,9 @@ function RecruiterFormFields({
               <SelectItem value="agency">Agency</SelectItem>
               <SelectItem value="av_supplier">AV Supplier</SelectItem>
               <SelectItem value="venue">Venue</SelectItem>
-              <SelectItem value="exhibition_trade_show_organiser">Exhibition & Trade Show Organiser</SelectItem>
+              <SelectItem value="exhibition_trade_show_organiser">
+                Exhibition & Trade Show Organiser
+              </SelectItem>
               <SelectItem value="entertainment_agency">Entertainment Agency</SelectItem>
             </SelectContent>
           </Select>
@@ -618,7 +677,7 @@ function RecruiterFormFields({
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => onInputChange('description', e.target.value)}
+          onChange={e => onInputChange("description", e.target.value)}
           placeholder="Tell us about your company..."
           rows={3}
           data-testid="textarea-description"
@@ -632,7 +691,7 @@ function RecruiterFormFields({
             id="website_url"
             type="url"
             value={formData.website_url}
-            onChange={(e) => onInputChange('website_url', e.target.value)}
+            onChange={e => onInputChange("website_url", e.target.value)}
             placeholder="https://yourcompany.com"
             data-testid="input-website-url"
           />
@@ -643,7 +702,7 @@ function RecruiterFormFields({
             id="linkedin_url"
             type="url"
             value={formData.linkedin_url}
-            onChange={(e) => onInputChange('linkedin_url', e.target.value)}
+            onChange={e => onInputChange("linkedin_url", e.target.value)}
             placeholder="https://linkedin.com/company/yourcompany"
             data-testid="input-linkedin-url"
           />
@@ -654,7 +713,7 @@ function RecruiterFormFields({
         <ImageUpload
           label="Company Logo"
           value={formData.company_logo_url}
-          onChange={(url: string) => onInputChange('company_logo_url', url)}
+          onChange={(url: string) => onInputChange("company_logo_url", url)}
           shape="circle"
         />
       </div>

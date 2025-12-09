@@ -3,7 +3,7 @@ export interface User {
   id: number;
   email: string;
   password?: string | null;
-  role: 'freelancer' | 'recruiter' | 'admin';
+  role: "freelancer" | "recruiter" | "admin";
   first_name: string | null;
   last_name: string | null;
   email_verified: boolean;
@@ -11,12 +11,12 @@ export interface User {
   email_verification_expires?: Date | null;
   password_reset_token?: string | null;
   password_reset_expires?: Date | null;
-  auth_provider?: 'email' | 'google' | 'facebook' | 'linkedin';
+  auth_provider?: "email" | "google" | "facebook" | "linkedin";
   google_id?: string | null;
   facebook_id?: string | null;
   linkedin_id?: string | null;
   profile_photo_url?: string | null;
-  last_login_method?: 'email' | 'google' | 'facebook' | 'linkedin';
+  last_login_method?: "email" | "google" | "facebook" | "linkedin";
   last_login_at?: Date | null;
   created_at: string | Date;
   updated_at: string | Date;
@@ -35,7 +35,7 @@ export interface FreelancerProfile {
   portfolio_url?: string;
   linkedin_url?: string;
   website_url?: string;
-  availability_status: 'available' | 'busy' | 'unavailable';
+  availability_status: "available" | "busy" | "unavailable";
   profile_photo_url?: string;
   cv_file_name?: string;
   cv_file_type?: string;
@@ -69,7 +69,15 @@ export interface Job {
   type: string;
   rate: string;
   description: string;
-  status: 'active' | 'paused' | 'closed';
+  event_date: string;
+  end_date?: string;
+  // Job duration fields
+  duration_type?: "time" | "days" | "hours" | null;
+  start_time?: string;
+  end_time?: string;
+  days?: number;
+  hours?: number;
+  status: "active" | "paused" | "closed";
   external_id?: string;
   external_source?: string;
   external_url?: string;
@@ -82,7 +90,7 @@ export interface JobApplication {
   id: number;
   job_id: number;
   freelancer_id: number;
-  status: 'applied' | 'pending' | 'reviewed' | 'rejected' | 'hired';
+  status: "applied" | "pending" | "reviewed" | "rejected" | "hired";
   cover_letter?: string;
   rejection_message?: string;
   applied_at: string;
@@ -90,6 +98,7 @@ export interface JobApplication {
   freelancer_profile?: FreelancerProfile;
   job_title?: string;
   job_company?: string;
+  recruiter_id?: number | null;
 }
 
 export interface Message {
@@ -120,7 +129,7 @@ export interface FreelancerFormData {
   portfolio_url: string;
   linkedin_url: string;
   website_url: string;
-  availability_status: 'available' | 'busy' | 'unavailable';
+  availability_status: "available" | "busy" | "unavailable";
   profile_photo_url: string;
 }
 
@@ -138,9 +147,11 @@ export interface RecruiterFormData {
 export interface JobFormData {
   title: string;
   type: string;
-  contract_type?: string;
   location: string;
   rate: string;
   description: string;
-  event_date: string;
+  event_date: string; // Start date (mandatory)
+  end_date?: string; // End date (optional)
+  start_time?: string; // Start time (optional)
+  end_time?: string; // End time (optional)
 }

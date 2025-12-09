@@ -1,15 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  MapPin, 
-  Clock, 
-  Coins, 
-  Calendar,
-  Building,
-  Users,
-  ArrowRight 
-} from "lucide-react";
+import { MapPin, Clock, Coins, Calendar, Building, Users, ArrowRight } from "lucide-react";
 
 const featuredJobs = [
   {
@@ -24,7 +16,7 @@ const featuredJobs = [
     date: "Dec 15-17, 2024",
     skills: ["Audio Mixing", "Live Sound", "Pro Tools", "Dante"],
     urgent: false,
-    description: "Leading audio engineer needed for high-profile tech conference at ExCeL London."
+    description: "Leading audio engineer needed for high-profile tech conference at ExCeL London.",
   },
   {
     id: 2,
@@ -38,7 +30,7 @@ const featuredJobs = [
     date: "Dec 20-21, 2024",
     skills: ["LED Systems", "Moving Lights", "grandMA2"],
     urgent: true,
-    description: "Experienced lighting tech for corporate awards ceremony at Manchester Central."
+    description: "Experienced lighting tech for corporate awards ceremony at Manchester Central.",
   },
   {
     id: 3,
@@ -52,7 +44,7 @@ const featuredJobs = [
     date: "Jan 8, 2025",
     skills: ["Video Switching", "Projection", "IMAG"],
     urgent: false,
-    description: "Multi-camera video production for executive meeting and live streaming."
+    description: "Multi-camera video production for executive meeting and live streaming.",
   },
   {
     id: 4,
@@ -66,8 +58,8 @@ const featuredJobs = [
     date: "Jan 15-19, 2025",
     skills: ["Project Management", "Client Relations", "Budget Management"],
     urgent: false,
-    description: "Lead technical production for international pharmaceutical conference."
-  }
+    description: "Lead technical production for international pharmaceutical conference.",
+  },
 ];
 
 export const JobListings = () => {
@@ -88,8 +80,11 @@ export const JobListings = () => {
 
         {/* Jobs Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {featuredJobs.map((job) => (
-            <Card key={job.id} className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+          {featuredJobs.map(job => (
+            <Card
+              key={job.id}
+              className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">

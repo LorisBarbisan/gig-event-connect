@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export interface Rating {
   id: number;
@@ -25,7 +25,7 @@ export interface AverageRating {
 
 export function useFreelancerRatings(freelancerId: number) {
   return useQuery({
-    queryKey: ['/api/ratings/freelancer', freelancerId],
+    queryKey: ["/api/ratings/freelancer", freelancerId],
     queryFn: async (): Promise<Rating[]> => {
       const response = await apiRequest(`/api/ratings/freelancer/${freelancerId}`);
       return response;
@@ -36,7 +36,7 @@ export function useFreelancerRatings(freelancerId: number) {
 
 export function useFreelancerAverageRating(freelancerId: number) {
   return useQuery({
-    queryKey: ['/api/ratings/freelancer', freelancerId, 'average'],
+    queryKey: ["/api/ratings/freelancer", freelancerId, "average"],
     queryFn: async (): Promise<AverageRating> => {
       const response = await apiRequest(`/api/ratings/freelancer/${freelancerId}/average`);
       return response;

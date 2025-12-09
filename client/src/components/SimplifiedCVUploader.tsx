@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Upload, FileText, Download, Trash2, CheckCircle } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Upload, FileText, Download, Trash2, CheckCircle } from "lucide-react";
 
 interface CVUploaderProps {
   userId: number;
@@ -13,7 +13,7 @@ interface CVUploaderProps {
     fileSize?: number;
     fileUrl?: string;
   };
-  onUploadComplete?: () => void;
+  onUploadComplete?: (updatedProfile?: any) => void;
 }
 
 export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CVUploaderProps) {
@@ -26,11 +26,11 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
     if (!file) return;
 
     // Validate file type
-    if (file.type !== 'application/pdf') {
+    if (file.type !== "application/pdf") {
       toast({
-        title: 'Invalid file type',
-        description: 'Please upload a PDF file.',
-        variant: 'destructive',
+        title: "Invalid file type",
+        description: "Please upload a PDF file.",
+        variant: "destructive",
       });
       return;
     }
@@ -38,86 +38,101 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: 'File too large',
-        description: 'File size must be less than 5MB.',
-        variant: 'destructive',
+        title: "File too large",
+        description: "File size must be less than 5MB.",
+        variant: "destructive",
       });
       return;
     }
 
     setIsUploading(true);
     try {
-      // Get upload URL
-      const { uploadURL } = await apiRequest('/api/cv/upload-url', {
-        method: 'POST',
+      console.log("📤 Starting CV upload:", file.name, file.type, file.size);
+
+      // Convert file to base64
+      console.log("Step 1: Converting file to base64...");
+      const fileData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(",")[1]; // Remove data:application/pdf;base64, prefix
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
+      console.log("✅ Step 1: File converted to base64");
 
-      // Upload file directly to cloud storage
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      // Save CV metadata
-      await apiRequest('/api/cv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Upload file to backend (backend handles upload to storage)
+      console.log("Step 2: Uploading to server...");
+      const response = await apiRequest("/api/cv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
-          fileName: file.name,
-          fileType: file.type,
+          fileData,
+          filename: file.name,
           fileSize: file.size,
-          fileUrl: uploadURL.split('?')[0], // Remove query parameters
+          contentType: file.type,
         }),
       });
+      console.log("✅ Step 2: File uploaded, response:", response);
 
       toast({
-        title: 'CV uploaded successfully',
-        description: 'Your CV has been uploaded and saved.',
+        title: "CV uploaded successfully",
+        description: "Your CV has been uploaded and saved.",
       });
 
-      onUploadComplete?.();
+      // Wait for the callback to complete with the response profile
+      if (onUploadComplete) {
+        await onUploadComplete(response.profile);
+      }
     } catch (error) {
-      console.error('CV upload error:', error);
+      console.error("❌ CV upload error:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+
+      // Extract detailed error message
+      let errorMessage = "Failed to upload CV. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      } else if (typeof error === "object" && error !== null && "error" in error) {
+        errorMessage = String((error as any).error);
+      }
+
       toast({
-        title: 'Upload failed',
-        description: 'Failed to upload CV. Please try again.',
-        variant: 'destructive',
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
       // Reset file input
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await apiRequest('/api/cv', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+      const response = await apiRequest("/api/cv", {
+        method: "DELETE",
       });
 
       toast({
-        title: 'CV deleted',
-        description: 'Your CV has been removed.',
+        title: "CV deleted",
+        description: "Your CV has been removed.",
       });
 
-      onUploadComplete?.();
+      // Wait for the callback to complete with the response profile
+      if (onUploadComplete) {
+        await onUploadComplete(response.profile);
+      }
     } catch (error) {
       toast({
-        title: 'Delete failed',
-        description: 'Failed to delete CV. Please try again.',
-        variant: 'destructive',
+        title: "Delete failed",
+        description: "Failed to delete CV. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
@@ -125,11 +140,11 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
+    const sizes = ["Bytes", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -165,7 +180,34 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(currentCV.fileUrl, '_blank')}
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem("auth_token");
+                        const response = await fetch(`/api/cv/download/${userId}`, {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        });
+                        if (response.ok) {
+                          const data = await response.json();
+                          if (data.downloadUrl) {
+                            window.open(data.downloadUrl, "_blank");
+                          }
+                        } else {
+                          toast({
+                            title: "Download failed",
+                            description: "Failed to download CV. Please try again.",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Download failed",
+                          description: "Failed to download CV. Please try again.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                     data-testid="button-download-cv"
                   >
                     <Download className="w-4 h-4 mr-1" />
@@ -180,18 +222,18 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
                   data-testid="button-delete-cv"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
               </div>
             </div>
-            
+
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">Want to upload a new CV?</p>
               <label htmlFor="cv-file-replace">
                 <Button variant="outline" disabled={isUploading} asChild>
                   <span>
                     <Upload className="w-4 h-4 mr-2" />
-                    {isUploading ? 'Uploading...' : 'Replace CV'}
+                    {isUploading ? "Uploading..." : "Replace CV"}
                   </span>
                 </Button>
               </label>
@@ -222,7 +264,7 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
               <Button disabled={isUploading} asChild>
                 <span>
                   <Upload className="w-4 h-4 mr-2" />
-                  {isUploading ? 'Uploading...' : 'Upload CV'}
+                  {isUploading ? "Uploading..." : "Upload CV"}
                 </span>
               </Button>
             </label>
@@ -235,7 +277,7 @@ export function SimplifiedCVUploader({ userId, currentCV, onUploadComplete }: CV
               disabled={isUploading}
               data-testid="input-cv-file-upload"
             />
-            
+
             <div className="mt-4 text-xs text-muted-foreground">
               <p>Accepted format: PDF</p>
               <p>Maximum size: 5MB</p>

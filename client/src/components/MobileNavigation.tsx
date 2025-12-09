@@ -1,7 +1,7 @@
-import { MessageSquare } from "lucide-react";
-import { Link, useLocation } from "wouter";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { EventLinkLogo } from "@/components/Logo";
+import { useAuth } from "@/hooks/useAuth";
+import { MessageSquare, Plus } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 interface MobileNavigationProps {
   onFeedbackClick: () => void;
@@ -9,7 +9,7 @@ interface MobileNavigationProps {
 
 export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => {
   const [, setLocation] = useLocation();
-  const { user, signOut } = useOptimizedAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full">
@@ -18,7 +18,7 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
         <EventLinkLogo size={40} />
         <span className="text-xl font-bold">EventLink</span>
       </div>
-      
+
       {/* User info if logged in */}
       {user && (
         <div className="py-4 border-b">
@@ -26,21 +26,29 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
           <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
         </div>
       )}
-      
+
       {/* Navigation */}
       <nav className="flex flex-col space-y-4 mt-8">
-        <Link to="/jobs" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-jobs">
+        <Link
+          to="/jobs"
+          className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+          data-testid="mobile-link-jobs"
+        >
           Find Jobs
         </Link>
-        <Link to="/freelancers" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-freelancers">
+        <Link
+          to="/freelancers"
+          className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+          data-testid="mobile-link-freelancers"
+        >
           Find Crew
         </Link>
-        <button 
+        <button
           onClick={() => {
             if (user) {
-              setLocation('/dashboard');
+              setLocation("/dashboard");
             } else {
-              setLocation('/auth');
+              setLocation("/auth");
             }
           }}
           className="text-left text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
@@ -48,7 +56,7 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
         >
           Dashboard
         </button>
-        <button 
+        <button
           onClick={onFeedbackClick}
           className="text-left text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted flex items-center gap-2"
           data-testid="mobile-button-feedback"
@@ -56,21 +64,45 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
           <MessageSquare className="w-4 h-4" />
           Feedback
         </button>
-        
+
+        {/* Post New Job button - only for recruiters */}
+        {user?.role === "recruiter" && (
+          <button
+            onClick={() => setLocation("/dashboard?tab=jobs&action=post")}
+            className="text-left bg-gradient-primary text-white py-3 px-4 rounded-md hover:bg-gradient-primary/90 transition-colors flex items-center gap-2 font-medium"
+            data-testid="mobile-button-post-job"
+          >
+            <Plus className="w-4 h-4" />
+            Post New Job
+          </button>
+        )}
+
         {user ? (
           <>
-            <Link to="/profile" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-profile">
+            <Link
+              to="/profile"
+              className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+              data-testid="mobile-link-profile"
+            >
               Profile
             </Link>
-            <Link to="/settings" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-settings">
+            <Link
+              to="/settings"
+              className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+              data-testid="mobile-link-settings"
+            >
               Settings
             </Link>
-            {user.role === 'admin' && (
-              <Link to="/admin" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-admin">
+            {user.role === "admin" && (
+              <Link
+                to="/admin"
+                className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+                data-testid="mobile-link-admin"
+              >
                 Admin Dashboard
               </Link>
             )}
-            <button 
+            <button
               onClick={signOut}
               className="text-left text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted mt-4"
               data-testid="mobile-button-signout"
@@ -80,10 +112,18 @@ export const MobileNavigation = ({ onFeedbackClick }: MobileNavigationProps) => 
           </>
         ) : (
           <>
-            <Link to="/auth" className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted" data-testid="mobile-link-signin">
+            <Link
+              to="/auth"
+              className="text-foreground hover:text-primary transition-colors py-2 px-4 rounded-md hover:bg-muted"
+              data-testid="mobile-link-signin"
+            >
               Sign In
             </Link>
-            <Link to="/auth?tab=signup" className="bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-hover transition-colors" data-testid="mobile-link-signup">
+            <Link
+              to="/auth?tab=signup"
+              className="bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-hover transition-colors"
+              data-testid="mobile-link-signup"
+            >
               Get Started
             </Link>
           </>

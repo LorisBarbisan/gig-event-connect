@@ -7,13 +7,15 @@ This guide explains how to customize and refine the jobs fetched from Reed and A
 The easiest way to refine your job searches is to use the built-in presets:
 
 ### Available Presets
+
 - **Audio**: Sound engineers, audio technicians, live sound mixing roles
-- **Lighting**: Lighting technicians, designers, LED and stage lighting work  
+- **Lighting**: Lighting technicians, designers, LED and stage lighting work
 - **Video**: Video technicians, AV engineers, projection and broadcast roles
 - **High Paying**: Contract positions with £40k+ minimum salary
 - **London**: Jobs specifically in the London area
 
 ### Using Presets via API
+
 ```bash
 # Sync jobs with audio preset
 curl -X POST http://localhost:5000/api/jobs/sync-preset/audio
@@ -74,40 +76,46 @@ general: {
 ## Effective Search Keywords
 
 ### Events Industry Keywords
+
 - **Audio**: `sound engineer`, `audio technician`, `live sound`, `mixing`, `PA system`, `microphone`
 - **Lighting**: `lighting technician`, `lighting designer`, `LED`, `moving lights`, `stage lighting`
 - **Video/AV**: `video technician`, `AV engineer`, `projection`, `LED screen`, `camera operator`, `broadcast`
 - **General**: `events`, `technical crew`, `stage`, `production`, `venue`, `concert`, `conference`
 
 ### Combining Keywords
+
 Use specific terms for better results:
+
 ```typescript
 // Good - specific terms
-keywords: 'live sound engineer mixing console events'
+keywords: "live sound engineer mixing console events";
 
 // Better - industry-specific terms
-keywords: 'sound engineer live events PA system mixing FOH'
+keywords: "sound engineer live events PA system mixing FOH";
 
 // Best - multiple related terms
-keywords: 'audio technician sound engineer live events mixing console PA system microphone setup'
+keywords: "audio technician sound engineer live events mixing console PA system microphone setup";
 ```
 
 ## Location Targeting
 
 ### Reed API Locations
+
 - `UK` - All of United Kingdom
 - `London` - London area only
-- `Manchester` - Manchester area only  
+- `Manchester` - Manchester area only
 - `Birmingham` - Birmingham area only
 - Can use any UK city/region name
 
 ### Adzuna API Locations
+
 - Country codes: `gb` (UK), `us` (USA), `au` (Australia), `ca` (Canada)
 - Specific locations: `London`, `Manchester`, `Edinburgh`, etc.
 
 ## Salary Filtering
 
 ### Setting Salary Ranges
+
 ```typescript
 // Reed API (annual salary in GBP)
 minimumSalary: 25000,
@@ -119,6 +127,7 @@ salary_max: 60000,
 ```
 
 ### Salary Guidelines by Role
+
 - **Junior Technician**: £18,000 - £25,000
 - **Experienced Technician**: £25,000 - £35,000
 - **Senior/Lead Tech**: £35,000 - £50,000
@@ -128,12 +137,14 @@ salary_max: 60000,
 ## Employment Type Filtering
 
 ### Reed API Options
+
 - `permanent` - Full-time permanent roles
 - `contract` - Fixed-term contracts
 - `temp` - Temporary positions
 - `parttime` - Part-time work
 
-### Adzuna API Options  
+### Adzuna API Options
+
 - `permanent` - Permanent full-time
 - `contract` - Contract work
 - `part_time` - Part-time positions
@@ -147,35 +158,35 @@ You can also send custom configurations via API:
 // Custom configuration example
 const customConfig = {
   reed: {
-    keywords: 'sound engineer live events',
-    location: 'London',
+    keywords: "sound engineer live events",
+    location: "London",
     options: {
       resultsToTake: 30,
       minimumSalary: 30000,
-      employmentType: 'contract'
-    }
+      employmentType: "contract",
+    },
   },
   adzuna: {
-    keywords: 'sound engineer live events',
-    country: 'gb',
+    keywords: "sound engineer live events",
+    country: "gb",
     options: {
-      location: 'London',
+      location: "London",
       salary_min: 30000,
       results_per_page: 30,
-      contract_type: 'contract'
-    }
+      contract_type: "contract",
+    },
   },
   general: {
     maxTotalJobs: 40,
-    enableDeduplication: true
-  }
+    enableDeduplication: true,
+  },
 };
 
 // Send to sync endpoint
-fetch('/api/jobs/sync-external', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ config: customConfig })
+fetch("/api/jobs/sync-external", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ config: customConfig }),
 });
 ```
 
@@ -194,12 +205,14 @@ fetch('/api/jobs/sync-external', {
 ## Troubleshooting
 
 ### No Results Returned
+
 - Check if keywords are too specific
 - Try broader location settings (e.g., 'UK' instead of specific city)
 - Remove salary filters temporarily
 - Verify API keys are configured correctly
 
 ### Too Many Irrelevant Results
+
 - Use more specific keywords
 - Add employment type filters
 - Set appropriate salary ranges
@@ -207,6 +220,7 @@ fetch('/api/jobs/sync-external', {
 - Reduce `maxTotalJobs` limit
 
 ### Duplicate Jobs
+
 - Ensure `enableDeduplication: true` in general settings
 - Check if same jobs are coming from both Reed and Adzuna
 - Consider filtering by `postedByRecruitmentAgency: false` to reduce agency duplicates
@@ -214,6 +228,7 @@ fetch('/api/jobs/sync-external', {
 ## Example Configurations
 
 ### High-End Audio Engineering Jobs
+
 ```typescript
 {
   reed: {
@@ -229,6 +244,7 @@ fetch('/api/jobs/sync-external', {
 ```
 
 ### London Contract Lighting Work
+
 ```typescript
 {
   reed: {
@@ -244,6 +260,7 @@ fetch('/api/jobs/sync-external', {
 ```
 
 ### Entry-Level AV Positions
+
 ```typescript
 {
   adzuna: {

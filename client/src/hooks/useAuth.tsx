@@ -1,202 +1,187 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { apiRequest } from '@/lib/queryClient';
-import { User } from '@shared/schema';
+import { apiRequest } from "@/lib/queryClient";
+import type { User } from "@shared/types";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+// OPTIMIZED AUTH HOOK: Simplified authentication with essential features only
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: 'freelancer' | 'recruiter') => Promise<{ error: any; message?: string; emailSent?: boolean; devVerificationUrl?: string }>;
-  signIn: (email: string, password: string) => Promise<{ error: any; user?: any }>;
-  signOut: () => Promise<{ error: any }>;
-  resendVerificationEmail: (email: string) => Promise<{ error: any; message?: string }>;
-  refreshUser: () => Promise<void>;
-  clearAllCache: () => void;
+  signUp: (
+    email: string,
+    password: string,
+    role: "freelancer" | "recruiter"
+  ) => Promise<{ error: any; message?: string }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const OptimizedAuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // AGGRESSIVE CACHE CLEARING: First, immediately clear any existing auth state
-    const clearAuthState = () => {
-      setUser(null);
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
-    };
-
-    // Check for stored user session and validate it against the server
-    const validateStoredUser = async () => {
-      // Check if this is a fresh deployment by looking for a version mismatch
-      const APP_VERSION = "2025-08-28-auth-fix-v2"; // Change this when we need to force clear cache
-      const storedVersion = localStorage.getItem('app_version');
-      
-      if (storedVersion !== APP_VERSION) {
-        console.log('App version mismatch detected');
-        // Only clear if there's no fresh user data (to avoid clearing fresh logins)
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-          console.log('No user data found, clearing all cache');
-          localStorage.clear();
-          sessionStorage.clear();
-        }
-        localStorage.setItem('app_version', APP_VERSION);
+    const restoreStoredUser = () => {
+      // Check if we already have a valid user to prevent infinite loops
+      if (user) {
+        setLoading(false);
+        return;
       }
-      
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+
+      // Version-based cache clearing - COMPLETELY DISABLED for session persistence
+      const APP_VERSION = "2025-09-24-jwt-fixed";
+      const storedVersion = localStorage.getItem("app_version");
+
+      // Only update version, never clear cache to preserve sessions
+      if (storedVersion !== APP_VERSION) {
+        console.log("App version updated, preserving authentication state");
+        localStorage.setItem("app_version", APP_VERSION);
+      }
+
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("auth_token");
+
+      if (storedUser && storedToken) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          console.log('Attempting to validate cached user:', parsedUser.id);
-          
-          // For fresh logins, trust the stored user data without validation
-          // Only validate if the data is old (more than 5 minutes)
-          const now = Date.now();
-          const userTimestamp = parsedUser.timestamp || 0;
-          const isRecentLogin = (now - userTimestamp) < 5 * 60 * 1000; // 5 minutes
-          
-          if (isRecentLogin) {
-            console.log('Recent login detected, trusting stored user data');
-            setUser(parsedUser);
-          } else {
-            // For older sessions, validate with server and UPDATE user data
-            try {
-              const response = await apiRequest(`/api/users/${parsedUser.id}`);
-              if (response && response.id && response.email && response.id == parsedUser.id) {
-                console.log('User validation successful, updating with fresh data from server');
-                console.log('Server user role:', response.role, 'Cached user role:', parsedUser.role);
-                const freshUserWithTimestamp = {
-                  ...response,
-                  timestamp: Date.now()
-                };
-                setUser(freshUserWithTimestamp);
-                localStorage.setItem('user', JSON.stringify(freshUserWithTimestamp));
+          // CRITICAL FIX: Validate token with server before trusting it
+          apiRequest("/api/auth/session", { skipAuthRedirect: true })
+            .then(sessionData => {
+              if (sessionData && sessionData.user) {
+                // Token is valid, use fresh data from server
+                setUser(sessionData.user);
+                localStorage.setItem("user", JSON.stringify(sessionData.user));
+                console.log("✅ Token validated, user restored:", {
+                  email: sessionData.user.email,
+                  id: sessionData.user.id,
+                  role: sessionData.user.role,
+                });
               } else {
-                console.log('Invalid user validation response, clearing cache');
-                clearAuthState();
+                throw new Error("Invalid session response");
               }
-            } catch (error) {
-              // For validation errors, be more tolerant - keep user for short term
-              console.log('User validation failed, but keeping user for this session:', error);
-              setUser(parsedUser);
-            }
-          }
+              setLoading(false);
+            })
+            .catch(error => {
+              console.log("❌ Token validation failed, clearing auth state:", error.message);
+              localStorage.removeItem("user");
+              localStorage.removeItem("auth_token");
+              setUser(null);
+              setLoading(false);
+            });
+
+          return; // Exit early, let validation complete async
         } catch (error) {
-          console.log('Error parsing cached user, clearing cache:', error);
-          clearAuthState();
+          console.log("❌ Failed to parse stored user, clearing cache", error);
+          localStorage.removeItem("user");
+          localStorage.removeItem("auth_token");
+          setUser(null);
         }
+      } else {
+        // No cached user or token - ensure clean state
+        setUser(null);
       }
       setLoading(false);
     };
-    
-    validateStoredUser();
+
+    restoreStoredUser();
+  }, []); // Remove user dependency to prevent infinite loops
+
+  // Listen for auth:invalid events and handle logout
+  useEffect(() => {
+    const handleAuthInvalid = () => {
+      console.log("🔄 Invalid session detected, clearing authentication");
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("auth_token");
+      sessionStorage.clear();
+
+      // Navigate to auth page if not already there
+      if (window.location.pathname !== "/auth") {
+        window.location.href = "/auth";
+      }
+    };
+
+    window.addEventListener("auth:invalid", handleAuthInvalid);
+
+    return () => {
+      window.removeEventListener("auth:invalid", handleAuthInvalid);
+    };
   }, []);
 
-  const signUp = async (email: string, password: string, role: 'freelancer' | 'recruiter') => {
+  const signUp = async (email: string, password: string, role: "freelancer" | "recruiter") => {
     try {
-      const result = await apiRequest('/api/auth/signup', {
-        method: 'POST',
+      const result = await apiRequest("/api/auth/signup", {
+        method: "POST",
         body: JSON.stringify({ email, password, role }),
       });
-      // New signup flow returns message instead of user
-      return { error: null, message: result.message, emailSent: result.emailSent, devVerificationUrl: result.devVerificationUrl };
+      return { error: null, message: result.message };
     } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Signup failed' } };
+      return { error: { message: error instanceof Error ? error.message : "Signup failed" } };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const result = await apiRequest('/api/auth/signin', {
-        method: 'POST',
+      const result = await apiRequest("/api/auth/signin", {
+        method: "POST",
         body: JSON.stringify({ email, password }),
+        skipAuthRedirect: true,
       });
-      
-      // Add timestamp for fresh login detection
-      const userWithTimestamp = {
-        ...result.user,
-        timestamp: Date.now()
-      };
-      
-      setUser(userWithTimestamp);
-      localStorage.setItem('user', JSON.stringify(userWithTimestamp));
-      return { error: null, user: userWithTimestamp };
+
+      // Store JWT token and user data from signin response
+      if (result && result.user && result.token) {
+        localStorage.setItem("auth_token", result.token);
+        setUser(result.user);
+        localStorage.setItem("user", JSON.stringify(result.user));
+      }
+
+      return { error: null };
     } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Sign in failed' } };
+      return { error: { message: error instanceof Error ? error.message : "Sign in failed" } };
     }
   };
 
   const signOut = async () => {
+    try {
+      // Call server signout to clear session
+      await apiRequest("/api/auth/signout", { method: "POST" });
+    } catch (error) {
+      console.log("Server signout failed, clearing local state anyway", error);
+    }
+
     setUser(null);
-    localStorage.removeItem('user');
-    return { error: null };
-  };
-
-  const resendVerificationEmail = async (email: string) => {
-    try {
-      const result = await apiRequest('/api/auth/resend-verification', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      });
-      return { error: null, message: result.message };
-    } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Failed to resend verification email' } };
-    }
-  };
-
-  const refreshUser = async () => {
-    if (!user?.id) return;
-    
-    try {
-      console.log('Refreshing user data from server...');
-      const response = await apiRequest(`/api/users/${user.id}`);
-      if (response && response.id && response.email) {
-        const userWithTimestamp = {
-          ...response,
-          timestamp: Date.now()
-        };
-        setUser(userWithTimestamp);
-        localStorage.setItem('user', JSON.stringify(userWithTimestamp));
-        console.log('User data refreshed successfully');
-      }
-    } catch (error) {
-      console.error('Failed to refresh user data:', error);
-    }
-  };
-
-  const clearAllCache = () => {
-    // Clear all localStorage data for this application
-    localStorage.clear();
-    // Clear any sessionStorage as well
+    localStorage.removeItem("user");
+    localStorage.removeItem("auth_token"); // Clear JWT token
     sessionStorage.clear();
-    // Reset user state
-    setUser(null);
-    // Force reload to ensure clean state
-    window.location.reload();
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      signUp,
-      signIn,
-      signOut,
-      resendVerificationEmail,
-      refreshUser,
-      clearAllCache
-    }}>
+    <OptimizedAuthContext.Provider
+      value={{
+        user,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        updateUser,
+      }}
+    >
       {children}
-    </AuthContext.Provider>
+    </OptimizedAuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = useContext(OptimizedAuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

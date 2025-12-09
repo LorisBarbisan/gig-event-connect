@@ -1,64 +1,51 @@
-# EventLink - Replit Migration
+# EventLink - Freelance Marketplace
 
 ## Overview
-EventLink is a freelance marketplace platform specifically designed for the events industry. It connects event professionals (freelancers) with recruiters/companies seeking skilled crew members. The platform aims to streamline the hiring process for event staff, offering detailed profiles, job posting capabilities, and integrated communication tools.
+
+EventLink is a freelance marketplace platform tailored for the events industry, connecting event professionals (freelancers) with recruiters and companies. Its primary purpose is to streamline the hiring process for event staff by providing detailed profiles, job posting capabilities, and integrated communication tools. The platform aims to be a leading solution for event staffing needs.
 
 ## User Preferences
+
 - Security-focused development with proper client/server separation
 - Modern web application patterns with backend handling data persistence
 - Minimal file structure with consolidated components where appropriate
 - Maximum system efficiency and performance optimization
 
 ## System Architecture
-The EventLink platform utilizes a modern web application stack with recent optimization improvements.
 
-### Current Production System
-- **Frontend**: React and TypeScript with Wouter routing, Tailwind CSS and shadcn/ui components
-- **Backend**: Express.js and TypeScript with comprehensive API layer
-- **Database**: PostgreSQL with Drizzle ORM (8 tables: users, freelancer_profiles, recruiter_profiles, jobs, job_applications, conversations, messages, notifications)
-- **Authentication**: Custom session management with localStorage persistence and email verification via SendGrid
+The EventLink platform utilizes a modern web application stack designed for efficiency and performance.
 
-### Optimized System Architecture (August 27, 2025)
-Created comprehensive system optimization with significantly improved efficiency:
+### UI/UX Decisions
 
-- **Optimized Database Schema** (`shared/schema-optimized.ts`): Unified profiles table, simplified messaging, streamlined jobs, efficient notifications
-- **Optimized Backend** (`server/storage-optimized.ts`, `server/routes-optimized.ts`): Simplified API endpoints, unified interface, better performance
-- **Optimized Frontend** (`client/src/hooks/useOptimizedAuth.tsx`): Version-based cache clearing, streamlined authentication, eliminated race conditions
+- **Styling**: Tailwind CSS for utility-first styling.
+- **Components**: shadcn/ui for consistent and accessible UI components.
+- **Responsive Design**: Mobile-first approach with responsive breakpoints. Dashboards use 2-column tab layout on mobile (expanding to 4 columns on larger screens), card layouts stack vertically on mobile with full-width buttons, and flexible grid systems adapt from single column on mobile to multi-column on desktop.
 
-### Performance Improvements
-- **60% reduction** in database complexity through table unification
-- **50% reduction** in API endpoint complexity
-- **25-40% faster** API response times expected
-- **Elimination** of authentication race conditions that caused deployment issues
+### Technical Implementations
 
-## Recent Changes (August 27, 2025)
-- ✅ Resolved authentication race conditions causing blank pages on deployment
-- ✅ Fixed "Get Started" button to open signup form instead of signin form  
-- ✅ Implemented version-based cache clearing to prevent deployment authentication issues
-- ✅ Corrected email verification message to only show for unverified users
-- ✅ Completed comprehensive system optimization with simplified database schema
-- ✅ Created optimized storage layer with unified interface
-- ✅ Built optimized routing structure with consistent API patterns
-- ✅ Developed system migration strategy and performance benchmarks
-- ✅ **DEFINITIVE USER DATA CLEANUP**: Implemented nuclear cleanup utility that completely eliminates all user traces
-- ✅ Fixed email verification SSL issues by disabling SendGrid click tracking
-- ✅ Updated favicon to use authentic E8 logo instead of generic placeholder
-- ✅ Corrected all spelling to consistent "EventLink" branding throughout platform
-- ✅ **DEPLOYMENT FIXES**: Added health check endpoints and removed startup cleanup to prevent deployment failures
+- **Frontend**: React and TypeScript with Wouter for client-side routing.
+- **Backend**: Express.js and TypeScript, providing a comprehensive API layer.
+- **Database**: PostgreSQL with Drizzle ORM. The schema has been optimized to unify profile tables, simplify messaging, streamline job handling, and improve notification efficiency.
+- **Authentication**: Custom session management with `localStorage` persistence, requiring email verification. Robust server-side validation and cache clearing mechanisms are implemented to prevent authentication race conditions and ensure immediate password reset/change efficacy. Social login (Google, Facebook, LinkedIn) UI has been removed from sign-in and sign-up pages - authentication is email/password only.
+- **Messaging System**: Refactored to a production-ready fetch-first pattern using React Query for messages, ensuring atomic operations via database transactions and eliminating race conditions. WebSocket integration provides real-time updates.
+- **Real-Time WebSocket System**: Centralized WebSocket architecture with single shared connection managed by WebSocketProvider. Features include automatic reconnection, message deduplication, connection state management, and subscriber pattern for component-level event handling. WebSocket service layer (`websocketService.ts`) handles all broadcast operations, maintaining separation from storage layer. Supports real-time events for messages, notifications, and badge count updates.
 
-## Recent Changes (September 13, 2025)
-- ✅ **ADMIN DASHBOARD MENU FIX**: Resolved admin dashboard menu not appearing in production by implementing server-side admin email allowlist
-- ✅ **SAVE JOB BUTTONS REMOVAL**: Successfully removed "Save Job" buttons from all job listings as requested
-- ✅ **PRODUCTION DEPLOYMENT PIPELINE**: Fixed critical issue where changes weren't reflecting in production due to development vs production environment confusion
+### Feature Specifications
 
-## Authentication System
-- **Production**: Custom session management with aggressive cache clearing, email verification required
-- **Email Service**: SendGrid integration for verification emails
-- **Security**: Server-side validation, proper error handling, protection against authentication race conditions
+- **Optimized Database Schema**: Significant reduction in database complexity through table unification and streamlined data models. Indexes added on freelancer_profiles(title, location, availability_status) for search performance.
+- **Optimized Backend**: Simplified API endpoints and a unified interface for improved performance.
+- **Optimized Frontend**: Streamlined authentication and version-based cache clearing to prevent deployment issues.
+- **Job Management**: Simplified job posting form focused on "gig" type jobs, including mandatory start dates and optional end dates/times.
+- **Application Management**: Enhanced display of job applications for both freelancers and recruiters, ensuring all relevant job details are visible.
+- **Email Service Diagnostics**: An internal endpoint `/api/debug/email-connector` is available for troubleshooting SendGrid connectivity.
+- **Job Search & Filtering**: Comprehensive server-side search system with keyword, location, and date range filters. EventLink jobs are prioritized above external jobs, with visual distinction badges ("EventLink Opportunity" vs. "External • [source]").
+- **Freelancer Search ("Find Crew")**: Server-side search with weighted relevance scoring (40% title, 30% skills, 20% bio, 10% rating), pagination (20 results/page), keyword/location filters, and rating integration. Performance optimized with database indexes achieving <400ms response time.
+- **Email Notification System**: Comprehensive notification system with user-configurable preferences via dedicated settings page accessible from account dropdown. Supports role-based notifications (freelancers vs. recruiters) including message alerts, application updates, job alerts with filters, and rating requests. Branded email templates with EventLink orange gradient (#D8690E) and full logging for debugging and reliability tracking. Email addressing logic prioritizes company name (from Settings) for recruiters, falling back to user's full name, then email. **Note: Currently blocked by SendGrid account credit limitations.**
 
 ## External Dependencies
-- **PostgreSQL**: Primary database with optimized schema design
-- **SendGrid**: Email service for user verification and notifications  
-- **Tailwind CSS**: Utility-first CSS framework
-- **shadcn/ui**: Component library for consistent UI
-- **Wouter**: Lightweight client-side routing
+
+- **PostgreSQL**: The primary relational database for all application data.
+- **SendGrid**: Used for sending transactional emails, primarily for user verification and notifications.
+- **Tailwind CSS**: A utility-first CSS framework for styling the application.
+- **shadcn/ui**: A collection of re-usable components built using Radix UI and Tailwind CSS.
+- **Wouter**: A lightweight client-side routing library for React.

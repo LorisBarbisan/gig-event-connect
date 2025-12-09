@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Upload, X, CheckCircle, Loader2 } from "lucide-react";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
+import { CheckCircle, Download, FileText, Loader2, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 interface CVUploaderProps {
   userId: number;
@@ -17,8 +17,13 @@ interface CVUploaderProps {
   "data-testid"?: string;
 }
 
-export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid": dataTestId }: CVUploaderProps) {
-  const { user } = useOptimizedAuth();
+export function CVUploader({
+  userId,
+  currentCV,
+  onUploadComplete,
+  "data-testid": dataTestId,
+}: CVUploaderProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -26,11 +31,11 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
   // Format file size helper
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const handleFileSelect = () => {
@@ -42,12 +47,16 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF, DOC, or DOCX file.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -57,7 +66,7 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
       toast({
         title: "File too large",
         description: "Please upload a file smaller than 5MB.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -70,38 +79,55 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
     setUploadProgress(0);
 
     try {
+      console.log("📤 Starting CV upload:", file.name, file.type, file.size);
+
       // Step 1: Get upload URL from backend
-      const { uploadURL } = await apiRequest('/api/cv/upload-url', {
-        method: 'POST'
+      console.log("Step 1: Requesting upload URL...");
+      const { uploadUrl, objectKey } = await apiRequest("/api/cv/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+        }),
       });
+      console.log("✅ Step 1: Got upload URL");
       setUploadProgress(25);
 
       // Step 2: Upload file directly to object storage
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
+      console.log("Step 2: Uploading file to storage...");
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
         body: file,
         headers: {
-          'Content-Type': file.type,
+          "Content-Type": file.type,
         },
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to storage');
+        const errorText = await uploadResponse.text();
+        console.error("❌ Step 2 failed:", uploadResponse.status, errorText);
+        throw new Error(
+          `Failed to upload file to storage: ${uploadResponse.status} - ${errorText || "Unknown error"}`
+        );
       }
+      console.log("✅ Step 2: File uploaded to storage");
 
       setUploadProgress(75);
 
       // Step 3: Save CV metadata to database
-      await apiRequest('/api/cv', {
-        method: 'POST',
+      console.log("Step 3: Saving CV metadata...");
+      await apiRequest("/api/cv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: userId,
-          fileName: file.name,
-          fileType: file.type,
+          objectKey,
+          filename: file.name,
           fileSize: file.size,
-          fileUrl: uploadURL.split('?')[0], // Remove query params from URL
+          contentType: file.type,
         }),
       });
+      console.log("✅ Step 3: Metadata saved");
 
       setUploadProgress(100);
 
@@ -112,18 +138,30 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
 
       // Call completion callback
       onUploadComplete?.();
-
     } catch (error) {
-      console.error('Error uploading CV:', error);
+      console.error("❌ CV upload error:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+
+      // Extract detailed error message
+      let errorMessage = "Failed to upload CV. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      } else if (typeof error === "object" && error !== null && "error" in error) {
+        errorMessage = String((error as any).error);
+      }
+
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload CV",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
@@ -133,16 +171,9 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
   const handleDeleteCV = async () => {
     try {
-      const response = await fetch('/api/cv', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userId }),
+      await apiRequest("/api/cv", {
+        method: "DELETE",
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete CV');
-      }
 
       toast({
         title: "Success",
@@ -151,11 +182,11 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
 
       onUploadComplete?.();
     } catch (error) {
-      console.error('Error deleting CV:', error);
+      console.error("Error deleting CV:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete CV",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -178,17 +209,48 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
             <div>
               <p className="font-medium">{currentCV.fileName}</p>
               <p className="text-sm text-muted-foreground">
-                {currentCV.fileSize ? formatFileSize(currentCV.fileSize) : 'Size unknown'}
+                {currentCV.fileSize ? formatFileSize(currentCV.fileSize) : "Size unknown"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
+            {currentCV.fileUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(`/api/cv/download/${userId}`, {
+                      headers: {
+                        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+                      },
+                    });
+                    const data = await response.json();
+                    if (data.downloadUrl) {
+                      window.open(data.downloadUrl, "_blank");
+                    }
+                  } catch (error) {
+                    console.error("Error opening CV:", error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to open CV",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                data-testid="button-view-cv"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                View
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
               onClick={handleDeleteCV}
               className="text-red-600 hover:text-red-700"
+              data-testid="button-delete-cv"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -198,14 +260,8 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
         // Show upload area
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
           <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-sm text-gray-600 mb-4">
-            Upload your CV (PDF, DOC, or DOCX)
-          </p>
-          <Button
-            onClick={handleFileSelect}
-            disabled={uploading}
-            className="w-full"
-          >
+          <p className="text-sm text-gray-600 mb-4">Upload your CV (PDF, DOC, or DOCX)</p>
+          <Button onClick={handleFileSelect} disabled={uploading} className="w-full">
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -218,16 +274,14 @@ export function CVUploader({ userId, currentCV, onUploadComplete, "data-testid":
               </>
             )}
           </Button>
-          <p className="text-xs text-gray-500 mt-2">
-            Maximum file size: 5MB
-          </p>
+          <p className="text-xs text-gray-500 mt-2">Maximum file size: 5MB</p>
         </div>
       )}
 
       {uploading && (
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-primary h-2 rounded-full transition-all duration-300" 
+          <div
+            className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>

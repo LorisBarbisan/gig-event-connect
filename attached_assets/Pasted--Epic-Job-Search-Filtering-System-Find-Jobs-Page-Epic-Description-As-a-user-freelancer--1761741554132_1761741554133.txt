@@ -1,0 +1,116 @@
+🔍 Epic: Job Search & Filtering System (Find Jobs Page)
+Epic Description:
+As a user (freelancer), I want to easily search and filter job listings by relevant parameters such as keyword, location, and date, so that I can quickly find the most suitable opportunities.
+Additionally, job posts that originate directly from EventLink (i.e., posted by recruiters within the platform) must always appear before externally sourced jobs in search results.
+________________________________________
+🎯 Epic Goals
+•	Provide a fast, intuitive way to search and filter jobs.
+•	Ensure platform-posted jobs have visual and ranking priority.
+•	Keep filtering optional and flexible — no field is mandatory.
+•	Support scalability for future filters (contract type, pay range, etc.).
+________________________________________
+✅ User Stories & Acceptance Criteria
+________________________________________
+1️⃣ Search by Keyword
+User Story:
+As a freelancer, I want to search job listings using keywords (e.g., job title, skill, company name) so that I can find relevant positions easily.
+Acceptance Criteria:
+•	A search bar is available at the top of the Find Jobs page.
+•	The search accepts free text input (keywords, partial words, or phrases).
+•	Results display all jobs where the keyword matches:
+o	Job title
+o	Description
+o	Company name
+o	Skills tags (if present)
+•	Search runs dynamically (on submit or typing, depending on chosen UX).
+•	If no keyword is entered, all jobs are displayed.
+•	Search results are sorted with EventLink-native jobs first, then external listings.
+Technical Breakdown:
+•	Add backend endpoint: /api/jobs?search={keyword}
+•	Implement full-text search or indexed search on job title, description, and company fields.
+•	Combine with sorting logic (EventLink jobs first, then external).
+________________________________________
+2️⃣ Filter by Location
+User Story:
+As a freelancer, I want to filter job listings by UK location so that I can find opportunities near me or in preferred regions.
+Acceptance Criteria:
+•	A “Location” filter field is available (text input or dropdown).
+•	Filtering is optional; leaving it blank shows all locations.
+•	Filter matches against job location field (city, postcode, or region).
+•	Users can enter partial location names (e.g., “Lon” returns “London”).
+•	Jobs are dynamically filtered by selected or entered location.
+•	Platform jobs always display before external ones, even after filtering.
+Technical Breakdown:
+•	Backend query filter for location field.
+•	Implement partial string matching for flexibility.
+•	Cache frequent searches for performance.
+________________________________________
+3️⃣ Filter by Date
+User Story:
+As a freelancer, I want to filter job listings by date or date range so that I can find upcoming jobs that fit my availability.
+Acceptance Criteria:
+•	A date filter component is visible in the search panel.
+•	Users can:
+o	Select a single date (e.g., event date).
+o	Select a date range (start–end).
+•	Filtering is optional — if no date is selected, all jobs show.
+•	Results display jobs whose event date or posting date falls within the selected range.
+•	Combined filters (e.g., keyword + location + date) must work together seamlessly.
+•	Platform-posted jobs remain at the top of all filtered results.
+Technical Breakdown:
+•	Backend supports query parameters: /api/jobs?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD.
+•	Date validation on backend.
+•	Use standardized UTC format for consistency.
+________________________________________
+4️⃣ Prioritization Logic (EventLink Jobs First)
+User Story:
+As a user, I want to always see EventLink-posted jobs first so that I can prioritize direct recruiter opportunities on the platform.
+Acceptance Criteria:
+•	All search and filter results sort EventLink jobs before external listings.
+•	Sorting priority order:
+1.	EventLink jobs (most recent first).
+2.	External job feed entries (most recent after platform jobs).
+•	Both job types clearly labeled (e.g., “Posted on EventLink” vs “External Source”).
+•	No loss of data or pagination conflict between the two categories.
+Technical Breakdown:
+•	Add a flag to job model (e.g., source_type = "eventlink" | "external").
+•	Apply sorting rule in SQL/ORM:
+•	ORDER BY CASE WHEN source_type = 'eventlink' THEN 0 ELSE 1 END, created_at DESC
+•	Update UI to visually distinguish internal vs external listings.
+________________________________________
+5️⃣ Combined Filters Functionality
+User Story:
+As a freelancer, I want to use multiple filters (keyword, location, date) at once so that I can narrow my search precisely.
+Acceptance Criteria:
+•	Filters can be applied independently or together.
+•	Filtering logic applies “AND” condition (e.g., keyword AND location AND date).
+•	All fields are optional — empty fields are ignored.
+•	Results update instantly upon applying or clearing filters.
+•	“Clear Filters” button resets all fields and reloads full results.
+Technical Breakdown:
+•	Backend supports multi-parameter query:
+/api/jobs?keyword=&location=&start_date=&end_date=
+•	Combine search and filters in a single optimized query.
+•	Implement caching and pagination to avoid performance drops.
+________________________________________
+6️⃣ UI Enhancements & User Experience
+User Story:
+As a user, I want a clean, intuitive search interface so I can easily find and adjust filters without confusion.
+Acceptance Criteria:
+•	Filter fields (keyword, location, date) are visually aligned and responsive.
+•	“Search” button triggers results instantly.
+•	“Clear Filters” resets all fields.
+•	Job cards clearly display job title, date, location, company, and type (EventLink/External).
+•	Results load quickly (<2 seconds for filtered queries).
+Technical Breakdown:
+•	Optimize database indexes on job title, location, date fields.
+•	Use lazy loading for results pagination.
+•	Apply responsive design for mobile devices.
+________________________________________
+🧩 Implementation Approach
+Phase	Key Tasks	Notes
+1. Backend Development	Build unified search endpoint with parameters for keyword, location, date; implement prioritization logic for EventLink jobs.	Focus on speed, indexes, and clean code.
+2. Frontend UI	Add filter bar, date picker, and search logic.	Keep filters visible and mobile-friendly.
+3. Testing	Test each filter independently and combined; verify sort order (EventLink first).	Include unit + integration tests.
+4. Optimization	Add caching, limit results per page, and use async loading.	Ensure <2s load time for queries.
+5. UX Review	Confirm layout clarity, accessibility, and visual hierarchy.	Adjust labels and placeholders for clarity.

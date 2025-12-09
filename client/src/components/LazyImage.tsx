@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
 interface LazyImageProps {
   src: string;
@@ -48,9 +48,7 @@ export function LazyImage({ src, alt, className, fallback, placeholder }: LazyIm
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
       {!isLoaded && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-          {placeholder && (
-            <span className="text-gray-400 text-sm">{placeholder}</span>
-          )}
+          {placeholder && <span className="text-gray-400 text-sm">{placeholder}</span>}
         </div>
       )}
       {shouldLoad && (
@@ -58,7 +56,7 @@ export function LazyImage({ src, alt, className, fallback, placeholder }: LazyIm
           src={displaySrc}
           alt={alt}
           className={`transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
+            isLoaded ? "opacity-100" : "opacity-0"
           } ${className}`}
           onLoad={handleLoad}
           onError={handleError}

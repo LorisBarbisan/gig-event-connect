@@ -1,22 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useParams } from 'wouter';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { apiRequest } from '@/lib/queryClient';
-import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { User, MapPin, Coins, Calendar, Globe, Linkedin, ExternalLink, Mail, Phone, Star, MessageCircle, FileText, Download } from 'lucide-react';
-import { RatingDisplay } from '@/components/StarRating';
-import { useFreelancerAverageRating } from '@/hooks/useRatings';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { MessageModal } from '@/components/MessageModal';
+import { Layout } from "@/components/Layout";
+import { MessageModal } from "@/components/MessageModal";
+import { RatingDisplay } from "@/components/StarRating";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useFreelancerAverageRating } from "@/hooks/useRatings";
+import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Calendar,
+  Download,
+  ExternalLink,
+  Globe,
+  Linkedin,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Star,
+  User,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useParams } from "wouter";
 
 interface Profile {
   id: string;
-  role: 'freelancer' | 'recruiter' | 'admin';
+  role: "freelancer" | "recruiter" | "admin";
   email: string;
 }
 
@@ -33,7 +44,7 @@ interface FreelancerProfile {
   portfolio_url: string;
   linkedin_url: string;
   website_url: string;
-  availability_status: 'available' | 'busy' | 'unavailable';
+  availability_status: "available" | "busy" | "unavailable";
   profile_photo_url?: string;
   cv_file_url?: string;
   cv_file_name?: string;
@@ -57,7 +68,7 @@ interface RecruiterProfile {
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { userId } = useParams();
-  const { user, loading: authLoading } = useOptimizedAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [freelancerProfile, setFreelancerProfile] = useState<FreelancerProfile | null>(null);
   const [recruiterProfile, setRecruiterProfile] = useState<RecruiterProfile | null>(null);
@@ -69,17 +80,15 @@ export default function Profile() {
   const { toast } = useToast();
 
   // Get rating data for freelancer profiles
-  const { data: averageRating } = useFreelancerAverageRating(
-    freelancerProfile?.user_id || 0
-  );
+  const { data: averageRating } = useFreelancerAverageRating(freelancerProfile?.user_id || 0);
 
   // Helper function to format file size
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Handle CV download
@@ -88,173 +97,168 @@ export default function Profile() {
       toast({
         title: "Error",
         description: "CV not available for download",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await fetch(
-        `/api/cv/download/${profile.user_id}?userId=${user.id}`,
-        {
-          method: 'GET',
-        }
-      );
+      // Get JWT token from localStorage for authentication
+      const token = localStorage.getItem("auth_token");
+
+      // Get the presigned download URL from the backend
+      const response = await fetch(`/api/cv/download/${profile.user_id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        // Handle contact info response for CV access
-        if (errorData.reason === "direct_contact_required") {
-          const contactDetails = errorData.contact_details;
-          toast({
-            title: "Contact Required for CV",
-            description: `${contactDetails.message} Email: ${contactDetails.email}`,
-            variant: "default"
-          });
-          return;
-        }
-        throw new Error(errorData.error || 'Failed to download CV');
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(errorData.error || "Failed to get download URL");
       }
 
-      // Create blob and download file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = profile.cv_file_name || `${profile.first_name}_${profile.last_name}_CV.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const { downloadUrl, fileName } = await response.json();
 
-      toast({
-        title: "Success",
-        description: "CV downloaded successfully",
-      });
+      // Open the presigned URL in a new tab to view/download the CV
+      if (downloadUrl) {
+        window.open(downloadUrl, "_blank");
+        toast({
+          title: "Success",
+          description: "CV opened in new tab",
+        });
+      }
     } catch (error) {
-      console.error('Error downloading CV:', error);
+      console.error("Error downloading CV:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to download CV",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-
   useEffect(() => {
-    console.log('Profile useEffect triggered:', { user, authLoading, userId });
-    console.log('URL userId parameter received:', userId, 'type:', typeof userId);
-    
+    console.log("Profile useEffect triggered:", { user, authLoading, userId });
+    console.log("URL userId parameter received:", userId, "type:", typeof userId);
+
     if (!authLoading) {
       if (userId) {
         // Check if viewing own profile via URL parameter
         const isViewingOwnProfile = user && userId === user.id.toString();
-        console.log('Profile comparison debug:', { userId, userIdType: typeof userId, userIdNum: user?.id, userIdStr: user?.id.toString(), isViewingOwnProfile });
+        console.log("Profile comparison debug:", {
+          userId,
+          userIdType: typeof userId,
+          userIdNum: user?.id,
+          userIdStr: user?.id.toString(),
+          isViewingOwnProfile,
+        });
         if (isViewingOwnProfile) {
-          console.log('Viewing own profile via URL parameter for user:', user);
+          console.log("Viewing own profile via URL parameter for user:", user);
           setIsOwnProfile(true);
           fetchProfile();
         } else {
           // Viewing someone else's profile
-          console.log('Fetching other profile for userId:', userId);
+          console.log("Fetching other profile for userId:", userId);
           setIsOwnProfile(false);
           fetchOtherProfile(userId);
         }
       } else if (user) {
         // Viewing own profile
-        console.log('Fetching own profile for user:', user);
+        console.log("Fetching own profile for user:", user);
         setIsOwnProfile(true);
         fetchProfile();
       } else {
         // Not logged in and no userId specified
-        console.log('No user found, redirecting to auth');
-        setLocation('/auth');
+        console.log("No user found, redirecting to auth");
+        setLocation("/auth");
       }
     }
   }, [user, authLoading, userId, setLocation]);
 
   const fetchProfile = async () => {
     try {
-      console.log('fetchProfile called with user:', user);
+      console.log("fetchProfile called with user:", user);
       const userProfile: Profile = {
         id: user!.id.toString(),
-        role: user!.role as 'freelancer' | 'recruiter' | 'admin',
-        email: user!.email
+        role: user!.role as "freelancer" | "recruiter" | "admin",
+        email: user!.email,
       };
-      console.log('Setting profile:', userProfile);
+      console.log("Setting profile:", userProfile);
       setProfile(userProfile);
 
       // Try to fetch freelancer profile for freelancer and admin users
-      if (userProfile.role === 'freelancer' || userProfile.role === 'admin') {
+      if (userProfile.role === "freelancer" || userProfile.role === "admin") {
         try {
           const data = await apiRequest(`/api/freelancer/${userProfile.id}`);
-          console.log('Freelancer profile data received:', data);
+          console.log("Freelancer profile data received:", data);
           if (data) {
             setFreelancerProfile({
               id: data.id,
               user_id: data.user_id,
-              first_name: data.first_name || '',
-              last_name: data.last_name || '',
-              title: data.title || '',
-              bio: data.bio || '',
-              location: data.location || '',
+              first_name: data.first_name || "",
+              last_name: data.last_name || "",
+              title: data.title || "",
+              bio: data.bio || "",
+              location: data.location || "",
 
               experience_years: data.experience_years || null,
               skills: data.skills || [],
-              portfolio_url: data.portfolio_url || '',
-              linkedin_url: data.linkedin_url || '',
-              website_url: data.website_url || '',
-              availability_status: data.availability_status || 'available',
-              profile_photo_url: data.profile_photo_url || '',
-              cv_file_url: data.cv_file_url || '',
-              cv_file_name: data.cv_file_name || '',
-              cv_file_type: data.cv_file_type || '',
-              cv_file_size: data.cv_file_size || null
+              portfolio_url: data.portfolio_url || "",
+              linkedin_url: data.linkedin_url || "",
+              website_url: data.website_url || "",
+              availability_status: data.availability_status || "available",
+              profile_photo_url: data.profile_photo_url || "",
+              cv_file_url: data.cv_file_url || "",
+              cv_file_name: data.cv_file_name || "",
+              cv_file_type: data.cv_file_type || "",
+              cv_file_size: data.cv_file_size || null,
             });
-            console.log('Freelancer profile set:', data);
+            console.log("Freelancer profile set:", data);
           } else {
-            console.log('No freelancer profile found');
+            console.log("No freelancer profile found");
             setFreelancerProfile(null);
           }
         } catch (error) {
-          console.log('No freelancer profile found:', error);
+          console.log("No freelancer profile found:", error);
           setFreelancerProfile(null);
         }
       }
 
       // Try to fetch recruiter profile for recruiter and admin users
-      if (userProfile.role === 'recruiter' || userProfile.role === 'admin') {
+      if (userProfile.role === "recruiter" || userProfile.role === "admin") {
         try {
           const data = await apiRequest(`/api/recruiter/${userProfile.id}`);
-          console.log('Recruiter profile data received:', data);
+          console.log("Recruiter profile data received:", data);
           if (data) {
-            console.log('Setting recruiter profile with data:', data);
+            console.log("Setting recruiter profile with data:", data);
             setRecruiterProfile({
               id: data.id?.toString(),
-              company_name: data.company_name || '',
-              contact_name: data.contact_name || '',
-              company_type: data.company_type || '',
-              company_description: data.company_description || '',
-              location: data.location || '',
-              website_url: data.website_url || '',
-              linkedin_url: data.linkedin_url || '',
-              phone: data.phone || '',
-              company_logo_url: data.company_logo_url || ''
+              company_name: data.company_name || "",
+              contact_name: data.contact_name || "",
+              company_type: data.company_type || "",
+              company_description: data.company_description || "",
+              location: data.location || "",
+              website_url: data.website_url || "",
+              linkedin_url: data.linkedin_url || "",
+              phone: data.phone || "",
+              company_logo_url: data.company_logo_url || "",
             });
-            console.log('Recruiter profile set successfully');
+            console.log("Recruiter profile set successfully");
           } else {
-            console.log('No recruiter profile data received from API');
+            console.log("No recruiter profile data received from API");
             setRecruiterProfile(null);
           }
         } catch (error) {
-          console.log('No recruiter profile found:', error);
+          console.log("No recruiter profile found:", error);
           setRecruiterProfile(null);
         }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
       setProfileDataLoaded(true);
@@ -263,71 +267,71 @@ export default function Profile() {
 
   const fetchOtherProfile = async (targetUserId: string) => {
     try {
-      console.log('fetchOtherProfile called with targetUserId:', targetUserId);
-      console.log('Making API request to:', `/api/users/${targetUserId}`);
+      console.log("fetchOtherProfile called with targetUserId:", targetUserId);
+      console.log("Making API request to:", `/api/users/${targetUserId}`);
       // First get the user basic info to determine their role
       const userData = await apiRequest(`/api/users/${targetUserId}`);
-      console.log('User data received:', userData);
+      console.log("User data received:", userData);
       const userProfile: Profile = {
         id: targetUserId,
-        role: userData.role as 'freelancer' | 'recruiter',
-        email: userData.email
+        role: userData.role as "freelancer" | "recruiter",
+        email: userData.email,
       };
-      console.log('Setting profile in fetchOtherProfile:', userProfile);
+      console.log("Setting profile in fetchOtherProfile:", userProfile);
       setProfile(userProfile);
 
-      if (userProfile.role === 'freelancer') {
+      if (userProfile.role === "freelancer") {
         try {
           const data = await apiRequest(`/api/freelancer/${targetUserId}`);
           if (data) {
             setFreelancerProfile({
               id: data.id,
               user_id: data.user_id,
-              first_name: data.first_name || '',
-              last_name: data.last_name || '',
-              title: data.title || '',
-              bio: data.bio || '',
-              location: data.location || '',
+              first_name: data.first_name || "",
+              last_name: data.last_name || "",
+              title: data.title || "",
+              bio: data.bio || "",
+              location: data.location || "",
 
               experience_years: data.experience_years || null,
               skills: data.skills || [],
-              portfolio_url: data.portfolio_url || '',
-              linkedin_url: data.linkedin_url || '',
-              website_url: data.website_url || '',
-              availability_status: data.availability_status || 'available',
-              profile_photo_url: data.profile_photo_url || '',
-              cv_file_url: data.cv_file_url || '',
-              cv_file_name: data.cv_file_name || '',
-              cv_file_type: data.cv_file_type || '',
-              cv_file_size: data.cv_file_size || null
+              portfolio_url: data.portfolio_url || "",
+              linkedin_url: data.linkedin_url || "",
+              website_url: data.website_url || "",
+              availability_status: data.availability_status || "available",
+              profile_photo_url: data.profile_photo_url || "",
+              cv_file_url: data.cv_file_url || "",
+              cv_file_name: data.cv_file_name || "",
+              cv_file_type: data.cv_file_type || "",
+              cv_file_size: data.cv_file_size || null,
             });
           }
         } catch (error) {
-          console.log('No freelancer profile found for user:', error);
+          console.log("No freelancer profile found for user:", error);
         }
-      } else if (userProfile.role === 'recruiter') {
+      } else if (userProfile.role === "recruiter") {
         try {
           const data = await apiRequest(`/api/recruiter/${targetUserId}`);
           if (data) {
             setRecruiterProfile({
               id: data.id?.toString(),
-              company_name: data.company_name || '',
-              contact_name: data.contact_name || '',
-              company_type: data.company_type || '',
-              company_description: data.company_description || '',
-              location: data.location || '',
-              website_url: data.website_url || '',
-              linkedin_url: data.linkedin_url || '',
-              phone: data.phone || '',
-              company_logo_url: data.company_logo_url || ''
+              company_name: data.company_name || "",
+              contact_name: data.contact_name || "",
+              company_type: data.company_type || "",
+              company_description: data.company_description || "",
+              location: data.location || "",
+              website_url: data.website_url || "",
+              linkedin_url: data.linkedin_url || "",
+              phone: data.phone || "",
+              company_logo_url: data.company_logo_url || "",
             });
           }
         } catch (error) {
-          console.log('No recruiter profile found for user:', error);
+          console.log("No recruiter profile found for user:", error);
         }
       }
     } catch (error) {
-      console.error('Error fetching other user profile:', error);
+      console.error("Error fetching other user profile:", error);
     } finally {
       setLoading(false);
     }
@@ -352,17 +356,15 @@ export default function Profile() {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-2xl font-bold mb-4">Profile Not Found</h1>
-            <Button onClick={() => setLocation('/dashboard')}>
-              Go to Dashboard
-            </Button>
+            <Button onClick={() => setLocation("/dashboard")}>Go to Dashboard</Button>
           </div>
         </div>
       </Layout>
     );
   }
 
-  if (profile?.role === 'freelancer' && !freelancerProfile && !loading && profileDataLoaded) {
-    console.log('No freelancer profile found, showing create profile message');
+  if (profile?.role === "freelancer" && !freelancerProfile && !loading && profileDataLoaded) {
+    console.log("No freelancer profile found, showing create profile message");
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
@@ -374,8 +376,8 @@ export default function Profile() {
             <p className="text-muted-foreground">
               Create your freelancer profile to start connecting with event organizers.
             </p>
-            <Button 
-              onClick={() => setLocation('/dashboard')}
+            <Button
+              onClick={() => setLocation("/dashboard")}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
               Create Profile
@@ -387,10 +389,14 @@ export default function Profile() {
   }
 
   // Show create profile message for users who should have recruiter profiles but don't
-  if ((profile?.role === 'recruiter' || (profile?.role === 'admin' && !freelancerProfile)) && !recruiterProfile && !loading) {
-    console.log('No recruiter profile found, showing create profile message');
-    console.log('Current recruiterProfile state:', recruiterProfile);
-    console.log('Profile role:', profile?.role);
+  if (
+    (profile?.role === "recruiter" || (profile?.role === "admin" && !freelancerProfile)) &&
+    !recruiterProfile &&
+    !loading
+  ) {
+    console.log("No recruiter profile found, showing create profile message");
+    console.log("Current recruiterProfile state:", recruiterProfile);
+    console.log("Profile role:", profile?.role);
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
@@ -402,8 +408,8 @@ export default function Profile() {
             <p className="text-muted-foreground">
               Create your company profile to start posting jobs and finding talent.
             </p>
-            <Button 
-              onClick={() => setLocation('/dashboard')}
+            <Button
+              onClick={() => setLocation("/dashboard")}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
               Create Profile
@@ -418,10 +424,10 @@ export default function Profile() {
 
   const handleContactClick = () => {
     if (!user) {
-      setLocation('/auth');
+      setLocation("/auth");
       return;
     }
-    
+
     setIsMessageModalOpen(true);
   };
 
@@ -432,23 +438,24 @@ export default function Profile() {
           {/* Profile Header */}
           <Card>
             <CardContent className="p-8">
-              {(freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile) ? (
+              {(freelancerProfile && profile?.role !== "admin") ||
+              (profile?.role === "admin" && freelancerProfile && !recruiterProfile) ? (
                 <div className="flex flex-col md:flex-row items-start gap-6">
                   <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
-                    {freelancerProfile?.profile_photo_url && 
-                     freelancerProfile.profile_photo_url.trim() !== '' && 
-                     freelancerProfile.profile_photo_url !== 'null' && 
-                     freelancerProfile.profile_photo_url.startsWith('data:') ? (
-                      <img 
-                        src={freelancerProfile.profile_photo_url} 
-                        alt="Profile" 
+                    {freelancerProfile?.profile_photo_url &&
+                    freelancerProfile.profile_photo_url.trim() !== "" &&
+                    freelancerProfile.profile_photo_url !== "null" &&
+                    freelancerProfile.profile_photo_url.startsWith("data:") ? (
+                      <img
+                        src={freelancerProfile.profile_photo_url}
+                        alt="Profile"
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <User className="w-16 h-16 text-white" />
                     )}
                   </div>
-                  
+
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
@@ -474,9 +481,9 @@ export default function Profile() {
                         {averageRating && (
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4" />
-                            <RatingDisplay 
-                              average={averageRating.average} 
-                              count={averageRating.count} 
+                            <RatingDisplay
+                              average={averageRating.average}
+                              count={averageRating.count}
                               size="sm"
                               showText={true}
                             />
@@ -486,11 +493,15 @@ export default function Profile() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className={`h-3 w-3 rounded-full ${
-                        freelancerProfile?.availability_status === 'available' ? 'bg-green-500' :
-                        freelancerProfile?.availability_status === 'busy' ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}></div>
+                      <div
+                        className={`h-3 w-3 rounded-full ${
+                          freelancerProfile?.availability_status === "available"
+                            ? "bg-green-500"
+                            : freelancerProfile?.availability_status === "busy"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                        }`}
+                      ></div>
                       <Badge variant="outline" className="capitalize">
                         {freelancerProfile?.availability_status}
                       </Badge>
@@ -498,7 +509,7 @@ export default function Profile() {
 
                     <div className="flex gap-3 pt-2">
                       {!isOwnProfile && (
-                        <Button 
+                        <Button
                           onClick={handleContactClick}
                           className="bg-gradient-primary hover:bg-primary-hover"
                         >
@@ -506,23 +517,22 @@ export default function Profile() {
                           Send Message
                         </Button>
                       )}
-                      {freelancerProfile?.cv_file_url && (
-                        (!isOwnProfile && user?.role === 'recruiter') || isOwnProfile
-                      ) && (
-                        <Button
-                          onClick={() => handleDownloadCV(freelancerProfile)}
-                          className="flex items-center gap-2"
-                          variant="outline"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download CV
-                        </Button>
-                      )}
+                      {freelancerProfile?.cv_file_url &&
+                        ((!isOwnProfile &&
+                          (user?.role === "recruiter" || user?.role === "admin")) ||
+                          isOwnProfile) && (
+                          <Button
+                            onClick={() => handleDownloadCV(freelancerProfile)}
+                            className="flex items-center gap-2"
+                            variant="outline"
+                            data-testid="button-download-cv-profile"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download CV
+                          </Button>
+                        )}
                       {isOwnProfile && (
-                        <Button 
-                          variant="outline"
-                          onClick={() => setLocation('/dashboard')}
-                        >
+                        <Button variant="outline" onClick={() => setLocation("/dashboard")}>
                           Edit Profile
                         </Button>
                       )}
@@ -532,26 +542,24 @@ export default function Profile() {
               ) : (
                 <div className="flex flex-col md:flex-row items-start gap-6">
                   <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center overflow-hidden">
-                    {recruiterProfile?.company_logo_url && 
-                     recruiterProfile.company_logo_url.trim() !== '' && 
-                     recruiterProfile.company_logo_url !== 'null' && 
-                     recruiterProfile.company_logo_url.startsWith('data:') ? (
-                      <img 
-                        src={recruiterProfile.company_logo_url} 
-                        alt="Company Logo" 
+                    {recruiterProfile?.company_logo_url &&
+                    recruiterProfile.company_logo_url.trim() !== "" &&
+                    recruiterProfile.company_logo_url !== "null" &&
+                    recruiterProfile.company_logo_url.startsWith("data:") ? (
+                      <img
+                        src={recruiterProfile.company_logo_url}
+                        alt="Company Logo"
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <User className="w-16 h-16 text-white" />
                     )}
                   </div>
-                  
+
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold">
-                          {recruiterProfile?.company_name}
-                        </h1>
+                        <h1 className="text-3xl font-bold">{recruiterProfile?.company_name}</h1>
                         <Badge variant="secondary" className="bg-green-100 text-green-800">
                           VERIFIED
                         </Badge>
@@ -579,7 +587,7 @@ export default function Profile() {
 
                     <div className="flex gap-3 pt-2">
                       {!isOwnProfile && (
-                        <Button 
+                        <Button
                           onClick={handleContactClick}
                           className="bg-gradient-primary hover:bg-primary-hover"
                         >
@@ -588,10 +596,7 @@ export default function Profile() {
                         </Button>
                       )}
                       {isOwnProfile && (
-                        <Button 
-                          variant="outline"
-                          onClick={() => setLocation('/dashboard')}
-                        >
+                        <Button variant="outline" onClick={() => setLocation("/dashboard")}>
                           Edit Profile
                         </Button>
                       )}
@@ -605,20 +610,26 @@ export default function Profile() {
           {/* About Section */}
           <Card>
             <CardHeader>
-              <CardTitle>{(freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile) ? 'About' : 'Company Description'}</CardTitle>
+              <CardTitle>
+                {(freelancerProfile && profile?.role !== "admin") ||
+                (profile?.role === "admin" && freelancerProfile && !recruiterProfile)
+                  ? "About"
+                  : "Company Description"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">
-                {(freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile)
-                  ? (freelancerProfile?.bio || 'No bio available.')
-                  : (recruiterProfile?.company_description || 'No company description available.')
-                }
+                {(freelancerProfile && profile?.role !== "admin") ||
+                (profile?.role === "admin" && freelancerProfile && !recruiterProfile)
+                  ? freelancerProfile?.bio || "No bio available."
+                  : recruiterProfile?.company_description || "No company description available."}
               </p>
             </CardContent>
           </Card>
 
           {/* Skills Section (Freelancers only) */}
-          {((freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile)) && (
+          {((freelancerProfile && profile?.role !== "admin") ||
+            (profile?.role === "admin" && freelancerProfile && !recruiterProfile)) && (
             <Card>
               <CardHeader>
                 <CardTitle>Skills & Expertise</CardTitle>
@@ -638,13 +649,21 @@ export default function Profile() {
             </Card>
           )}
 
-
           {/* Links Section */}
           {(() => {
-            const showFreelancerProfile = (freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile);
-            const hasFreelancerLinks = freelancerProfile?.portfolio_url || freelancerProfile?.linkedin_url || freelancerProfile?.website_url;
-            const hasRecruiterLinks = recruiterProfile?.website_url || recruiterProfile?.linkedin_url;
-            return (showFreelancerProfile && hasFreelancerLinks) || (recruiterProfile && hasRecruiterLinks);
+            const showFreelancerProfile =
+              (freelancerProfile && profile?.role !== "admin") ||
+              (profile?.role === "admin" && freelancerProfile && !recruiterProfile);
+            const hasFreelancerLinks =
+              freelancerProfile?.portfolio_url ||
+              freelancerProfile?.linkedin_url ||
+              freelancerProfile?.website_url;
+            const hasRecruiterLinks =
+              recruiterProfile?.website_url || recruiterProfile?.linkedin_url;
+            return (
+              (showFreelancerProfile && hasFreelancerLinks) ||
+              (recruiterProfile && hasRecruiterLinks)
+            );
           })() && (
             <Card>
               <CardHeader>
@@ -653,12 +672,14 @@ export default function Profile() {
               <CardContent>
                 <div className="space-y-3">
                   {(() => {
-                    const showFreelancerProfile = (freelancerProfile && profile?.role !== 'admin') || (profile?.role === 'admin' && freelancerProfile && !recruiterProfile);
+                    const showFreelancerProfile =
+                      (freelancerProfile && profile?.role !== "admin") ||
+                      (profile?.role === "admin" && freelancerProfile && !recruiterProfile);
                     return showFreelancerProfile;
                   })() ? (
                     <>
                       {freelancerProfile?.portfolio_url && (
-                        <a 
+                        <a
                           href={freelancerProfile.portfolio_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -669,7 +690,7 @@ export default function Profile() {
                         </a>
                       )}
                       {freelancerProfile?.linkedin_url && (
-                        <a 
+                        <a
                           href={freelancerProfile.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -680,7 +701,7 @@ export default function Profile() {
                         </a>
                       )}
                       {freelancerProfile?.website_url && (
-                        <a 
+                        <a
                           href={freelancerProfile.website_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -694,7 +715,7 @@ export default function Profile() {
                   ) : (
                     <>
                       {recruiterProfile?.website_url && (
-                        <a 
+                        <a
                           href={recruiterProfile.website_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -705,7 +726,7 @@ export default function Profile() {
                         </a>
                       )}
                       {recruiterProfile?.linkedin_url && (
-                        <a 
+                        <a
                           href={recruiterProfile.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -731,9 +752,9 @@ export default function Profile() {
           onClose={() => setIsMessageModalOpen(false)}
           recipientId={parseInt(profile.id)}
           recipientName={
-            profile.role === 'freelancer' 
+            profile.role === "freelancer"
               ? `${freelancerProfile?.first_name} ${freelancerProfile?.last_name}`
-              : recruiterProfile?.company_name || 'User'
+              : recruiterProfile?.company_name || "User"
           }
           senderId={user.id}
         />

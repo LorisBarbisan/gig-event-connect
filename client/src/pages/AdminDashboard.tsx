@@ -1,39 +1,50 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { 
-  Users, 
-  MessageSquare, 
-  TrendingUp, 
-  AlertCircle, 
-  Clock, 
-  CheckCircle, 
-  UserCheck,
+import { AdminGuard } from "@/components/AdminGuard";
+import { Layout } from "@/components/Layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { trackAdminAnalytics } from "@/lib/analytics";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import {
+  AlertCircle,
   Briefcase,
   FileText,
-  Calendar,
-  ChevronRight
-} from 'lucide-react';
-import { AdminGuard } from '@/components/AdminGuard';
-import { Layout } from '@/components/Layout';
+  Mail,
+  MessageSquare,
+  Shield,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface FeedbackItem {
   id: number;
-  feedback_type: 'malfunction' | 'feature-missing' | 'suggestion' | 'other';
+  feedback_type: "malfunction" | "feature-missing" | "suggestion" | "other";
   message: string;
-  status: 'pending' | 'in_review' | 'resolved' | 'closed';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: "pending" | "in_review" | "resolved" | "closed";
+  priority: "low" | "normal" | "high" | "urgent";
   page_url?: string;
-  source?: 'header' | 'popup';
+  source?: "header" | "popup";
   user_name?: string;
   user_email?: string;
   created_at: string;
@@ -46,10 +57,22 @@ interface FeedbackItem {
   };
 }
 
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: "pending" | "replied" | "resolved";
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
 interface User {
   id: number;
   email: string;
-  role: 'freelancer' | 'recruiter' | 'admin';
+  role: "freelancer" | "recruiter" | "admin";
   first_name?: string;
   last_name?: string;
   email_verified: boolean;
@@ -81,189 +104,240 @@ interface AnalyticsData {
 
 function AdminDashboardContent() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
-  const [adminResponse, setAdminResponse] = useState('');
+  const [adminResponse, setAdminResponse] = useState("");
   const [feedbackFilters, setFeedbackFilters] = useState({
-    status: 'all',
-    type: 'all'
+    status: "all",
+    type: "all",
   });
-  
+
+  // Contact message reply state
+  const [selectedContactMessage, setSelectedContactMessage] = useState<ContactMessage | null>(null);
+  const [contactReply, setContactReply] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
+
   // Admin management state
-  const [grantAdminEmail, setGrantAdminEmail] = useState('');
-  const [revokeAdminEmail, setRevokeAdminEmail] = useState('');
-  const [isGrantingAdmin, setIsGrantingAdmin] = useState(false);
-  const [isRevokingAdmin, setIsRevokingAdmin] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
+
+  // Track Google Analytics when tab changes
+  useEffect(() => {
+    trackAdminAnalytics(activeTab);
+  }, [activeTab]);
 
   // Analytics query
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
-    queryKey: ['/api/admin/analytics/overview'],
-    queryFn: () => apiRequest('/api/admin/analytics/overview'),
+    queryKey: ["/api/admin/analytics/overview"],
+    queryFn: () => apiRequest("/api/admin/analytics/overview"),
     retry: 1,
   });
 
   // Feedback query
-  const { data: feedbackData, isLoading: feedbackLoading, refetch: refetchFeedback } = useQuery({
-    queryKey: ['/api/admin/feedback', feedbackFilters],
+  const {
+    data: feedbackData,
+    isLoading: feedbackLoading,
+    refetch: refetchFeedback,
+  } = useQuery({
+    queryKey: ["/api/feedback", feedbackFilters],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (feedbackFilters.status !== 'all') params.append('status', feedbackFilters.status);
-      if (feedbackFilters.type !== 'all') params.append('type', feedbackFilters.type);
-      
-      return await apiRequest(`/api/admin/feedback?${params.toString()}`);
+      if (feedbackFilters.status !== "all") params.append("status", feedbackFilters.status);
+      if (feedbackFilters.type !== "all") params.append("type", feedbackFilters.type);
+
+      return await apiRequest(`/api/feedback?${params.toString()}`);
     },
     retry: 1,
   });
 
   // Feedback stats query
   const { data: feedbackStats } = useQuery({
-    queryKey: ['/api/admin/feedback/stats'],
-    queryFn: () => apiRequest('/api/admin/feedback/stats'),
+    queryKey: ["/api/admin/feedback/stats"],
+    queryFn: () => apiRequest("/api/admin/feedback/stats"),
     retry: 1,
   });
 
   // Users query
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/admin/users'],
-    queryFn: () => apiRequest('/api/admin/users'),
+    queryKey: ["/api/admin/users"],
+    queryFn: () => apiRequest("/api/admin/users"),
     retry: 1,
   });
 
   // Admin users query
-  const { data: adminUsers, isLoading: adminUsersLoading, refetch: refetchAdminUsers } = useQuery({
-    queryKey: ['/api/admin/users/admins'],
-    queryFn: () => apiRequest('/api/admin/users/admins'),
+  const {
+    data: adminUsers,
+    isLoading: adminUsersLoading,
+    refetch: refetchAdminUsers,
+  } = useQuery({
+    queryKey: ["/api/admin/users/admins"],
+    queryFn: () => apiRequest("/api/admin/users/admins"),
+    retry: 1,
+  });
+
+  // Contact messages query
+  const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery<ContactMessage[]>({
+    queryKey: ["/api/contact-messages"],
+    queryFn: () => apiRequest("/api/contact-messages"),
     retry: 1,
   });
 
   const updateFeedbackStatus = async (id: number, status: string) => {
     try {
       await apiRequest(`/api/admin/feedback/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      
+
       toast({
-        title: 'Status Updated',
-        description: 'Feedback status has been updated successfully.',
+        title: "Status Updated",
+        description: "Feedback status has been updated successfully.",
       });
-      
+
       refetchFeedback();
     } catch (error) {
       toast({
-        title: 'Update Failed',
-        description: 'Failed to update feedback status.',
-        variant: 'destructive',
+        title: "Update Failed",
+        description: "Failed to update feedback status.",
+        variant: "destructive",
       });
     }
   };
 
   const submitAdminResponse = async (id: number) => {
     if (!adminResponse.trim()) return;
-    
+
     try {
       await apiRequest(`/api/admin/feedback/${id}/response`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ response: adminResponse }),
       });
-      
+
       toast({
-        title: 'Response Added',
-        description: 'Your response has been added to the feedback.',
+        title: "Response Added",
+        description: "Your response has been added to the feedback.",
       });
-      
-      setAdminResponse('');
+
+      setAdminResponse("");
       setSelectedFeedback(null);
       refetchFeedback();
     } catch (error) {
       toast({
-        title: 'Response Failed',
-        description: 'Failed to add response to feedback.',
-        variant: 'destructive',
+        title: "Response Failed",
+        description: "Failed to add response to feedback.",
+        variant: "destructive",
       });
     }
   };
 
-  // Admin management functions
-  const handleGrantAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!grantAdminEmail.trim()) return;
+  const submitContactReply = async (id: number) => {
+    if (!contactReply.trim()) return;
 
-    setIsGrantingAdmin(true);
+    setIsSendingReply(true);
     try {
-      await apiRequest('/api/admin/users/grant-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: grantAdminEmail.trim() }),
+      console.log(`📧 Sending reply for message ID: ${id}`);
+      console.log(`📧 Reply content: ${contactReply.substring(0, 50)}...`);
+
+      const result = await apiRequest(`/api/admin/contact-messages/${id}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: contactReply }),
       });
+
+      console.log("✅ Reply sent successfully:", result);
 
       toast({
-        title: 'Admin Status Granted',
-        description: `Admin privileges have been granted to ${grantAdminEmail}`,
+        title: "Reply Sent",
+        description: "Your reply has been sent via email to the user.",
       });
 
-      setGrantAdminEmail('');
-      refetchAdminUsers();
+      setContactReply("");
+      setSelectedContactMessage(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/contact-messages"] });
     } catch (error: any) {
+      console.error("❌ Reply error:", error);
+      console.error("❌ Error message:", error?.message);
+      console.error("❌ Error details:", JSON.stringify(error, null, 2));
+
       toast({
-        title: 'Grant Admin Failed',
-        description: error.response?.data?.error || 'Failed to grant admin status',
-        variant: 'destructive',
+        title: "Reply Failed",
+        description: error?.message || "Failed to send reply. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setIsGrantingAdmin(false);
+      setIsSendingReply(false);
     }
   };
 
-  const handleRevokeAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!revokeAdminEmail.trim()) return;
+  // Bootstrap admin creation function
+  const handleBootstrapAdmin = async () => {
+    if (!user?.email) return;
 
-    setIsRevokingAdmin(true);
+    setIsBootstrapping(true);
     try {
-      await apiRequest('/api/admin/users/revoke-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: revokeAdminEmail.trim() }),
+      const result = await apiRequest("/api/admin/create-first-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
       });
+
+      // Store JWT token and updated user data from bootstrap response
+      if (result && result.token && result.user) {
+        localStorage.setItem("auth_token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
+      }
 
       toast({
-        title: 'Admin Status Revoked',
-        description: `Admin privileges have been revoked from ${revokeAdminEmail}`,
+        title: "Bootstrap Successful",
+        description: "You have been granted admin privileges!",
       });
 
-      setRevokeAdminEmail('');
+      // Invalidate and refetch admin users list to ensure immediate update
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/users/admins"] });
       refetchAdminUsers();
+
+      // Refresh the page to update authentication state
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       toast({
-        title: 'Revoke Admin Failed',
-        description: error.response?.data?.error || 'Failed to revoke admin status',
-        variant: 'destructive',
+        title: "Bootstrap Failed",
+        description: error.response?.data?.error || "Failed to create first admin",
+        variant: "destructive",
       });
     } finally {
-      setIsRevokingAdmin(false);
+      setIsBootstrapping(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in_review': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "in_review":
+        return "bg-blue-100 text-blue-800";
+      case "resolved":
+        return "bg-green-100 text-green-800";
+      case "closed":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getFeedbackTypeLabel = (type: string) => {
     switch (type) {
-      case 'malfunction': return 'Bug Report';
-      case 'feature-missing': return 'Feature Request';
-      case 'suggestion': return 'Suggestion';
-      case 'other': return 'Other';
-      default: return type;
+      case "malfunction":
+        return "Bug Report";
+      case "feature-missing":
+        return "Feature Request";
+      case "suggestion":
+        return "Suggestion";
+      case "other":
+        return "Other";
+      default:
+        return type;
     }
   };
 
@@ -271,11 +345,13 @@ function AdminDashboardContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage feedback, users, and monitor platform analytics</p>
+        <p className="text-muted-foreground">
+          Manage feedback, users, and monitor platform analytics
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Overview
@@ -283,6 +359,10 @@ function AdminDashboardContent() {
           <TabsTrigger value="feedback" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Feedback
+          </TabsTrigger>
+          <TabsTrigger value="contact" className="flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            Contact
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -394,9 +474,11 @@ function AdminDashboardContent() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <CardTitle>Feedback Management</CardTitle>
                 <div className="flex gap-2">
-                  <Select 
-                    value={feedbackFilters.status} 
-                    onValueChange={(value) => setFeedbackFilters(prev => ({...prev, status: value}))}
+                  <Select
+                    value={feedbackFilters.status}
+                    onValueChange={value =>
+                      setFeedbackFilters(prev => ({ ...prev, status: value }))
+                    }
                   >
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Filter by status" />
@@ -409,10 +491,10 @@ function AdminDashboardContent() {
                       <SelectItem value="closed">Closed</SelectItem>
                     </SelectContent>
                   </Select>
-                  
-                  <Select 
-                    value={feedbackFilters.type} 
-                    onValueChange={(value) => setFeedbackFilters(prev => ({...prev, type: value}))}
+
+                  <Select
+                    value={feedbackFilters.type}
+                    onValueChange={value => setFeedbackFilters(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Filter by type" />
@@ -445,19 +527,25 @@ function AdminDashboardContent() {
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">{getFeedbackTypeLabel(item.feedback_type)}</Badge>
+                              <Badge variant="outline">
+                                {getFeedbackTypeLabel(item.feedback_type)}
+                              </Badge>
                               <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
-                              {item.priority === 'high' && (
+                              {item.priority === "high" && (
                                 <Badge variant="destructive">High Priority</Badge>
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              From: {item.user_name || item.user?.first_name || item.user_email || 'Anonymous'} • 
-                              {new Date(item.created_at).toLocaleDateString()}
+                              From:{" "}
+                              {item.user_name ||
+                                item.user?.first_name ||
+                                item.user_email ||
+                                "Anonymous"}{" "}
+                              •{new Date(item.created_at).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Select onValueChange={(value) => updateFeedbackStatus(item.id, value)}>
+                            <Select onValueChange={value => updateFeedbackStatus(item.id, value)}>
                               <SelectTrigger className="w-32">
                                 <SelectValue placeholder="Update Status" />
                               </SelectTrigger>
@@ -468,11 +556,11 @@ function AdminDashboardContent() {
                                 <SelectItem value="closed">Closed</SelectItem>
                               </SelectContent>
                             </Select>
-                            
+
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
+                                <Button
+                                  variant="outline"
                                   size="sm"
                                   onClick={() => setSelectedFeedback(item)}
                                 >
@@ -488,25 +576,25 @@ function AdminDashboardContent() {
                                     <p className="text-sm font-medium mb-2">Original Message:</p>
                                     <p className="text-sm">{item.message}</p>
                                   </div>
-                                  
+
                                   {item.admin_response && (
                                     <div className="p-4 bg-blue-50 rounded-lg">
                                       <p className="text-sm font-medium mb-2">Previous Response:</p>
                                       <p className="text-sm">{item.admin_response}</p>
                                     </div>
                                   )}
-                                  
+
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium">Your Response:</label>
                                     <Textarea
                                       value={adminResponse}
-                                      onChange={(e) => setAdminResponse(e.target.value)}
+                                      onChange={e => setAdminResponse(e.target.value)}
                                       placeholder="Enter your response to this feedback..."
                                       rows={4}
                                     />
                                   </div>
-                                  
-                                  <Button 
+
+                                  <Button
                                     onClick={() => submitAdminResponse(item.id)}
                                     disabled={!adminResponse.trim()}
                                   >
@@ -517,14 +605,145 @@ function AdminDashboardContent() {
                             </Dialog>
                           </div>
                         </div>
-                        
+
                         <p className="text-sm">{item.message}</p>
-                        
+
                         {item.page_url && (
-                          <p className="text-xs text-muted-foreground">
-                            Page: {item.page_url}
-                          </p>
+                          <p className="text-xs text-muted-foreground">Page: {item.page_url}</p>
                         )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Contact Messages Tab */}
+        <TabsContent value="contact" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Messages</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Messages submitted through the Contact Us form
+              </p>
+            </CardHeader>
+            <CardContent>
+              {contactMessagesLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {!contactMessages || contactMessages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No contact messages yet.
+                    </div>
+                  ) : (
+                    contactMessages.map((message: ContactMessage) => (
+                      <div
+                        key={message.id}
+                        className="border border-border rounded-lg p-4 space-y-3"
+                        data-testid={`contact-message-${message.id}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{message.subject}</span>
+                              <Badge
+                                className={
+                                  message.status === "pending"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : message.status === "replied"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-blue-100 text-blue-800"
+                                }
+                              >
+                                {message.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              From: {message.name} ({message.email}) •
+                              {new Date(message.created_at).toLocaleDateString()} at{" "}
+                              {new Date(message.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                        </div>
+
+                        {message.ip_address && (
+                          <p className="text-xs text-muted-foreground">IP: {message.ip_address}</p>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedContactMessage(message)}
+                                data-testid={`button-reply-${message.id}`}
+                              >
+                                <Mail className="w-4 h-4 mr-2" />
+                                Reply
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Reply to Contact Message</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="p-4 bg-muted rounded-lg">
+                                  <p className="text-sm font-medium mb-2">Original Message:</p>
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    From: {message.name} ({message.email})
+                                  </p>
+                                  <p className="text-sm font-semibold mb-1">{message.subject}</p>
+                                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Your Reply:</label>
+                                  <Textarea
+                                    value={contactReply}
+                                    onChange={e => setContactReply(e.target.value)}
+                                    placeholder="Enter your reply message here... This will be sent via email to the user."
+                                    rows={6}
+                                    data-testid="textarea-contact-reply"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    Reply will be sent to: {message.email}
+                                  </p>
+                                </div>
+
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setContactReply("");
+                                      setSelectedContactMessage(null);
+                                    }}
+                                    disabled={isSendingReply}
+                                    data-testid="button-cancel-reply"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    onClick={() => submitContactReply(message.id)}
+                                    disabled={!contactReply.trim() || isSendingReply}
+                                    data-testid="button-send-reply"
+                                  >
+                                    {isSendingReply ? "Sending..." : "Send Reply"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </div>
                     ))
                   )}
@@ -548,27 +767,29 @@ function AdminDashboardContent() {
               ) : (
                 <div className="space-y-4">
                   {usersData?.users?.map((user: User) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border border-border rounded-lg"
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">
-                            {user.first_name || user.last_name 
-                              ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                              : user.email
-                            }
+                            {user.first_name || user.last_name
+                              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                              : user.email}
                           </span>
-                          <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                          <Badge variant={user.role === "admin" ? "default" : "outline"}>
                             {user.role}
                           </Badge>
                           {user.email_verified && <UserCheck className="w-4 h-4 text-green-500" />}
                         </div>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                         <p className="text-xs text-muted-foreground">
-                          Joined: {new Date(user.created_at).toLocaleDateString()} • 
-                          Provider: {user.auth_provider}
+                          Joined: {new Date(user.created_at).toLocaleDateString()} • Provider:{" "}
+                          {user.auth_provider}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm">
                           View Profile
@@ -584,102 +805,57 @@ function AdminDashboardContent() {
 
         {/* Admin Management Tab */}
         <TabsContent value="admin-management" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Grant Admin Access */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5" />
-                  Grant Admin Access
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleGrantAdmin} className="space-y-4">
-                  <div>
-                    <label htmlFor="grant-email" className="text-sm font-medium">
-                      User Email
-                    </label>
-                    <Input
-                      id="grant-email"
-                      data-testid="input-grant-admin-email"
-                      type="email"
-                      placeholder="user@example.com"
-                      value={grantAdminEmail}
-                      onChange={(e) => setGrantAdminEmail(e.target.value)}
-                      disabled={isGrantingAdmin}
-                      required
-                    />
+          {/* Bootstrap Admin Creation - Top Priority */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                First Admin Setup
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        Need to create the first admin user?
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        If you're having trouble accessing admin features because no admin users
+                        exist yet, use this bootstrap button to make yourself the first admin. This
+                        only works if you're logged in with a pre-approved email address.
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Current user:</strong> {user?.email || "Not logged in"}
+                      </p>
+                    </div>
                   </div>
-                  <Button
-                    type="submit"
-                    data-testid="button-grant-admin"
-                    disabled={isGrantingAdmin || !grantAdminEmail.trim()}
-                    className="w-full"
-                  >
-                    {isGrantingAdmin ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Granting Admin...
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="w-4 h-4 mr-2" />
-                        Grant Admin Access
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                </div>
 
-            {/* Revoke Admin Access */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Revoke Admin Access
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleRevokeAdmin} className="space-y-4">
-                  <div>
-                    <label htmlFor="revoke-email" className="text-sm font-medium">
-                      Admin Email
-                    </label>
-                    <Input
-                      id="revoke-email"
-                      data-testid="input-revoke-admin-email"
-                      type="email"
-                      placeholder="admin@example.com"
-                      value={revokeAdminEmail}
-                      onChange={(e) => setRevokeAdminEmail(e.target.value)}
-                      disabled={isRevokingAdmin}
-                      required
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    data-testid="button-revoke-admin"
-                    variant="destructive"
-                    disabled={isRevokingAdmin || !revokeAdminEmail.trim()}
-                    className="w-full"
-                  >
-                    {isRevokingAdmin ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Revoking Admin...
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-4 h-4 mr-2" />
-                        Revoke Admin Access
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                <Button
+                  onClick={handleBootstrapAdmin}
+                  data-testid="button-bootstrap-admin"
+                  disabled={isBootstrapping || !user?.email}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {isBootstrapping ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      Creating First Admin...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Create First Admin ({user?.email || "No user"})
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Current Admin Users List */}
           <Card>
@@ -691,7 +867,7 @@ function AdminDashboardContent() {
                 </span>
                 {adminUsers && (
                   <Badge variant="secondary" data-testid="text-admin-count">
-                    {adminUsers.length} {adminUsers.length === 1 ? 'Admin' : 'Admins'}
+                    {adminUsers.length} {adminUsers.length === 1 ? "Admin" : "Admins"}
                   </Badge>
                 )}
               </CardTitle>
@@ -727,9 +903,7 @@ function AdminDashboardContent() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="default">Admin</Badge>
-                        <Badge variant="outline">
-                          {admin.auth_provider || 'Email'}
-                        </Badge>
+                        <Badge variant="outline">{admin.auth_provider || "Email"}</Badge>
                       </div>
                     </div>
                   ))}
@@ -746,16 +920,12 @@ function AdminDashboardContent() {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>User Statistics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>Total Users</span>
-                  <span className="font-bold">{analytics?.users?.total || 0}</span>
-                </div>
                 <div className="flex justify-between items-center">
                   <span>Freelancers</span>
                   <span className="font-bold">{analytics?.users?.freelancers || 0}</span>

@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 interface ImageUploadProps {
   label: string;
@@ -9,9 +9,9 @@ interface ImageUploadProps {
   onChange: (imageData: string) => void;
   placeholder?: string;
   maxSizeMB?: number;
-  aspectRatio?: 'square' | 'landscape' | 'auto';
+  aspectRatio?: "square" | "landscape" | "auto";
   testId?: string;
-  shape?: 'square' | 'circle';
+  shape?: "square" | "circle";
 }
 
 export function ImageUpload({
@@ -20,9 +20,9 @@ export function ImageUpload({
   onChange,
   placeholder = "Upload image",
   maxSizeMB = 2,
-  aspectRatio = 'auto',
-  testId = 'image-upload',
-  shape = 'square'
+  aspectRatio = "auto",
+  testId = "image-upload",
+  shape = "square",
 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,8 +33,8 @@ export function ImageUpload({
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
       return;
     }
 
@@ -42,8 +42,8 @@ export function ImageUpload({
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
         // Resize image for optimization
@@ -66,15 +66,15 @@ export function ImageUpload({
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // WebP support with JPEG fallback for better compression
-        let compressedData = '';
-        if (canvas.toDataURL('image/webp').indexOf('webp') !== -1) {
-          compressedData = canvas.toDataURL('image/webp', 0.8);
+        let compressedData = "";
+        if (canvas.toDataURL("image/webp").indexOf("webp") !== -1) {
+          compressedData = canvas.toDataURL("image/webp", 0.8);
         } else {
-          compressedData = canvas.toDataURL('image/jpeg', 0.8);
+          compressedData = canvas.toDataURL("image/jpeg", 0.8);
         }
-        console.log('ImageUpload: Generated compressed data URL, length:', compressedData.length);
+        console.log("ImageUpload: Generated compressed data URL, length:", compressedData.length);
         onChange(compressedData);
       };
       img.src = reader.result as string;
@@ -99,37 +99,44 @@ export function ImageUpload({
   };
 
   const removeImage = () => {
-    onChange('');
+    onChange("");
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      
-      {value && value.trim() !== '' && value !== 'null' ? (
+
+      {value && value.trim() !== "" && value !== "null" ? (
         <div className="relative">
-          <div className={`relative overflow-hidden ${
-            shape === 'circle' ? 'rounded-full w-16 h-16 bg-gradient-primary border-2 border-muted' : 
-            'rounded-lg border-2 border-dashed border-muted'
-          } ${
-            shape === 'circle' ? '' :
-            aspectRatio === 'square' ? 'aspect-square' : 
-            aspectRatio === 'landscape' ? 'aspect-video' : 'max-h-48'
-          }`}>
-            <img 
-              src={value} 
-              alt="Uploaded" 
+          <div
+            className={`relative overflow-hidden ${
+              shape === "circle"
+                ? "rounded-full w-16 h-16 bg-gradient-primary border-2 border-muted"
+                : "rounded-lg border-2 border-dashed border-muted"
+            } ${
+              shape === "circle"
+                ? ""
+                : aspectRatio === "square"
+                  ? "aspect-square"
+                  : aspectRatio === "landscape"
+                    ? "aspect-video"
+                    : "max-h-48"
+            }`}
+          >
+            <img
+              src={value}
+              alt="Uploaded"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                console.log('ImageUpload: Image failed to load:', value?.substring(0, 50));
+              onError={e => {
+                console.log("ImageUpload: Image failed to load:", value?.substring(0, 50));
                 // Hide the image preview if it fails to load
-                onChange('');
+                onChange("");
               }}
               onLoad={() => {
-                console.log('ImageUpload: Image loaded successfully');
+                console.log("ImageUpload: Image loaded successfully");
               }}
             />
             <Button
@@ -146,46 +153,46 @@ export function ImageUpload({
       ) : (
         <div
           className={`border-2 border-dashed border-muted text-center transition-colors ${
-            shape === 'circle' ? 'rounded-full w-16 h-16 flex items-center justify-center' : 
-            'rounded-lg p-12'
-          } ${
-            isDragging ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-          } ${
-            shape === 'circle' ? '' :
-            aspectRatio === 'square' ? 'aspect-square' : 'min-h-64'
+            shape === "circle"
+              ? "rounded-full w-16 h-16 flex items-center justify-center"
+              : "rounded-lg p-12"
+          } ${isDragging ? "border-primary bg-primary/5" : "hover:border-primary/50"} ${
+            shape === "circle" ? "" : aspectRatio === "square" ? "aspect-square" : "min-h-64"
           }`}
           onDrop={handleDrop}
-          onDragOver={(e) => {
+          onDragOver={e => {
             e.preventDefault();
             setIsDragging(true);
           }}
           onDragLeave={() => setIsDragging(false)}
           data-testid={testId}
         >
-          <div className={`flex flex-col items-center justify-center ${shape === 'circle' ? 'space-y-1' : 'space-y-3'}`}>
-            <ImageIcon className={`${shape === 'circle' ? 'w-8 h-8' : 'w-12 h-12'} text-muted-foreground`} />
-            {shape !== 'circle' && (
+          <div
+            className={`flex flex-col items-center justify-center ${shape === "circle" ? "space-y-1" : "space-y-3"}`}
+          >
+            <ImageIcon
+              className={`${shape === "circle" ? "w-8 h-8" : "w-12 h-12"} text-muted-foreground`}
+            />
+            {shape !== "circle" && (
               <>
                 <p className="text-base text-muted-foreground font-medium">{placeholder}</p>
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop or click to browse
-                </p>
+                <p className="text-sm text-muted-foreground">Drag and drop or click to browse</p>
               </>
             )}
             <Button
               variant="outline"
-              size={shape === 'circle' ? 'sm' : 'default'}
+              size={shape === "circle" ? "sm" : "default"}
               onClick={() => fileInputRef.current?.click()}
               data-testid={`${testId}-button`}
-              className={shape === 'circle' ? 'text-xs px-2 py-1' : 'px-6 py-2'}
+              className={shape === "circle" ? "text-xs px-2 py-1" : "px-6 py-2"}
             >
-              <Upload className={`${shape === 'circle' ? 'w-3 h-3 mr-1' : 'w-5 h-5 mr-2'}`} />
-              {shape === 'circle' ? 'Add' : 'Choose File'}
+              <Upload className={`${shape === "circle" ? "w-3 h-3 mr-1" : "w-5 h-5 mr-2"}`} />
+              {shape === "circle" ? "Add" : "Choose File"}
             </Button>
           </div>
         </div>
       )}
-      
+
       <input
         ref={fileInputRef}
         type="file"
@@ -194,7 +201,7 @@ export function ImageUpload({
         onChange={handleFileInput}
         data-testid={`${testId}-input`}
       />
-      
+
       <p className="text-xs text-muted-foreground">
         Maximum file size: {maxSizeMB}MB. Supported formats: JPG, PNG, GIF
       </p>

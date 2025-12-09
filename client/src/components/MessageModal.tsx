@@ -1,11 +1,19 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { MessageCircle, Send } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import { MessageCircle, Send } from "lucide-react";
+import { useState } from "react";
 
 interface MessageModalProps {
   isOpen: boolean;
@@ -15,57 +23,58 @@ interface MessageModalProps {
   senderId: number;
 }
 
-export function MessageModal({ isOpen, onClose, recipientId, recipientName, senderId }: MessageModalProps) {
-  const [message, setMessage] = useState('');
+export function MessageModal({
+  isOpen,
+  onClose,
+  recipientId,
+  recipientName,
+  senderId,
+}: MessageModalProps) {
+  const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSendMessage = async () => {
     if (!message.trim()) {
       toast({
-        title: 'Error',
-        description: 'Please enter a message.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please enter a message.",
+        variant: "destructive",
       });
       return;
     }
 
     setIsSending(true);
     try {
-      // First, get or create a conversation
-      const conversation = await apiRequest('/api/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Create conversation and send initial message
+      const response = await apiRequest("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userOneId: senderId,
           userTwoId: recipientId,
-        }),
-      });
-
-      // Then send the message
-      await apiRequest('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: conversation.id,
-          sender_id: senderId,
-          content: message.trim(),
+          initialMessage: message.trim(),
         }),
       });
 
       toast({
-        title: 'Message sent',
+        title: "Message sent",
         description: `Your message has been sent to ${recipientName}.`,
       });
 
-      setMessage('');
+      // Invalidate conversations cache to refresh the messages list
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${response.id}/messages`] });
+
+      setMessage("");
       onClose();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to send message. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSending(false);
@@ -73,7 +82,7 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
   };
 
   const handleClose = () => {
-    setMessage('');
+    setMessage("");
     onClose();
   };
 
@@ -86,10 +95,11 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
             Send Message to {recipientName}
           </DialogTitle>
           <DialogDescription>
-            Send a direct message to this freelancer. They will be notified and can respond through the messaging system.
+            Send a direct message to this freelancer. They will be notified and can respond through
+            the messaging system.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div>
             <Label htmlFor="message-content">Message</Label>
@@ -97,14 +107,12 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
               id="message-content"
               placeholder="Type your message here..."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value)}
               rows={4}
               className="resize-none"
               data-testid="textarea-message-content"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {message.length}/1000 characters
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{message.length}/1000 characters</p>
           </div>
         </div>
 
@@ -112,13 +120,13 @@ export function MessageModal({ isOpen, onClose, recipientId, recipientName, send
           <Button variant="outline" onClick={handleClose} disabled={isSending}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSendMessage} 
+          <Button
+            onClick={handleSendMessage}
             disabled={isSending || !message.trim()}
             data-testid="button-send-message"
           >
             {isSending ? (
-              'Sending...'
+              "Sending..."
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
