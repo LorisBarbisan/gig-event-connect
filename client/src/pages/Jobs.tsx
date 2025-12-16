@@ -485,7 +485,17 @@ export default function Jobs() {
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <CardTitle className="text-xl">{job.title}</CardTitle>
-                            <p className="text-muted-foreground font-medium">{job.company}</p>
+                            {job.recruiter_id && !job.external_source ? (
+                              <button
+                                onClick={() => window.open(`/profile/${job.recruiter_id}`, '_blank')}
+                                className="text-muted-foreground font-medium hover:text-primary hover:underline cursor-pointer text-left transition-colors"
+                                data-testid={`link-company-${job.id}`}
+                              >
+                                {job.company}
+                              </button>
+                            ) : (
+                              <p className="text-muted-foreground font-medium">{job.company}</p>
+                            )}
                           </div>
                           <div className="flex flex-col gap-2">
                             {!job.external_source ? (
