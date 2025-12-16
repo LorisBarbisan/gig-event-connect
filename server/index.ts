@@ -225,8 +225,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
   // Use PORT environment variable for production deployment
-  // Fall back to 3000 for development (5000 and 7000 are often used by macOS services)
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  // Fall back to 5000 for development (standard Replit port)
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "0.0.0.0";
   server.listen(port, host, () => {
     log(`serving on port ${port} (host: ${host})`);

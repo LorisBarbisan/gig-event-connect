@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
-import eventImage from "@assets/Landing page Image small_1762324021670.jpg";
+import eventImage from "@assets/Landing_Page_new_1765869873273.jpg";
 import eventlinkLogo from "@assets/E8-Logo-Orange-New.png";
 
 export const HeroSection = () => {
@@ -80,7 +80,7 @@ export const HeroSection = () => {
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <img
                 src={eventImage}
-                alt="Professional trade fair and exhibition hall with lighting and event displays"
+                alt="Professional event production setup with video monitors, cameras, mixing console and stage lighting"
                 className="w-full h-[500px] object-cover"
                 loading="eager"
                 decoding="async"
