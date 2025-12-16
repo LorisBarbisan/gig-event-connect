@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { ArrowRight, Users, Briefcase, Star, MapPin, Clock } from "lucide-react";
-import eventImage from "@assets/Landing_Page_new_1765869873273.jpg";
+import eventImage from "@assets/Landing_Page_optimized.jpg";
 import eventlinkLogo from "@assets/E8-Logo-Orange-New.png";
 
 export const HeroSection = () => {
