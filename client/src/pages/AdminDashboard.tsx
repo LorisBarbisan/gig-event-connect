@@ -17,11 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TabBadge } from "@/components/ui/tab-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useBadgeCounts } from "@/hooks/useBadgeCounts";
 import { trackAdminAnalytics } from "@/lib/analytics";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -127,6 +129,10 @@ function AdminDashboardContent() {
 
   const [, setLocation] = useLocation();
 
+  const { counts, markCategoryAsRead } = useBadgeCounts({
+    enabled: !!user?.id,
+  });
+
   // Sync activeTab with URL hash for deep linking from notifications
   useEffect(() => {
     const handleHashSync = () => {
@@ -231,38 +237,17 @@ function AdminDashboardContent() {
     refetchOnMount: true,
   });
 
-  // Fetch category unread counts to monitor for new notifications while on tabs
-  const { data: categoryCounts } = useQuery({
-    queryKey: ["/api/notifications/category-counts", user?.id],
-    queryFn: () => apiRequest("/api/notifications/category-counts"),
-    enabled: !!user?.id,
-  });
 
   // Automatically mark notifications as read when the relevant tab is active
   useEffect(() => {
-    const markAsRead = async (category: string) => {
-      try {
-        await apiRequest(`/api/notifications/mark-category-read/${category}`, {
-          method: "PATCH",
-        });
-        // Invalidate notification counts to update UI badges
-        queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count", user?.id] });
-        queryClient.invalidateQueries({
-          queryKey: ["/api/notifications/category-counts", user?.id],
-        });
-      } catch (error) {
-        console.error(`Failed to mark ${category} notifications as read:`, error);
-      }
-    };
-
     // Trigger mark as read if we are on the tab AND there are pending notifications
-    // categoryCounts is updated instantly by WebSocket context
-    if (activeTab === "feedback" && (categoryCounts as any)?.feedback > 0) {
-      markAsRead("feedback");
-    } else if (activeTab === "contact" && (categoryCounts as any)?.contact_messages > 0) {
-      markAsRead("contact_messages");
+    // counts is updated instantly by WebSocket context
+    if (activeTab === "feedback" && (counts as any)?.feedback > 0) {
+      markCategoryAsRead("feedback");
+    } else if (activeTab === "contact" && (counts as any)?.contact_messages > 0) {
+      markCategoryAsRead("contact_messages");
     }
-  }, [activeTab, categoryCounts, user?.id]);
+  }, [activeTab, counts, user?.id, markCategoryAsRead]);
 
   const updateFeedbackStatus = async (id: number, status: string) => {
     try {
@@ -441,10 +426,12 @@ function AdminDashboardContent() {
           <TabsTrigger value="feedback" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Feedback
+            <TabBadge count={counts.feedback} />
           </TabsTrigger>
           <TabsTrigger value="contact" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
             Contact
+            <TabBadge count={counts.contact_messages} />
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />

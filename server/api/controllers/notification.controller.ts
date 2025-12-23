@@ -1,7 +1,7 @@
 import {
-    insertJobAlertFilterSchema,
-    insertNotificationPreferencesSchema,
-    insertNotificationSchema,
+  insertJobAlertFilterSchema,
+  insertNotificationPreferencesSchema,
+  insertNotificationSchema,
 } from "@shared/schema";
 import type { Request, Response } from "express";
 import { storage } from "../../storage.js";
@@ -164,14 +164,9 @@ export async function markCategoryNotificationsAsRead(req: Request, res: Respons
 
     // Send WebSocket update for badge counts
     try {
+      const { wsService } = await import("../websocket/websocketService.js");
       const counts = await storage.getCategoryUnreadCounts((req as any).user.id);
-      const broadcastToUser = (global as any).broadcastToUser;
-      if (broadcastToUser) {
-        broadcastToUser((req as any).user.id, {
-          type: "badge_counts_update",
-          counts: counts,
-        });
-      }
+      wsService.broadcastBadgeCounts((req as any).user.id, counts);
     } catch (wsError) {
       console.error("WebSocket broadcast error:", wsError);
     }
@@ -204,14 +199,9 @@ export async function deleteNotification(req: Request, res: Response) {
 
     // Send WebSocket update for badge counts
     try {
+      const { wsService } = await import("../websocket/websocketService.js");
       const counts = await storage.getCategoryUnreadCounts((req as any).user.id);
-      const broadcastToUser = (global as any).broadcastToUser;
-      if (broadcastToUser) {
-        broadcastToUser((req as any).user.id, {
-          type: "badge_counts_update",
-          counts: counts,
-        });
-      }
+      wsService.broadcastBadgeCounts((req as any).user.id, counts);
     } catch (wsError) {
       console.error("WebSocket broadcast error:", wsError);
     }

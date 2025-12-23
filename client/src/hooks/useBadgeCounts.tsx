@@ -7,6 +7,8 @@ interface BadgeCounts {
   applications: number;
   jobs: number;
   ratings: number;
+  feedback: number;
+  contact_messages: number;
   total: number;
 }
 
@@ -24,18 +26,43 @@ export function useBadgeCounts({
 
   // Fetch badge counts from API
   const {
-    data: counts = { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 },
+    data: counts = {
+      messages: 0,
+      applications: 0,
+      jobs: 0,
+      ratings: 0,
+      feedback: 0,
+      contact_messages: 0,
+      total: 0,
+    },
     refetch,
   } = useQuery<BadgeCounts>({
     queryKey: ["/api/notifications/category-counts", user?.id],
     queryFn: async (): Promise<BadgeCounts> => {
-      if (!user?.id) return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
+      if (!user?.id)
+        return {
+          messages: 0,
+          applications: 0,
+          jobs: 0,
+          ratings: 0,
+          feedback: 0,
+          contact_messages: 0,
+          total: 0,
+        };
 
       try {
         return await apiRequest("/api/notifications/category-counts");
       } catch (error) {
         console.error("Error fetching badge counts:", error);
-        return { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 };
+        return {
+          messages: 0,
+          applications: 0,
+          jobs: 0,
+          ratings: 0,
+          feedback: 0,
+          contact_messages: 0,
+          total: 0,
+        };
       }
     },
     enabled: enabled && !!user?.id,
@@ -72,7 +99,9 @@ export function useBadgeCounts({
   };
 
   // Function to mark category notifications as read
-  const markCategoryAsRead = async (category: "messages" | "applications" | "jobs" | "ratings") => {
+  const markCategoryAsRead = async (
+    category: "messages" | "applications" | "jobs" | "ratings" | "feedback" | "contact_messages"
+  ) => {
     if (!user?.id) return;
 
     try {
@@ -80,22 +109,8 @@ export function useBadgeCounts({
         method: "PATCH",
       });
 
-      // Optimistically update badge counts immediately (set to 0 for the category)
-      // This provides instant UI feedback while WebSocket confirms the update
-      queryClient.setQueryData<BadgeCounts>(
-        ["/api/notifications/category-counts", user.id],
-        (old = { messages: 0, applications: 0, jobs: 0, ratings: 0, total: 0 }) => {
-          const updated = {
-            ...old,
-            [category]: 0,
-            total: Math.max(0, old.total - (old[category] || 0)),
-          };
-          console.log(`✅ Optimistically updated badge counts for ${category}:`, updated);
-          return updated;
-        }
-      );
-
-      // Also refetch to ensure we have the latest from server
+      // Refetch to ensure we have the latest from server
+      // The WebSocket will also broadcast the update, but this ensures consistency
       refetch();
     } catch (error) {
       console.error(`Error marking ${category} notifications as read:`, error);
